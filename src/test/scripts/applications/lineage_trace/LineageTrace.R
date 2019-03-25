@@ -28,9 +28,12 @@ library("Matrix");
 
 X = readMM(paste(args[1], "X.mtx", sep=""));
 
-max_iteration = 3;
-i = 0;
+max_iteration = sum(X) %% 5
+max_iteration = max_iteration + 1;
+max_iteration = max_iteration + 1;
+max_iteration = max_iteration %% 3 + 4;
 
+i = 0;
 while(i < max_iteration) {
 	if (i == 1)
     {

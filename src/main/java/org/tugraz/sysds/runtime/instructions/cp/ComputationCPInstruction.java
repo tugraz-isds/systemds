@@ -23,10 +23,14 @@ import org.tugraz.sysds.api.DMLScript;
 import org.tugraz.sysds.common.Types.ExecMode;
 import org.tugraz.sysds.hops.OptimizerUtils;
 import org.tugraz.sysds.runtime.controlprogram.caching.CacheableData;
+import org.tugraz.sysds.runtime.lineage.Lineage;
+import org.tugraz.sysds.runtime.lineage.LineageTracable;
+import org.tugraz.sysds.runtime.lineage.LineageTraceItem;
 import org.tugraz.sysds.runtime.matrix.data.MatrixBlock;
 import org.tugraz.sysds.runtime.matrix.operators.Operator;
+import java.util.HashSet;
 
-public abstract class ComputationCPInstruction extends CPInstruction {
+public abstract class ComputationCPInstruction extends CPInstruction implements LineageTracable {
 
 	public final CPOperand output;
 	public final CPOperand input1, input2, input3;
@@ -70,4 +74,23 @@ public abstract class ComputationCPInstruction extends CPInstruction {
 		return ( memReq < memIn1 + memIn2
 			+ OptimizerUtils.SAFE_REP_CHANGE_THRES ); //8MB
 	}
+
+
+	@Override
+	public LineageTraceItem getLineageTraceItem() {
+		HashSet<LineageTraceItem> lineages = new HashSet<>();
+		if (this.input1 != null)
+			lineages.add(Lineage.getOrCreate(this.input1));
+        if (this.input2 != null)
+            lineages.add(Lineage.getOrCreate(this.input2));
+        if (this.input3 != null)
+            lineages.add(Lineage.getOrCreate(this.input3));
+
+        if (this.output == null)
+            assert(false);
+		else if (Lineage.get(this.output) != null)
+            return new LineageTraceItem(output, lineages);
+        return new LineageTraceItem(output, lineages);
+	}
+
 }

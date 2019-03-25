@@ -222,11 +222,17 @@ public class VariableCPInstruction extends CPInstruction {
 		return (opcode == VariableOperationCode.RemoveVariable 
 			|| opcode == VariableOperationCode.RemoveVariableAndFile);
 	}
-	
-	public boolean isAssignVariable() {
-		return (opcode == VariableOperationCode.AssignVariable);
+
+	public boolean isAssignVariable() { return (opcode == VariableOperationCode.AssignVariable); }
+
+	public boolean isCreateVariable() {
+		return (opcode == VariableOperationCode.CreateVariable);
 	}
-	
+
+	public boolean isCopyVariable() { return (opcode == VariableOperationCode.CopyVariable); }
+
+	public boolean isWriteVariable() { return (opcode == VariableOperationCode.Write); }
+
 	public FileFormatProperties getFormatProperties() {
 		return _formatProperties;
 	}

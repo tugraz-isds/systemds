@@ -21,6 +21,7 @@ package org.tugraz.sysds.test.integration.applications;
 
 import org.junit.runners.Parameterized.Parameters;
 import org.tugraz.sysds.api.DMLScript;
+import org.tugraz.sysds.common.Types;
 import org.tugraz.sysds.runtime.matrix.data.MatrixValue.CellIndex;
 import org.tugraz.sysds.test.AutomatedTestBase;
 import org.tugraz.sysds.test.TestUtils;
@@ -43,8 +44,7 @@ public abstract class LineageTraceTest extends AutomatedTestBase {
     @Parameters
     public static Collection<Object[]> data() {
         Object[][] data = new Object[][]{
-                {100, 50}
-//                , {1000, 500}
+                {10, 5} //, {1000, 500}
         };
         return Arrays.asList(data);
     }
@@ -62,14 +62,13 @@ public abstract class LineageTraceTest extends AutomatedTestBase {
 
         getAndLoadTestConfiguration(TEST_NAME);
 
-        List<String> proArgs = new ArrayList<String>();
-//        dmlscript =
+//        rtplatform = Types.ExecMode.SPARK;
 //        DMLScript.USE_LOCAL_SPARK_CONFIG = true;
+
+        List<String> proArgs = new ArrayList<String>();
 
         proArgs.add("-stats");
         proArgs.add("-explain");
-//        proArgs.add("-exec");
-//        proArgs.add("spark");
         proArgs.add("-args");
         proArgs.add(input("X"));
         proArgs.add(output("X"));
