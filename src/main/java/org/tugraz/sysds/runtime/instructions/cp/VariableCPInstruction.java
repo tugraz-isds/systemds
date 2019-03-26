@@ -80,8 +80,9 @@ public class VariableCPInstruction extends CPInstruction {
 	 *	    allocate a new file object with name FP, and associate it with variable x
 	 *     createvar x FP [dimensions] [formatinfo]
 	 */
-	
-	private enum VariableOperationCode 
+
+	// TODO bnyra: Is it useful to make this public? How should i check between different types of VariableCPInstructions?
+	public enum VariableOperationCode
 	{
 		CreateVariable, 
 		AssignVariable, 
@@ -225,13 +226,9 @@ public class VariableCPInstruction extends CPInstruction {
 
 	public boolean isAssignVariable() { return (opcode == VariableOperationCode.AssignVariable); }
 
-	public boolean isCreateVariable() {
-		return (opcode == VariableOperationCode.CreateVariable);
+	public VariableOperationCode getVariableOpcode() {
+		return this.opcode;
 	}
-
-	public boolean isCopyVariable() { return (opcode == VariableOperationCode.CopyVariable); }
-
-	public boolean isWriteVariable() { return (opcode == VariableOperationCode.Write); }
 
 	public FileFormatProperties getFormatProperties() {
 		return _formatProperties;

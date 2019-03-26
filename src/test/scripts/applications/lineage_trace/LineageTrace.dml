@@ -26,15 +26,11 @@
 
 # X = rand(rows=20, cols=20);
 X = read($1);
-
-max_iteration = sum(X) %% 5
-max_iteration = max_iteration + 1;
-max_iteration = max_iteration + 1;
-max_iteration = max_iteration %% 3 + 4;
-
+max_iteration = 4
 i = 0;
+
 while(i < max_iteration) {
-	if (i == 1)
+	if (i %% 2 == 1)
     {
         X = X * 3;
     }

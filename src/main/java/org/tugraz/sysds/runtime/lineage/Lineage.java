@@ -1,79 +1,120 @@
 package org.tugraz.sysds.runtime.lineage;
 
-import org.apache.hadoop.hdfs.server.namenode.CachePool;
 import org.tugraz.sysds.runtime.instructions.Instruction;
-import org.tugraz.sysds.runtime.instructions.cp.BinaryScalarScalarCPInstruction;
 import org.tugraz.sysds.runtime.instructions.cp.CPOperand;
-import org.tugraz.sysds.runtime.instructions.cp.UnaryCPInstruction;
 import org.tugraz.sysds.runtime.instructions.cp.VariableCPInstruction;
 
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 
 public class Lineage {
-    // static variable single_instance of type Singleton
-//    private static Lineage single_instance = null;
 
-    // private constructor restricted to this class itself
+    private static HashMap<String, LineageItem> lineage_traces = new HashMap<>();
+
     private Lineage() {
     }
 
-    private static HashMap<String, LineageTraceItem> lineage_traces = new HashMap<>();
-
     public static void trace(Instruction instruction) {
-//        System.out.printf("Instruction: %s (%s)\n", instruction.getOpcode(), instruction.getClass().getName());
-
-        if (instruction instanceof VariableCPInstruction && ((VariableCPInstruction) instruction).isCreateVariable()) {
-            HashSet<LineageTraceItem> lineages = new HashSet<>();
-            lineages.add(lineage_traces.getOrDefault(((VariableCPInstruction) instruction).getInput2(),
-                    new LineageTraceItem(((VariableCPInstruction) instruction).getInput2())));
-            lineages.add(lineage_traces.getOrDefault(((VariableCPInstruction) instruction).getInput3(),
-                    new LineageTraceItem(((VariableCPInstruction) instruction).getInput3())));
-            LineageTraceItem lti = new LineageTraceItem(((VariableCPInstruction) instruction).getInput1(), lineages);
-            lineage_traces.put(lti.getVariable().getName(), lti);
-
-        } else if (instruction instanceof VariableCPInstruction && ((VariableCPInstruction) instruction).isRemoveVariable()) {
-            lineage_traces.remove(((VariableCPInstruction) instruction).getInput1().getName());
-
-        } else if (instruction instanceof VariableCPInstruction && (((VariableCPInstruction) instruction).isAssignVariable() ||
-                ((VariableCPInstruction) instruction).isCopyVariable())) {
-            HashSet<LineageTraceItem> lineages = new HashSet<>();
-            lineages.add(getOrCreate(((VariableCPInstruction) instruction).getInput1()));
-            LineageTraceItem lti = new LineageTraceItem(((VariableCPInstruction) instruction).getInput2(), lineages);
-            lineage_traces.put(lti.getVariable().getName(), lti);
-
-        } else if (instruction instanceof VariableCPInstruction && ((VariableCPInstruction) instruction).isWriteVariable()) {
-            LineageTraceItem lti = lineage_traces.get(((VariableCPInstruction) instruction).getInput1().getName());
-            lti.print();
-
-        } else if (instruction instanceof LineageTracable) {
-            LineageTraceItem lti = ((LineageTracable) instruction).getLineageTraceItem();
-            lineage_traces.put(lti.getVariable().getName(), lti);
-
+        if (instruction instanceof VariableCPInstruction) {
+            VariableCPInstruction inst = ((VariableCPInstruction) instruction);
+            switch (inst.getVariableOpcode()) {
+                case CreateVariable: {
+                    createVariableLineageItem(inst);
+                    break;
+                }
+                case RemoveVariable: {
+                    removeLineageItem(inst);
+                    break;
+                }
+                case AssignVariable:
+                case CopyVariable: {
+                    copyVariableLineage(inst);
+                    break;
+                }
+                case Write: {
+                    writeLineageItem(inst);
+                    break;
+                }
+                case MoveVariable: {
+                    moveLineageItem(inst);
+                    break;
+                }
+                default:
+                    System.out.printf("Oh no! Unknown VariableCPInstruction traced: %s\n", instruction.getOpcode());
+                    break;
+            }
+        } else if (instruction instanceof LineageTraceable) {
+            LineageItem li = ((LineageTraceable) instruction).getLineageItem();
+            lineage_traces.put(li.getVariable().getName(), li);
         } else {
-            System.out.printf("Oh no! Unknown instruction traced: %s (%s)\n", instruction.getOpcode(), instruction.getClass().getName());
+            System.out.printf("Oh no! Unknown Instruction traced: %s (%s)\n", instruction.getOpcode(), instruction.getClass().getName());
         }
     }
 
-    public static LineageTraceItem getOrCreate(CPOperand variable) {
+    private static void moveLineageItem(VariableCPInstruction instruction) {
+        // TODO bnyra: What is a mov instruction doing?
+        LineageItem li_source = get(instruction.getInput1());
+        if (li_source != null) {
+            LineageItem li = new LineageItem(instruction.getInput2(), li_source.getLineages());
+            lineage_traces.put(li.getVariable().getName(), li);
+        } else {
+            ArrayList<LineageItem> lineages = new ArrayList<>();
+
+            if (instruction.getInput1() != null)
+                lineages.add(getOrCreate(instruction.getInput1()));
+            if (instruction.getInput3() != null)
+                lineages.add(getOrCreate(instruction.getInput3()));
+
+            LineageItem li = new LineageItem(instruction.getInput2(), lineages);
+            lineage_traces.put(li.getVariable().getName(), li);
+        }
+    }
+
+    private static void writeLineageItem(VariableCPInstruction instruction) {
+        // TODO bnyra: Writing such thing, not printing to std::out
+        LineageItem li = lineage_traces.get(instruction.getInput1().getName());
+        li.print();
+    }
+
+    private static void copyVariableLineage(VariableCPInstruction instruction) {
+        LineageItem li_source = get(instruction.getInput1());
+        LineageItem li;
+        if (li_source != null)
+            li = new LineageItem(instruction.getInput2(), li_source.getLineages());
+        else {
+            ArrayList<LineageItem> lineages = new ArrayList<>();
+            lineages.add(getOrCreate(instruction.getInput1()));
+            li = new LineageItem(instruction.getInput2(), lineages);
+        }
+        lineage_traces.put(li.getVariable().getName(), li);
+    }
+
+    private static void removeLineageItem(VariableCPInstruction instruction) {
+        // TODO bnyra: Cleanup for removing, maybe the same like __pred
+        lineage_traces.remove(instruction.getInput1().getName());
+    }
+
+    private static void createVariableLineageItem(VariableCPInstruction inst) {
+        ArrayList<LineageItem> lineages = new ArrayList<>();
+        lineages.add(lineage_traces.getOrDefault(inst.getInput2(),
+                new LineageItem(inst.getInput2())));
+        lineages.add(lineage_traces.getOrDefault(inst.getInput3(),
+                new LineageItem(inst.getInput3())));
+        LineageItem li = new LineageItem(inst.getInput1(), lineages);
+        lineage_traces.put(li.getVariable().getName(), li);
+    }
+
+    public static LineageItem getOrCreate(CPOperand variable) {
         if (variable == null)
             return null;
         if (lineage_traces.get(variable.getName()) == null)
-            return new LineageTraceItem(variable);
+            return new LineageItem(variable);
         return lineage_traces.get(variable.getName());
     }
 
-    public static LineageTraceItem get(CPOperand variable) {
+    public static LineageItem get(CPOperand variable) {
         if (variable == null)
             return null;
         return lineage_traces.get(variable.getName());
     }
-
-//    // static method to create instance of Singleton class
-//    public static Lineage getInstance() {
-//        if (single_instance == null)
-//            single_instance = new Lineage();
-//
-//        return single_instance;
-//    }
 }
