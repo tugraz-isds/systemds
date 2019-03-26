@@ -20,23 +20,20 @@
 package org.tugraz.sysds.test.integration.applications;
 
 import org.junit.runners.Parameterized.Parameters;
-import org.tugraz.sysds.api.DMLScript;
-import org.tugraz.sysds.common.Types;
 import org.tugraz.sysds.runtime.matrix.data.MatrixValue.CellIndex;
 import org.tugraz.sysds.test.AutomatedTestBase;
-import org.tugraz.sysds.test.TestUtils;
 
 import java.util.*;
 
-public abstract class LineageTraceTest extends AutomatedTestBase {
+public abstract class LineageTraceSelfReferenceTest extends AutomatedTestBase {
 
     protected final static String TEST_DIR = "applications/lineage_trace/";
-    protected final static String TEST_NAME = "LineageTrace";
-    protected String TEST_CLASS_DIR = TEST_DIR + LineageTraceTest.class.getSimpleName() + "/";
+    protected final static String TEST_NAME = "LineageTraceSelfReference";
+    protected String TEST_CLASS_DIR = TEST_DIR + LineageTraceSelfReferenceTest.class.getSimpleName() + "/";
 
     protected int numRecords, numFeatures;
 
-    public LineageTraceTest(int rows, int cols) {
+    public LineageTraceSelfReferenceTest(int rows, int cols) {
         numRecords = rows;
         numFeatures = cols;
     }

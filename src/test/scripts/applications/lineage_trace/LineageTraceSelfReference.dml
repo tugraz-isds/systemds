@@ -19,25 +19,20 @@
 #
 #-------------------------------------------------------------
 
-# JUnit test class: dml.test.integration.applications.LineageTraceTest.java
-# command line invocation assuming $LR_HOME is set to the home of the R script
-# Rscript $LR_HOME/LineageTrace.R $LR_HOME/in/ $LR_HOME/expected/
-args <- commandArgs(TRUE);
+# How to invoke this dml script LineageTrace.dml?
+# Assume LR_HOME is set to the home of the dml script
+# Assume rows = 20 and cols = 20 for X
+# hadoop jar SystemML.jar -f $LR_HOME/LineageTrace.dml -args "$INPUT_DIR/X" "$OUTPUT_DIR/X" "$OUTPUT_DIR/Y"
 
-library("Matrix");
-
-X = readMM(paste(args[1], "X.mtx", sep=""));
-
-max_iteration = sum(X) %% 5
-max_iteration = max_iteration + 1;
-max_iteration = max_iteration + 1;
-max_iteration = max_iteration %% 3 + 4;
-
+# X = rand(rows=20, cols=20);
+X = read($1);
+max_iteration = 3;
 i = 0;
+
 while(i < max_iteration) {
-	if (i == 1)
+	if (i %% 2 == 1)
     {
-        X = X * 3;
+        X = X * X * X;
     }
     else
     {
@@ -48,5 +43,5 @@ while(i < max_iteration) {
 
 Y = t(X) %*% X;
 
-writeMM(as(X,"CsparseMatrix"), paste(args[2], "X", sep=""));
-writeMM(as(Y,"CsparseMatrix"), paste(args[2], "Y", sep=""));
+write(X, $2, format="text");
+write(Y, $3, format="text");
