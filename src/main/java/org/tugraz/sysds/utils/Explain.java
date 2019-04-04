@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 import org.tugraz.sysds.hops.Hop;
 import org.tugraz.sysds.hops.LiteralOp;
@@ -60,6 +61,7 @@ import org.tugraz.sysds.runtime.instructions.gpu.GPUInstruction;
 import org.tugraz.sysds.runtime.instructions.spark.CSVReblockSPInstruction;
 import org.tugraz.sysds.runtime.instructions.spark.ReblockSPInstruction;
 import org.tugraz.sysds.runtime.instructions.spark.SPInstruction;
+import org.tugraz.sysds.runtime.lineage.LineageItem;
 
 public class Explain 
 {	
@@ -388,7 +390,9 @@ public class Explain
 	public static String getIdentation( int level ) {
 		return createOffset(level);
 	}
-	
+
+	public static String explainLineageItem( LineageItem li) { return explainLineageItem(li, 0); }
+
 	//////////////
 	// internal explain HOPS
 
@@ -556,6 +560,49 @@ public class Explain
 		
 		hop.setVisited();
 		
+		return sb.toString();
+	}
+
+	/**
+	 * Do a post-order traverse through the Lineage Item DAG and explain each Hop
+	 *
+	 * @param li lineage item
+	 * @param level offset
+	 * @return string explanation of Lineage Item DAG
+	 */
+	private static String explainLineageItem(LineageItem li, int level) {
+		if( li.isVisited())
+			return "";
+
+		StringBuilder sb = new StringBuilder();
+		String offset = createOffset(level);
+
+	   if (li.getLineages() != null)
+			for( LineageItem input : li.getLineages() )
+				sb.append(explainLineageItem(input, level));
+
+		//indentation
+		sb.append(offset);
+
+		//li id
+		sb.append("(").append(li.getId()).append(") ");
+
+		if (li.getOpcode().isEmpty())
+			sb.append(li.getVariable().getName());
+		else {
+			//operation string
+			sb.append(li.getOpcode()).append(" ");
+
+			String ids = li.getLineages().stream()
+					.map(i -> String.format("(%d)", i.getId()))
+					.collect(Collectors.joining(" "));
+			sb.append(ids);
+		}
+
+		sb.append('\n');
+
+		li.setVisited();
+
 		return sb.toString();
 	}
 

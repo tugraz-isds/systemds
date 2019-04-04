@@ -1,12 +1,7 @@
 package org.tugraz.sysds.runtime.lineage;
 
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import org.tugraz.sysds.lops.Lop;
 import org.tugraz.sysds.runtime.instructions.cp.CPOperand;
 
 public class LineageItem {
@@ -16,6 +11,7 @@ public class LineageItem {
     private final String _opcode;
     private final CPOperand _variable;
     private final ArrayList<LineageItem> _lineages;
+    private boolean _visited = false;
 
     public LineageItem(CPOperand variable) {
         _id = LineageItem.getUniqueId();
@@ -41,38 +37,41 @@ public class LineageItem {
         return this._lineages;
     }
 
-//    public void setOpcode(String opcode){
-//        this._opcode = opcode;
-//    }
-//
-//    public void setLineages(ArrayList<LineageItem> lineages) {
-//        this._lineages.clear();
-//        this._lineages.addAll(lineages);
-//    }
+    public boolean isVisited() {
+        return _visited;
+    }
+
+    public void setVisited() {
+        setVisited(true);
+    }
+
+    public void setVisited(boolean flag) {
+        _visited = flag;
+    }
 
     public int getId() {
         return this._id;
     }
 
-
-    public void print() {
-        System.out.println(this.toString());
-        if (this._lineages != null)
-            for (LineageItem li : this._lineages)
-                li.print();
+    public String getOpcode() {
+        return this._opcode;
     }
 
-    @Override
-    public String toString() {
-        if (!this._opcode.isEmpty()) {
-            String ids = this._lineages.stream()
-                    .map(i -> String.format("(%d)", i.getId()))
-                    .collect(Collectors.joining(" "));
-            return String.format("(%d) %s %s", this.getId(), this._opcode, ids);
-        } else
-            return String.format("(%d) %s", this.getId(), this.getVariable().getName());
+    public LineageItem resetVisitStatus() {
+        if (!isVisited())
+            return this;
+        for (LineageItem li : getLineages())
+            li.resetVisitStatus();
+        setVisited(false);
+        return this;
     }
-   
+
+    public static void resetVisitStatus(ArrayList<LineageItem> lis) {
+        if (lis != null)
+            for (LineageItem liRoot : lis)
+                liRoot.resetVisitStatus();
+    }
+
     private static int getUniqueId() {
         int id = _id_counter;
         _id_counter++;

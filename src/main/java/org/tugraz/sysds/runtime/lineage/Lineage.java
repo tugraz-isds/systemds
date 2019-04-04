@@ -1,9 +1,19 @@
 package org.tugraz.sysds.runtime.lineage;
 
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocalFileSystem;
+import org.apache.hadoop.fs.Path;
+import org.tugraz.sysds.common.Types;
+import org.tugraz.sysds.runtime.DMLRuntimeException;
+import org.tugraz.sysds.runtime.controlprogram.context.ExecutionContext;
 import org.tugraz.sysds.runtime.instructions.Instruction;
 import org.tugraz.sysds.runtime.instructions.cp.CPOperand;
 import org.tugraz.sysds.runtime.instructions.cp.VariableCPInstruction;
+import org.tugraz.sysds.runtime.io.IOUtilFunctions;
+import org.tugraz.sysds.runtime.util.HDFSTool;
+import org.tugraz.sysds.utils.Explain;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -14,7 +24,7 @@ public class Lineage {
     private Lineage() {
     }
 
-    public static void trace(Instruction instruction) {
+    public static void trace(Instruction instruction, ExecutionContext ec) {
         if (instruction instanceof VariableCPInstruction) {
             VariableCPInstruction inst = ((VariableCPInstruction) instruction);
             switch (inst.getVariableOpcode()) {
@@ -32,7 +42,7 @@ public class Lineage {
                     break;
                 }
                 case Write: {
-                    writeLineageItem(inst);
+                    writeLineageItem(inst, ec);
                     break;
                 }
                 case MoveVariable: {
@@ -70,11 +80,27 @@ public class Lineage {
         }
     }
 
-    private static void writeLineageItem(VariableCPInstruction inst) {
-        // TODO bnyra: Writing such thing, not printing to std::out
+    private static void writeLineageItem(VariableCPInstruction inst, ExecutionContext ec) {
         LineageItem li = lineage_traces.get(inst.getInput1().getName());
-        System.out.printf("Write Lineage Trace: (%d) %s\n", li.getId(), li.getVariable().getName());
-        li.print();
+        String desc = Explain.explainLineageItem(li);
+
+        String fname = ec.getScalarInput(inst.getInput2().getName(), Types.ValueType.STRING, inst.getInput2().isLiteral()).getStringValue();
+        fname += ".lineage";
+
+        try {
+            HDFSTool.writeStringToHDFS(desc, fname);
+            FileSystem fs = IOUtilFunctions.getFileSystem(fname);
+            if (fs instanceof LocalFileSystem) {
+                Path path = new Path(fname);
+                IOUtilFunctions.deleteCrcFilesFromLocalFileSystem(fs, path);
+            }
+
+        } catch (IOException e) {
+            throw new DMLRuntimeException(e);
+        }
+
+//        System.out.printf("Write Lineage Trace: (%d) %s\n", li.getId(), li.getVariable().getName());
+//        System.out.print(desc);
     }
 
     private static void copyVariableLineage(VariableCPInstruction inst) {

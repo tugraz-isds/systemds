@@ -68,7 +68,8 @@ public abstract class LineageTraceTest extends AutomatedTestBase {
         List<String> proArgs = new ArrayList<String>();
 
         proArgs.add("-stats");
-        proArgs.add("-explain");
+//        proArgs.add("-explain");
+//        proArgs.add("hops");
         proArgs.add("-lineage");
         proArgs.add("-args");
         proArgs.add(input("X"));
@@ -80,6 +81,17 @@ public abstract class LineageTraceTest extends AutomatedTestBase {
 
         double[][] X = getRandomMatrix(rows, cols, 0, 1, 0.8, -1);
         writeInputMatrixWithMTD("X", X, true);
+
+        String expected_X_lineage =
+                "(1) target/testTemp/applications/lineage_trace/LineageTraceDMLTest/in/X\n" +
+                "(2) false\n" +
+                "(3) createvar (1) (2)\n" +
+                "(7) rblk (3)\n" +
+                "(11) 3\n" +
+                "(12) * (7) (11)\n" +
+                "(16) 5\n" +
+                "(17) + (12) (16)\n";
+        String expected_Y_lineage = "(21) tsmm (17)\n";
 
         /*
          * Expected number of jobs:
@@ -93,5 +105,11 @@ public abstract class LineageTraceTest extends AutomatedTestBase {
 
         HashMap<CellIndex, Double> X_DML = readDMLMatrixFromHDFS("X");
         HashMap<CellIndex, Double> Y_DML = readDMLMatrixFromHDFS("Y");
+
+        String X_lineage = readDMLLineageFromHDFS("X");
+        String Y_lineage = readDMLLineageFromHDFS("Y");
+
+        TestUtils.compareScalars(expected_X_lineage, X_lineage);
+        TestUtils.compareScalars(expected_Y_lineage, Y_lineage);
     }
 }

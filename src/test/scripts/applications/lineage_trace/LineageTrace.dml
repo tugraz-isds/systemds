@@ -24,25 +24,10 @@
 # Assume rows = 20 and cols = 20 for X
 # hadoop jar SystemML.jar -f $LR_HOME/LineageTrace.dml -args "$INPUT_DIR/X" "$OUTPUT_DIR/X" "$OUTPUT_DIR/Y"
 
-# X = rand(rows=20, cols=20);
 X = read($1);
-X = X * 11;
-X = X + 22;
 
-# max_iteration = 4
-# i = 0;
-#
-# while(i < max_iteration) {
-# 	if (i %% 2 == 1)
-#     {
-#         X = X * 3;
-#     }
-#     else
-#     {
-#         X = X + 7;
-#     }
-#     i = i + 1;
-# }
+X = X * 3;
+X = X + 5;
 
 Y = t(X) %*% X;
 
