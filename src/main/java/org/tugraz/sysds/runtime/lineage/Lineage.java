@@ -51,47 +51,48 @@ public class Lineage {
         }
     }
 
-    private static void moveLineageItem(VariableCPInstruction instruction) {
+    private static void moveLineageItem(VariableCPInstruction inst) {
         // TODO bnyra: What is a mov instruction doing?
-        LineageItem li_source = get(instruction.getInput1());
+        LineageItem li_source = get(inst.getInput1());
         if (li_source != null) {
-            LineageItem li = new LineageItem(instruction.getInput2(), li_source.getLineages());
+            LineageItem li = new LineageItem(inst.getInput2(), li_source.getLineages(), inst.getOpcode());
             lineage_traces.put(li.getVariable().getName(), li);
         } else {
             ArrayList<LineageItem> lineages = new ArrayList<>();
 
-            if (instruction.getInput1() != null)
-                lineages.add(getOrCreate(instruction.getInput1()));
-            if (instruction.getInput3() != null)
-                lineages.add(getOrCreate(instruction.getInput3()));
+            if (inst.getInput1() != null)
+                lineages.add(getOrCreate(inst.getInput1()));
+            if (inst.getInput3() != null)
+                lineages.add(getOrCreate(inst.getInput3()));
 
-            LineageItem li = new LineageItem(instruction.getInput2(), lineages);
+            LineageItem li = new LineageItem(inst.getInput2(), lineages, inst.getOpcode());
             lineage_traces.put(li.getVariable().getName(), li);
         }
     }
 
-    private static void writeLineageItem(VariableCPInstruction instruction) {
+    private static void writeLineageItem(VariableCPInstruction inst) {
         // TODO bnyra: Writing such thing, not printing to std::out
-        LineageItem li = lineage_traces.get(instruction.getInput1().getName());
+        LineageItem li = lineage_traces.get(inst.getInput1().getName());
+        System.out.printf("Write Lineage Trace: (%d) %s\n", li.getId(), li.getVariable().getName());
         li.print();
     }
 
-    private static void copyVariableLineage(VariableCPInstruction instruction) {
-        LineageItem li_source = get(instruction.getInput1());
+    private static void copyVariableLineage(VariableCPInstruction inst) {
+        LineageItem li_source = get(inst.getInput1());
         LineageItem li;
         if (li_source != null)
-            li = new LineageItem(instruction.getInput2(), li_source.getLineages());
+            li = new LineageItem(inst.getInput2(), li_source.getLineages(), inst.getOpcode());
         else {
             ArrayList<LineageItem> lineages = new ArrayList<>();
-            lineages.add(getOrCreate(instruction.getInput1()));
-            li = new LineageItem(instruction.getInput2(), lineages);
+            lineages.add(getOrCreate(inst.getInput1()));
+            li = new LineageItem(inst.getInput2(), lineages, inst.getOpcode());
         }
         lineage_traces.put(li.getVariable().getName(), li);
     }
 
-    private static void removeLineageItem(VariableCPInstruction instruction) {
+    private static void removeLineageItem(VariableCPInstruction inst) {
         // TODO bnyra: Cleanup for removing, maybe the same like __pred
-        lineage_traces.remove(instruction.getInput1().getName());
+        lineage_traces.remove(inst.getInput1().getName());
     }
 
     private static void createVariableLineageItem(VariableCPInstruction inst) {
@@ -100,7 +101,7 @@ public class Lineage {
                 new LineageItem(inst.getInput2())));
         lineages.add(lineage_traces.getOrDefault(inst.getInput3(),
                 new LineageItem(inst.getInput3())));
-        LineageItem li = new LineageItem(inst.getInput1(), lineages);
+        LineageItem li = new LineageItem(inst.getInput1(), lineages, inst.getOpcode());
         lineage_traces.put(li.getVariable().getName(), li);
     }
 

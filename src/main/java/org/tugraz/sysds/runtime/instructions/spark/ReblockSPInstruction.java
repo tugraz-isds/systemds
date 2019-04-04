@@ -39,6 +39,9 @@ import org.tugraz.sysds.runtime.instructions.spark.utils.RDDConverterUtils;
 import org.tugraz.sysds.runtime.io.FileFormatPropertiesCSV;
 import org.tugraz.sysds.runtime.io.FileFormatPropertiesMM;
 import org.tugraz.sysds.runtime.io.IOUtilFunctions;
+import org.tugraz.sysds.runtime.lineage.Lineage;
+import org.tugraz.sysds.runtime.lineage.LineageItem;
+import org.tugraz.sysds.runtime.lineage.LineageTraceable;
 import org.tugraz.sysds.runtime.matrix.data.FrameBlock;
 import org.tugraz.sysds.runtime.matrix.data.InputInfo;
 import org.tugraz.sysds.runtime.matrix.data.MatrixBlock;
@@ -48,7 +51,9 @@ import org.tugraz.sysds.runtime.matrix.operators.Operator;
 import org.tugraz.sysds.runtime.meta.MatrixCharacteristics;
 import org.tugraz.sysds.runtime.meta.MetaDataFormat;
 
-public class ReblockSPInstruction extends UnarySPInstruction {
+import java.util.ArrayList;
+
+public class ReblockSPInstruction extends UnarySPInstruction implements LineageTraceable {
 	private int brlen;
 	private int bclen;
 	private boolean outputEmptyBlocks;
@@ -233,5 +238,23 @@ public class ReblockSPInstruction extends UnarySPInstruction {
 			throw new DMLRuntimeException("The given InputInfo is not implemented "
 				+ "for ReblockSPInstruction: " + InputInfo.inputInfoToString(iinfo));
 		}
+	}
+
+	@Override
+	public LineageItem getLineageItem() {
+        ArrayList<LineageItem> lineages = new ArrayList<>();
+        if (this.input1 != null)
+            lineages.add(Lineage.getOrCreate(this.input1));
+        if (this.input2 != null)
+            lineages.add(Lineage.getOrCreate(this.input2));
+        if (this.input3 != null)
+            lineages.add(Lineage.getOrCreate(this.input3));
+
+        assert this.output != null;
+
+        // TODO bnyra: what should i do with this guy here?
+        LineageItem li = Lineage.get(this.output);
+        li =  new LineageItem(output, lineages, this.getOpcode());
+        return li;
 	}
 }

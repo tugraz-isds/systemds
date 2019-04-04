@@ -26,20 +26,23 @@
 
 # X = rand(rows=20, cols=20);
 X = read($1);
-max_iteration = 4
-i = 0;
+X = X * 11;
+X = X + 22;
 
-while(i < max_iteration) {
-	if (i %% 2 == 1)
-    {
-        X = X * 3;
-    }
-    else
-    {
-        X = X + 7;
-    }
-    i = i + 1;
-}
+# max_iteration = 4
+# i = 0;
+#
+# while(i < max_iteration) {
+# 	if (i %% 2 == 1)
+#     {
+#         X = X * 3;
+#     }
+#     else
+#     {
+#         X = X + 7;
+#     }
+#     i = i + 1;
+# }
 
 Y = t(X) %*% X;
 
