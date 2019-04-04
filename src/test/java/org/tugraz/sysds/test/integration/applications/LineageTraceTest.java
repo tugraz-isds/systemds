@@ -69,6 +69,7 @@ public abstract class LineageTraceTest extends AutomatedTestBase {
 
         proArgs.add("-stats");
         proArgs.add("-explain");
+        proArgs.add("-lineage");
         proArgs.add("-args");
         proArgs.add(input("X"));
         proArgs.add(output("X"));

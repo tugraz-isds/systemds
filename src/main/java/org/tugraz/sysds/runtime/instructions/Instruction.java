@@ -236,6 +236,7 @@ public abstract class Instruction
 	 * @param ec execution context
 	 */
 	public void postprocessInstruction(ExecutionContext ec) {
-		Lineage.trace(this);
+		if (DMLScript.LINEAGE)
+			Lineage.trace(this);
 	}
 }
