@@ -391,7 +391,7 @@ public class Explain
 		return createOffset(level);
 	}
 
-	public static String explainLineageItem( LineageItem li) { return explainLineageItem(li, 0); }
+	public static String explain(LineageItem li) { return explain(li, 0); }
 
 	//////////////
 	// internal explain HOPS
@@ -570,7 +570,7 @@ public class Explain
 	 * @param level offset
 	 * @return string explanation of Lineage Item DAG
 	 */
-	private static String explainLineageItem(LineageItem li, int level) {
+	private static String explain(LineageItem li, int level) {
 		if( li.isVisited())
 			return "";
 
@@ -579,7 +579,7 @@ public class Explain
 
 	   if (li.getLineages() != null)
 			for( LineageItem input : li.getLineages() )
-				sb.append(explainLineageItem(input, level));
+				sb.append(explain(input, level));
 
 		//indentation
 		sb.append(offset);
@@ -588,7 +588,7 @@ public class Explain
 		sb.append("(").append(li.getId()).append(") ");
 
 		if (li.getOpcode().isEmpty())
-			sb.append(li.getVariable().getName());
+			sb.append(li.getKey());
 		else {
 			//operation string
 			sb.append(li.getOpcode()).append(" ");

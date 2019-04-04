@@ -22,6 +22,7 @@ package org.tugraz.sysds.test.integration.applications;
 import org.junit.runners.Parameterized.Parameters;
 import org.tugraz.sysds.runtime.matrix.data.MatrixValue.CellIndex;
 import org.tugraz.sysds.test.AutomatedTestBase;
+import org.tugraz.sysds.test.TestUtils;
 
 import java.util.*;
 
@@ -65,7 +66,9 @@ public abstract class LineageTraceSelfReferenceTest extends AutomatedTestBase {
         List<String> proArgs = new ArrayList<String>();
 
         proArgs.add("-stats");
-        proArgs.add("-explain");
+//        proArgs.add("-explain");
+//        proArgs.add("hops");
+        proArgs.add("-lineage");
         proArgs.add("-args");
         proArgs.add(input("X"));
         proArgs.add(output("X"));
@@ -77,6 +80,25 @@ public abstract class LineageTraceSelfReferenceTest extends AutomatedTestBase {
         double[][] X = getRandomMatrix(rows, cols, 0, 1, 0.8, -1);
         writeInputMatrixWithMTD("X", X, true);
 
+        String expected_X_lineage =
+                "(1) target/testTemp/applications/lineage_trace/LineageTraceSelfReferenceDMLTest/in/X\n" +
+                "(2) false\n" +
+                "(3) createvar (1) (2)\n" +
+                "(7) rblk (3)\n" +
+                "(10) cpvar (7)\n" +
+                "(20) 7\n" +
+                "(21) + (10) (20)\n" +
+                "(22) cpvar (21)\n" +
+                "(35) * (22) (22)\n" +
+                "(39) * (35) (22)\n" +
+                "(40) cpvar (39)\n" +
+                "(53) 7\n" +
+                "(54) + (40) (53)\n" +
+                "(55) cpvar (54)\n";
+
+        String expected_Y_lineage = "(64) tsmm (55)\n";
+
+        
         /*
          * Expected number of jobs:
          * Rand - 1 job
@@ -89,5 +111,11 @@ public abstract class LineageTraceSelfReferenceTest extends AutomatedTestBase {
 
         HashMap<CellIndex, Double> X_DML = readDMLMatrixFromHDFS("X");
         HashMap<CellIndex, Double> Y_DML = readDMLMatrixFromHDFS("Y");
+
+        String X_lineage = readDMLLineageFromHDFS("X");
+        String Y_lineage = readDMLLineageFromHDFS("Y");
+
+        TestUtils.compareScalars(expected_X_lineage, X_lineage);
+        TestUtils.compareScalars(expected_Y_lineage, Y_lineage);
     }
 }

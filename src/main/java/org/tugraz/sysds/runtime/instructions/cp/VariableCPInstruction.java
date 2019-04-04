@@ -81,7 +81,6 @@ public class VariableCPInstruction extends CPInstruction {
 	 *     createvar x FP [dimensions] [formatinfo]
 	 */
 
-	// TODO bnyra: Is it useful to make this public? How should i check between different types of VariableCPInstructions?
 	public enum VariableOperationCode
 	{
 		CreateVariable, 

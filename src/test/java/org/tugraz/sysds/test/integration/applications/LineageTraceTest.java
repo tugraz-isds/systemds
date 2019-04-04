@@ -20,8 +20,6 @@
 package org.tugraz.sysds.test.integration.applications;
 
 import org.junit.runners.Parameterized.Parameters;
-import org.tugraz.sysds.api.DMLScript;
-import org.tugraz.sysds.common.Types;
 import org.tugraz.sysds.runtime.matrix.data.MatrixValue.CellIndex;
 import org.tugraz.sysds.test.AutomatedTestBase;
 import org.tugraz.sysds.test.TestUtils;

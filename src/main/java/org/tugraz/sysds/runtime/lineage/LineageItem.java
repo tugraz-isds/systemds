@@ -25,7 +25,6 @@ public class LineageItem {
         _id = LineageItem.getUniqueId();
         _variable = variable;
         _opcode = opcode;
-        // TODO bnyra: do i need here the new keyword?
         _lineages = new ArrayList<>(lineages);
     }
 
@@ -35,6 +34,10 @@ public class LineageItem {
 
     public ArrayList<LineageItem> getLineages() {
         return this._lineages;
+    }
+
+    public String getKey() {
+        return this._variable.getName();
     }
 
     public boolean isVisited() {
