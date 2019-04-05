@@ -96,7 +96,7 @@ public abstract class LineageTraceSelfReferenceTest extends AutomatedTestBase {
                 "(54) + (40) (53)\n" +
                 "(55) cpvar (54)\n";
 
-        String expected_Y_lineage = "(64) tsmm (55)\n";
+        String expected_Y_lineage = expected_X_lineage + "(64) tsmm (55)\n";
 
         
         /*

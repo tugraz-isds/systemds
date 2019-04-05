@@ -63,8 +63,9 @@ public class LineageItem {
     public LineageItem resetVisitStatus() {
         if (!isVisited())
             return this;
-        for (LineageItem li : getLineages())
-            li.resetVisitStatus();
+        if (_lineages != null && !_lineages.isEmpty())
+            for (LineageItem li : getLineages())
+                li.resetVisitStatus();
         setVisited(false);
         return this;
     }

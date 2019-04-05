@@ -89,7 +89,7 @@ public abstract class LineageTraceTest extends AutomatedTestBase {
                 "(12) * (7) (11)\n" +
                 "(16) 5\n" +
                 "(17) + (12) (16)\n";
-        String expected_Y_lineage = "(21) tsmm (17)\n";
+        String expected_Y_lineage = expected_X_lineage + "(21) tsmm (17)\n";
 
         /*
          * Expected number of jobs:

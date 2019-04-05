@@ -61,6 +61,7 @@ import org.tugraz.sysds.runtime.instructions.gpu.GPUInstruction;
 import org.tugraz.sysds.runtime.instructions.spark.CSVReblockSPInstruction;
 import org.tugraz.sysds.runtime.instructions.spark.ReblockSPInstruction;
 import org.tugraz.sysds.runtime.instructions.spark.SPInstruction;
+import org.tugraz.sysds.runtime.lineage.Lineage;
 import org.tugraz.sysds.runtime.lineage.LineageItem;
 
 public class Explain 
@@ -316,6 +317,33 @@ public class Explain
 		return explainStatementBlock(sb, 0);
 	}
 
+	public static String explainLineageItems( ArrayList<LineageItem> lis) {
+	    return explainLineageItems(lis, 0);
+	}
+
+	public static String explainLineageItems(ArrayList<LineageItem> lis, int level ) {
+		StringBuilder sb = new StringBuilder();
+		LineageItem.resetVisitStatus(lis);
+		for( LineageItem li : lis )
+        {
+            sb.append(li.getKey()).append(" (").append(li.getId()).append("):\n");
+			sb.append(explainLineageItem(li, level));
+        }
+		LineageItem.resetVisitStatus(lis);
+		return sb.toString();
+	}
+
+	public static String explain( LineageItem li) {
+		return explain(li, 0);
+	}
+
+	public static String explain( LineageItem li, int level ) {
+		li.resetVisitStatus();
+		String ret = explainLineageItem(li, level);
+		li.resetVisitStatus();
+		return ret;
+	}
+
 	public static String explainHops( ArrayList<Hop> hops ) {
 		return explainHops(hops, 0);
 	}
@@ -390,8 +418,6 @@ public class Explain
 	public static String getIdentation( int level ) {
 		return createOffset(level);
 	}
-
-	public static String explain(LineageItem li) { return explain(li, 0); }
 
 	//////////////
 	// internal explain HOPS
@@ -570,7 +596,7 @@ public class Explain
 	 * @param level offset
 	 * @return string explanation of Lineage Item DAG
 	 */
-	private static String explain(LineageItem li, int level) {
+	private static String explainLineageItem(LineageItem li, int level) {
 		if( li.isVisited())
 			return "";
 

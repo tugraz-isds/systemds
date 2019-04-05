@@ -252,7 +252,6 @@ public class ReblockSPInstruction extends UnarySPInstruction implements LineageT
 
         assert this.output != null;
 
-        // TODO bnyra: what should i do with this guy here?
         LineageItem li = Lineage.get(this.output);
         li =  new LineageItem(output, lineages, this.getOpcode());
         return li;
