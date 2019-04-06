@@ -98,7 +98,7 @@ public abstract class LineageTraceSelfReferenceTest extends AutomatedTestBase {
 
         String expected_Y_lineage = expected_X_lineage + "(64) tsmm (55)\n";
 
-        
+
         /*
          * Expected number of jobs:
          * Rand - 1 job
@@ -115,7 +115,13 @@ public abstract class LineageTraceSelfReferenceTest extends AutomatedTestBase {
         String X_lineage = readDMLLineageFromHDFS("X");
         String Y_lineage = readDMLLineageFromHDFS("Y");
 
+//        HINT:
+//        Disable rewriting rule RewriteMatrixMultChainOptimization ()
+//        and simplifyBinaryToUnaryOperation ()
+
         TestUtils.compareScalars(expected_X_lineage, X_lineage);
         TestUtils.compareScalars(expected_Y_lineage, Y_lineage);
+
+
     }
 }

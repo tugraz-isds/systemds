@@ -87,10 +87,7 @@ public abstract class ComputationCPInstruction extends CPInstruction implements 
             lineages.add(Lineage.getOrCreate(this.input3));
 
 		assert this.output != null;
-
-        LineageItem li = Lineage.get(this.output);
-		li =  new LineageItem(output, lineages, this.getOpcode());
+		LineageItem li =  new LineageItem(output, lineages, this.getOpcode());
 		return li;
 	}
-
 }

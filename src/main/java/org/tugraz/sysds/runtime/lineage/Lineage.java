@@ -54,11 +54,35 @@ public class Lineage {
                     break;
             }
         } else if (instruction instanceof LineageTraceable) {
-            LineageItem li = ((LineageTraceable) instruction).getLineageItem();
-            lineage_traces.put(li.getKey(), li);
+            addLineageItem(((LineageTraceable) instruction).getLineageItem());
         } else {
             System.out.printf("Oh no! Unknown Instruction traced: %s (%s)\n", instruction.getOpcode(), instruction.getClass().getName());
         }
+    }
+
+    public static void removeLineageItem(String key) {
+        LineageItem li = lineage_traces.get(key);
+        if (li == null)
+            return;
+
+        removeAncestorLink(li);
+        lineage_traces.remove(key);
+    }
+
+    public static void addLineageItem(LineageItem li) {
+        if (lineage_traces.get(li.getKey()) != null) {
+            removeAncestorLink(lineage_traces.get(li.getKey()));
+            lineage_traces.remove(li.getKey());
+        }
+        lineage_traces.put(li.getKey(), li);
+    }
+
+    public static LineageItem getOrCreate(CPOperand variable) {
+        if (variable == null)
+            return null;
+        if (lineage_traces.get(variable.getName()) == null)
+            return new LineageItem(variable);
+        return lineage_traces.get(variable.getName());
     }
 
     private static void writeInstruction(VariableCPInstruction inst, ExecutionContext ec) {
@@ -79,9 +103,6 @@ public class Lineage {
         } catch (IOException e) {
             throw new DMLRuntimeException(e);
         }
-
-        System.out.printf("Write Lineage Trace: (%d) %s\n", li.getId(), li.getKey());
-        System.out.print(desc);
     }
 
     private static void removeInstruction(VariableCPInstruction inst) {
@@ -104,7 +125,7 @@ public class Lineage {
                     lineages.add(getOrCreate(inst.getInput3()));
                 li = new LineageItem(inst.getInput2(), lineages, inst.getOpcode());
             }
-            lineage_traces.put(li.getKey(), li);
+            addLineageItem(li);
         }
     }
 
@@ -119,7 +140,7 @@ public class Lineage {
             lineages.add(getOrCreate(inst.getInput1()));
             li = new LineageItem(inst.getInput2(), lineages, inst.getOpcode());
         }
-        lineage_traces.put(li.getKey(), li);
+        addLineageItem(li);
     }
 
     private static void createVariableInstruction(VariableCPInstruction inst) {
@@ -129,25 +150,23 @@ public class Lineage {
         lineages.add(lineage_traces.getOrDefault(inst.getInput3(),
                 new LineageItem(inst.getInput3())));
         LineageItem li = new LineageItem(inst.getInput1(), lineages, inst.getOpcode());
-        lineage_traces.put(li.getVariable().getName(), li);
-    }
-
-    public static void removeLineageItem(String key) {
-        // TODO bnyra: how should i delete this guy?
-        lineage_traces.remove(key);
-    }
-
-    public static LineageItem getOrCreate(CPOperand variable) {
-        if (variable == null)
-            return null;
-        if (lineage_traces.get(variable.getName()) == null)
-            return new LineageItem(variable);
-        return lineage_traces.get(variable.getName());
+        addLineageItem(li);
     }
 
     public static LineageItem get(CPOperand variable) {
         if (variable == null)
             return null;
         return lineage_traces.get(variable.getName());
+    }
+
+    private static void removeAncestorLink(LineageItem li) {
+        if (li.getChildren().isEmpty()) {
+            ArrayList<LineageItem> ancestors = new ArrayList<>(li.getAncestors());
+            for (LineageItem an : ancestors) {
+                li.getAncestors().remove(an);
+                an.getChildren().remove(li);
+                removeAncestorLink(an);
+            }
+        }
     }
 }

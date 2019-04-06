@@ -10,30 +10,39 @@ public class LineageItem {
     private final int _id;
     private final String _opcode;
     private final CPOperand _variable;
-    private final ArrayList<LineageItem> _lineages;
+    private final ArrayList<LineageItem> _ancestors;
+    private final ArrayList<LineageItem> _children;
     private boolean _visited = false;
 
     public LineageItem(CPOperand variable) {
         _id = LineageItem.getUniqueId();
         _variable = new CPOperand(variable);
         _opcode = "";
-        _lineages = null;
+        _ancestors = new ArrayList<>();
+        _children = new ArrayList<>();
     }
 
-    public LineageItem(CPOperand variable, ArrayList<LineageItem> lineages, String opcode) {
+    public LineageItem(CPOperand variable, ArrayList<LineageItem> ancestors, String opcode) {
         super();
         _id = LineageItem.getUniqueId();
         _variable = variable;
         _opcode = opcode;
-        _lineages = new ArrayList<>(lineages);
+        _ancestors = new ArrayList<>(ancestors);
+        _children = new ArrayList<>();
+        for (LineageItem li : _ancestors)
+            li._children.add(this);
     }
 
     public CPOperand getVariable() {
         return this._variable;
     }
 
-    public ArrayList<LineageItem> getLineages() {
-        return this._lineages;
+    public ArrayList<LineageItem> getAncestors() {
+        return this._ancestors;
+    }
+
+    public ArrayList<LineageItem> getChildren() {
+        return this._children;
     }
 
     public String getKey() {
@@ -63,8 +72,8 @@ public class LineageItem {
     public LineageItem resetVisitStatus() {
         if (!isVisited())
             return this;
-        if (_lineages != null && !_lineages.isEmpty())
-            for (LineageItem li : getLineages())
+        if (_ancestors != null && !_ancestors.isEmpty())
+            for (LineageItem li : getAncestors())
                 li.resetVisitStatus();
         setVisited(false);
         return this;
