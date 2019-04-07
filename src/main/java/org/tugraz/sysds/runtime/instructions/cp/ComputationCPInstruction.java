@@ -75,19 +75,16 @@ public abstract class ComputationCPInstruction extends CPInstruction implements 
 			+ OptimizerUtils.SAFE_REP_CHANGE_THRES ); //8MB
 	}
 
-
 	@Override
 	public LineageItem getLineageItem() {
 		ArrayList<LineageItem> lineages = new ArrayList<>();
-		if (this.input1 != null)
-			lineages.add(Lineage.getOrCreate(this.input1));
-        if (this.input2 != null)
-            lineages.add(Lineage.getOrCreate(this.input2));
-        if (this.input3 != null)
-            lineages.add(Lineage.getOrCreate(this.input3));
+		if (input1 != null)
+			lineages.add(Lineage.getOrCreate(input1));
+        if (input2 != null)
+			lineages.add(Lineage.getOrCreate(input2));
+		if (input3 != null)
+			lineages.add(Lineage.getOrCreate(input3));
 
-		assert this.output != null;
-		LineageItem li =  new LineageItem(output, lineages, this.getOpcode());
-		return li;
+		return new LineageItem(output, lineages, getOpcode());
 	}
 }

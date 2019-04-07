@@ -599,7 +599,7 @@ public class Explain
 		StringBuilder sb = new StringBuilder();
 		String offset = createOffset(level);
 
-		for( LineageItem input : li.getAncestors() )
+		for( LineageItem input : li.getInputs() )
 			sb.append(explainLineageItem(input, level));
 
 		//indentation
@@ -614,7 +614,7 @@ public class Explain
 			//operation string
 			sb.append(li.getOpcode()).append(" ");
 
-			String ids = li.getAncestors().stream()
+			String ids = li.getInputs().stream()
 					.map(i -> String.format("(%d)", i.getId()))
 					.collect(Collectors.joining(" "));
 			sb.append(ids);

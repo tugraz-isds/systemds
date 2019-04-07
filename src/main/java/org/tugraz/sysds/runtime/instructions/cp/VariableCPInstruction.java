@@ -223,7 +223,9 @@ public class VariableCPInstruction extends CPInstruction {
 			|| opcode == VariableOperationCode.RemoveVariableAndFile);
 	}
 
-	public boolean isAssignVariable() { return (opcode == VariableOperationCode.AssignVariable); }
+	public boolean isAssignVariable() {
+		return (opcode == VariableOperationCode.AssignVariable);
+	}
 
 	public VariableOperationCode getVariableOpcode() {
 		return this.opcode;

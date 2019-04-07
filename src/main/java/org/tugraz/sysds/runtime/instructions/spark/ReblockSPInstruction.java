@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -105,7 +105,7 @@ public class ReblockSPInstruction extends UnarySPInstruction implements LineageT
 			if( input1.getDataType() == DataType.MATRIX )
 				Recompiler.executeInMemoryMatrixReblock(sec, input1.getName(), output.getName());
 			else if( input1.getDataType() == DataType.FRAME )
-				Recompiler.executeInMemoryFrameReblock(sec, input1.getName(), output.getName());	
+				Recompiler.executeInMemoryFrameReblock(sec, input1.getName(), output.getName());
 			return;
 		}
 		
@@ -147,8 +147,8 @@ public class ReblockSPInstruction extends UnarySPInstruction implements LineageT
 			String delim = ",";
 			boolean fill = false;
 			double fillValue = 0;
-			if(mo.getFileFormatProperties() instanceof FileFormatPropertiesCSV 
-			   && mo.getFileFormatProperties() != null ) 
+			if(mo.getFileFormatProperties() instanceof FileFormatPropertiesCSV
+			   && mo.getFileFormatProperties() != null )
 			{
 				FileFormatPropertiesCSV props = (FileFormatPropertiesCSV) mo.getFileFormatProperties();
 				hasHeader = props.hasHeader();
@@ -161,7 +161,7 @@ public class ReblockSPInstruction extends UnarySPInstruction implements LineageT
 			csvInstruction.processInstruction(sec);
 			return;
 		}
-		else if(iinfo == InputInfo.BinaryCellInputInfo) 
+		else if(iinfo == InputInfo.BinaryCellInputInfo)
 		{
 			JavaPairRDD<MatrixIndexes, MatrixCell> binaryCells = (JavaPairRDD<MatrixIndexes, MatrixCell>) sec.getRDDHandleForMatrixObject(mo, iinfo);
 			JavaPairRDD<MatrixIndexes, MatrixBlock> out = RDDConverterUtils.binaryCellToBinaryBlock(sec.getSparkContext(), binaryCells, mcOut, outputEmptyBlocks);
@@ -170,7 +170,7 @@ public class ReblockSPInstruction extends UnarySPInstruction implements LineageT
 			sec.setRDDHandleForVariable(output.getName(), out);
 			sec.addLineageRDD(output.getName(), input1.getName());
 		}
-		else if(iinfo == InputInfo.BinaryBlockInputInfo) 
+		else if(iinfo == InputInfo.BinaryBlockInputInfo)
 		{
 			//BINARY BLOCK <- BINARY BLOCK (different sizes)
 			JavaPairRDD<MatrixIndexes, MatrixBlock> in1 = sec.getBinaryBlockRDDHandleForVariable(input1.getName());
@@ -195,18 +195,18 @@ public class ReblockSPInstruction extends UnarySPInstruction implements LineageT
 	}
 
 	@SuppressWarnings("unchecked")
-	protected void processFrameReblockInstruction(SparkExecutionContext sec, InputInfo iinfo) 
+	protected void processFrameReblockInstruction(SparkExecutionContext sec, InputInfo iinfo)
 	{
 		FrameObject fo = sec.getFrameObject(input1.getName());
 		MatrixCharacteristics mcOut = sec.getMatrixCharacteristics(output.getName());
 		
 		if(iinfo == InputInfo.TextCellInputInfo ) {
 			//get the input textcell rdd
-			JavaPairRDD<LongWritable, Text> lines = (JavaPairRDD<LongWritable, Text>) 
+			JavaPairRDD<LongWritable, Text> lines = (JavaPairRDD<LongWritable, Text>)
 				sec.getRDDHandleForFrameObject(fo, iinfo);
 			
 			//convert textcell to binary block
-			JavaPairRDD<Long, FrameBlock> out = 
+			JavaPairRDD<Long, FrameBlock> out =
 				FrameRDDConverterUtils.textCellToBinaryBlock(sec.getSparkContext(), lines, mcOut, fo.getSchema());
 			
 			//put output RDD handle into symbol table
@@ -222,7 +222,7 @@ public class ReblockSPInstruction extends UnarySPInstruction implements LineageT
 			boolean fill = false;
 			double fillValue = 0;
 			if(fo.getFileFormatProperties() instanceof FileFormatPropertiesCSV
-				&& fo.getFileFormatProperties() != null ) 
+				&& fo.getFileFormatProperties() != null )
 			{
 				FileFormatPropertiesCSV props = (FileFormatPropertiesCSV) fo.getFileFormatProperties();
 				hasHeader = props.hasHeader();
@@ -242,16 +242,14 @@ public class ReblockSPInstruction extends UnarySPInstruction implements LineageT
 
 	@Override
 	public LineageItem getLineageItem() {
-        ArrayList<LineageItem> lineages = new ArrayList<>();
-        if (this.input1 != null)
-            lineages.add(Lineage.getOrCreate(this.input1));
-        if (this.input2 != null)
-            lineages.add(Lineage.getOrCreate(this.input2));
-        if (this.input3 != null)
-            lineages.add(Lineage.getOrCreate(this.input3));
-
-        assert this.output != null;
-		LineageItem li =  new LineageItem(output, lineages, this.getOpcode());
-        return li;
+		ArrayList<LineageItem> lineages = new ArrayList<>();
+		if (input1 != null)
+			lineages.add(Lineage.getOrCreate(input1));
+		if (input2 != null)
+			lineages.add(Lineage.getOrCreate(input2));
+		if (input3 != null)
+			lineages.add(Lineage.getOrCreate(input3));
+		
+		return new LineageItem(output, lineages, getOpcode());
 	}
 }

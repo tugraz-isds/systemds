@@ -195,7 +195,7 @@ public class DMLScript
 			FORCE_ACCELERATOR   = dmlOptions.forceGPU;
 			EXPLAIN             = dmlOptions.explainType;
 			EXEC_MODE           = dmlOptions.execMode;
-			LINEAGE 			= dmlOptions.lineage;
+			LINEAGE             = dmlOptions.lineage;
 
 			String fnameOptConfig = dmlOptions.configFile;
 			boolean isFile = dmlOptions.filePath != null;

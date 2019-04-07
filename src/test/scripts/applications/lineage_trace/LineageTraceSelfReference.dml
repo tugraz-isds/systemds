@@ -30,15 +30,15 @@ max_iteration = 3;
 i = 0;
 
 while(i < max_iteration) {
-	if (i %% 2 == 1)
-    {
-        X = X * X * X;
-    }
-    else
-    {
-        X = X + 7;
-    }
-    i = i + 1;
+  if (i %% 2 == 1)
+  {
+    X = X * X * X;
+  }
+  else
+  {
+    X = X + 7;
+  }
+  i = i + 1;
 }
 
 Y = t(X) %*% X;
