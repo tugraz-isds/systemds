@@ -18,6 +18,7 @@ package org.tugraz.sysds.runtime.lineage;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.controlprogram.parfor.util.IDSequence;
@@ -61,9 +62,11 @@ public class LineageItem {
 		return _variable;
 	}
 	
-	public List<LineageItem> getInputs() { return _inputs; }
+	public List<LineageItem> getInputs() {
+		return _inputs;
+	}
 	
-	public void removeAllInputs(){
+	public void removeAllInputs() {
 		_inputs = new ArrayList<>();
 	}
 	
@@ -93,6 +96,26 @@ public class LineageItem {
 	
 	public String getOpcode() {
 		return _opcode;
+	}
+	
+	public String explain() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("(").append(_id).append(") ");
+		
+		if (isLeaf()) {
+			sb.append(_variable.getName()).append(" ");
+		} else {
+			sb.append(_opcode).append(" ");
+			String ids = _inputs.stream()
+					.map(i -> String.format("(%d)", i._id))
+					.collect(Collectors.joining(" "));
+			sb.append(ids);
+		}
+		return sb.toString().trim();
+	}
+	
+	private boolean isLeaf() {
+		return _inputs.isEmpty();
 	}
 	
 	public LineageItem resetVisitStatus() {

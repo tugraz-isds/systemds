@@ -604,22 +604,7 @@ public class Explain
 
 		//indentation
 		sb.append(offset);
-
-		//li id
-		sb.append("(").append(li.getId()).append(") ");
-
-		if (li.getOpcode().isEmpty())
-			sb.append(li.getKey());
-		else {
-			//operation string
-			sb.append(li.getOpcode()).append(" ");
-
-			String ids = li.getInputs().stream()
-					.map(i -> String.format("(%d)", i.getId()))
-					.collect(Collectors.joining(" "));
-			sb.append(ids);
-		}
-
+		sb.append(li.explain());
 		sb.append('\n');
 
 		li.setVisited();

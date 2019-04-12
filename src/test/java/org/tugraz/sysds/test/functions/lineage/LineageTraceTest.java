@@ -78,9 +78,24 @@ public class LineageTraceTest extends AutomatedTestBase {
 							"(10) 3\n" +
 							"(11) * (6) (10)\n" +
 							"(15) 5\n" +
-							"(16) + (11) (15)\n";
+							"(16) + (11) (15)\n" +
+							"(21) target/testTemp/applications/lineage_trace/LineageTraceDMLTest/out/X\n" +
+							"(22) textcell\n" +
+							"(23) write (16) (21) (22)\n";
+			
 			String expected_Y_lineage =
-					expected_X_lineage + "(20) tsmm (16)\n";
+					"(0) target/testTemp/applications/lineage_trace/LineageTraceDMLTest/in/X\n" +
+							"(1) false\n" +
+							"(2) createvar (0) (1)\n" +
+							"(6) rblk (2)\n" +
+							"(10) 3\n" +
+							"(11) * (6) (10)\n" +
+							"(15) 5\n" +
+							"(16) + (11) (15)\n" +
+							"(20) tsmm (16)\n" +
+							"(24) target/testTemp/applications/lineage_trace/LineageTraceDMLTest/out/Y\n" +
+							"(25) textcell\n" +
+							"(26) write (20) (24) (25)\n";
 			
 			LineageItem.resetIDSequence();
 			runTest(true, EXCEPTION_NOT_EXPECTED, null, -1);

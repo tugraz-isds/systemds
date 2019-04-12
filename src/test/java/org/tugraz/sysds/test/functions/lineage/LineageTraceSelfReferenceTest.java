@@ -80,17 +80,37 @@ public class LineageTraceSelfReferenceTest extends AutomatedTestBase {
 							"(2) createvar (0) (1)\n" +
 							"(6) rblk (2)\n" +
 							"(9) cpvar (6)\n" +
-							"(19) 7\n" +
-							"(20) + (9) (19)\n" +
-							"(21) cpvar (20)\n" +
-							"(34) * (21) (21)\n" +
-							"(38) * (34) (21)\n" +
-							"(39) cpvar (38)\n" +
-							"(52) 7\n" +
-							"(53) + (39) (52)\n" +
-							"(54) cpvar (53)\n";
+							"(21) 7\n" +
+							"(22) + (9) (21)\n" +
+							"(23) cpvar (22)\n" +
+							"(38) * (23) (23)\n" +
+							"(42) * (38) (23)\n" +
+							"(43) cpvar (42)\n" +
+							"(58) 7\n" +
+							"(59) + (43) (58)\n" +
+							"(60) cpvar (59)\n" +
+							"(71) target/testTemp/applications/lineage_trace/LineageTraceSelfReferenceDMLTest/out/X\n" +
+							"(72) textcell\n" +
+							"(73) write (60) (71) (72)\n";
 			String expected_Y_lineage =
-					expected_X_lineage + "(63) tsmm (54)\n";
+					"(0) target/testTemp/applications/lineage_trace/LineageTraceSelfReferenceDMLTest/in/X\n" +
+							"(1) false\n" +
+							"(2) createvar (0) (1)\n" +
+							"(6) rblk (2)\n" +
+							"(9) cpvar (6)\n" +
+							"(21) 7\n" +
+							"(22) + (9) (21)\n" +
+							"(23) cpvar (22)\n" +
+							"(38) * (23) (23)\n" +
+							"(42) * (38) (23)\n" +
+							"(43) cpvar (42)\n" +
+							"(58) 7\n" +
+							"(59) + (43) (58)\n" +
+							"(60) cpvar (59)\n" +
+							"(70) tsmm (60)\n" +
+							"(74) target/testTemp/applications/lineage_trace/LineageTraceSelfReferenceDMLTest/out/Y\n" +
+							"(75) textcell\n" +
+							"(76) write (70) (74) (75)\n";
 			
 			LineageItem.resetIDSequence();
 			runTest(true, EXCEPTION_NOT_EXPECTED, null, -1);
