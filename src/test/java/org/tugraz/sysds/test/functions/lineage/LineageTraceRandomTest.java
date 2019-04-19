@@ -16,23 +16,20 @@
 
 package org.tugraz.sysds.test.functions.lineage;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.junit.Test;
 import org.tugraz.sysds.hops.OptimizerUtils;
 import org.tugraz.sysds.runtime.lineage.LineageItem;
 import org.tugraz.sysds.test.AutomatedTestBase;
 import org.tugraz.sysds.test.TestUtils;
 
-public class LineageTraceTest extends AutomatedTestBase {
+import java.util.ArrayList;
+import java.util.List;
+
+public class LineageTraceRandomTest extends AutomatedTestBase {
 	
 	protected static final String TEST_DIR = "functions/lineage/";
-	protected static final String TEST_NAME = "LineageTrace";
-	protected String TEST_CLASS_DIR = TEST_DIR + LineageTraceTest.class.getSimpleName() + "/";
-	
-	protected static final int numRecords = 10;
-	protected static final int numFeatures = 5;
+	protected static final String TEST_NAME = "LineageTraceRandom";
+	protected String TEST_CLASS_DIR = TEST_DIR + LineageTraceRandomTest.class.getSimpleName() + "/";
 	
 	@Override
 	public void setUp() {
@@ -40,7 +37,7 @@ public class LineageTraceTest extends AutomatedTestBase {
 	}
 	
 	@Test
-	public void testLineageTrace() {
+	public void testLineageTraceRandom() {
 		boolean old_simplification = OptimizerUtils.ALLOW_ALGEBRAIC_SIMPLIFICATION;
 		boolean old_sum_product = OptimizerUtils.ALLOW_SUM_PRODUCT_REWRITES;
 		
@@ -50,9 +47,6 @@ public class LineageTraceTest extends AutomatedTestBase {
 			OptimizerUtils.ALLOW_ALGEBRAIC_SIMPLIFICATION = false;
 			OptimizerUtils.ALLOW_SUM_PRODUCT_REWRITES = false;
 			
-			int rows = numRecords;
-			int cols = numFeatures;
-			
 			getAndLoadTestConfiguration(TEST_NAME);
 			
 			List<String> proArgs = new ArrayList<String>();
@@ -60,49 +54,18 @@ public class LineageTraceTest extends AutomatedTestBase {
 			proArgs.add("-stats");
 			proArgs.add("-lineage");
 			proArgs.add("-args");
-			proArgs.add(input("X"));
 			proArgs.add(output("X"));
 			proArgs.add(output("Y"));
 			programArgs = proArgs.toArray(new String[proArgs.size()]);
 			
 			fullDMLScriptName = getScript();
 			
-			double[][] X = getRandomMatrix(rows, cols, 0, 1, 0.8, -1);
-			writeInputMatrixWithMTD("X", X, true);
-//
-//			String expected_X_lineage =
-//					"(0) target/testTemp/functions/lineage/LineageTraceTest/in/X\n" +
-//							"(1) false\n" +
-//							"(2) createvar (0) (1)\n" +
-//							"(6) rblk (2)\n" +
-//							"(10) 3\n" +
-//							"(11) * (6) (10)\n" +
-//							"(15) 5\n" +
-//							"(16) + (11) (15)\n" +
-//							"(21) target/testTemp/applications/lineage_trace/LineageTraceDMLTest/out/X\n" +
-//							"(22) textcell\n" +
-//							"(23) write (16) (21) (22)\n";
-//
-//			String expected_Y_lineage =
-//					"(0) target/testTemp/applications/lineage_trace/LineageTraceDMLTest/in/X\n" +
-//							"(1) false\n" +
-//							"(2) createvar (0) (1)\n" +
-//							"(6) rblk (2)\n" +
-//							"(10) 3\n" +
-//							"(11) * (6) (10)\n" +
-//							"(15) 5\n" +
-//							"(16) + (11) (15)\n" +
-//							"(20) tsmm (16)\n" +
-//							"(24) target/testTemp/applications/lineage_trace/LineageTraceDMLTest/out/Y\n" +
-//							"(25) textcell\n" +
-//							"(26) write (20) (24) (25)\n";
-//
 			LineageItem.resetIDSequence();
 			runTest(true, EXCEPTION_NOT_EXPECTED, null, -1);
 			
 			String X_lineage = readDMLLineageFromHDFS("X");
 			String Y_lineage = readDMLLineageFromHDFS("Y");
-			
+
 			System.out.print(X_lineage);
 			
 //			TestUtils.compareScalars(expected_X_lineage, X_lineage);

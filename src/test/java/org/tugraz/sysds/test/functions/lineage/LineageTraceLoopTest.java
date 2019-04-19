@@ -16,23 +16,27 @@
 
 package org.tugraz.sysds.test.functions.lineage;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.junit.Test;
 import org.tugraz.sysds.hops.OptimizerUtils;
 import org.tugraz.sysds.runtime.lineage.LineageItem;
 import org.tugraz.sysds.test.AutomatedTestBase;
 import org.tugraz.sysds.test.TestUtils;
 
-public class LineageTraceTest extends AutomatedTestBase {
+import java.util.ArrayList;
+import java.util.List;
+
+public class LineageTraceLoopTest extends AutomatedTestBase {
 	
 	protected static final String TEST_DIR = "functions/lineage/";
-	protected static final String TEST_NAME = "LineageTrace";
-	protected String TEST_CLASS_DIR = TEST_DIR + LineageTraceTest.class.getSimpleName() + "/";
+	protected static final String TEST_NAME = "LineageTraceLoop";
+	protected String TEST_CLASS_DIR = TEST_DIR + LineageTraceLoopTest.class.getSimpleName() + "/";
 	
 	protected static final int numRecords = 10;
 	protected static final int numFeatures = 5;
+	
+	public LineageTraceLoopTest() {
+		
+	}
 	
 	@Override
 	public void setUp() {
@@ -40,7 +44,7 @@ public class LineageTraceTest extends AutomatedTestBase {
 	}
 	
 	@Test
-	public void testLineageTrace() {
+	public void testLineageTraceLoop() {
 		boolean old_simplification = OptimizerUtils.ALLOW_ALGEBRAIC_SIMPLIFICATION;
 		boolean old_sum_product = OptimizerUtils.ALLOW_SUM_PRODUCT_REWRITES;
 		
@@ -69,41 +73,50 @@ public class LineageTraceTest extends AutomatedTestBase {
 			
 			double[][] X = getRandomMatrix(rows, cols, 0, 1, 0.8, -1);
 			writeInputMatrixWithMTD("X", X, true);
-//
-//			String expected_X_lineage =
-//					"(0) target/testTemp/functions/lineage/LineageTraceTest/in/X\n" +
-//							"(1) false\n" +
-//							"(2) createvar (0) (1)\n" +
-//							"(6) rblk (2)\n" +
-//							"(10) 3\n" +
-//							"(11) * (6) (10)\n" +
-//							"(15) 5\n" +
-//							"(16) + (11) (15)\n" +
-//							"(21) target/testTemp/applications/lineage_trace/LineageTraceDMLTest/out/X\n" +
-//							"(22) textcell\n" +
-//							"(23) write (16) (21) (22)\n";
-//
-//			String expected_Y_lineage =
-//					"(0) target/testTemp/applications/lineage_trace/LineageTraceDMLTest/in/X\n" +
-//							"(1) false\n" +
-//							"(2) createvar (0) (1)\n" +
-//							"(6) rblk (2)\n" +
-//							"(10) 3\n" +
-//							"(11) * (6) (10)\n" +
-//							"(15) 5\n" +
-//							"(16) + (11) (15)\n" +
-//							"(20) tsmm (16)\n" +
-//							"(24) target/testTemp/applications/lineage_trace/LineageTraceDMLTest/out/Y\n" +
-//							"(25) textcell\n" +
-//							"(26) write (20) (24) (25)\n";
-//
+			
+			String expected_X_lineage =
+					"(0) target/testTemp/functions/lineage/LineageTraceSelfReferenceTest/in/X\n" +
+							"(1) false\n" +
+							"(2) createvar (0) (1)\n" +
+							"(6) rblk (2)\n" +
+							"(9) cpvar (6)\n" +
+							"(21) 7\n" +
+							"(22) + (9) (21)\n" +
+							"(23) cpvar (22)\n" +
+							"(38) * (23) (23)\n" +
+							"(42) * (38) (23)\n" +
+							"(43) cpvar (42)\n" +
+							"(58) 7\n" +
+							"(59) + (43) (58)\n" +
+							"(60) cpvar (59)\n" +
+							"(71) target/testTemp/applications/lineage_trace/LineageTraceSelfReferenceDMLTest/out/X\n" +
+							"(72) textcell\n" +
+							"(73) write (60) (71) (72)\n";
+			String expected_Y_lineage =
+					"(0) target/testTemp/applications/lineage_trace/LineageTraceSelfReferenceDMLTest/in/X\n" +
+							"(1) false\n" +
+							"(2) createvar (0) (1)\n" +
+							"(6) rblk (2)\n" +
+							"(9) cpvar (6)\n" +
+							"(21) 7\n" +
+							"(22) + (9) (21)\n" +
+							"(23) cpvar (22)\n" +
+							"(38) * (23) (23)\n" +
+							"(42) * (38) (23)\n" +
+							"(43) cpvar (42)\n" +
+							"(58) 7\n" +
+							"(59) + (43) (58)\n" +
+							"(60) cpvar (59)\n" +
+							"(70) tsmm (60)\n" +
+							"(74) target/testTemp/applications/lineage_trace/LineageTraceSelfReferenceDMLTest/out/Y\n" +
+							"(75) textcell\n" +
+							"(76) write (70) (74) (75)\n";
+			
 			LineageItem.resetIDSequence();
 			runTest(true, EXCEPTION_NOT_EXPECTED, null, -1);
 			
 			String X_lineage = readDMLLineageFromHDFS("X");
 			String Y_lineage = readDMLLineageFromHDFS("Y");
-			
-			System.out.print(X_lineage);
 			
 //			TestUtils.compareScalars(expected_X_lineage, X_lineage);
 //			TestUtils.compareScalars(expected_Y_lineage, Y_lineage);
