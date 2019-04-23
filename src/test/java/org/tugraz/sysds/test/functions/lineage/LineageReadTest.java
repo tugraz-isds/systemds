@@ -45,19 +45,15 @@ public class LineageReadTest extends AutomatedTestBase {
 		getAndLoadTestConfiguration(TEST_NAME);
 		
 		String lineage =
-				"(0) target/testTemp/functions/lineage/LineageTraceTest/in/X\n" +
-						"(1) false\n" +
-						"(2) MATRIX\n" +
-						"(3) [10 x 5, nnz=-1 (false), blocks (-1 x -1)]\n" +
-						"(4) createvar (0) (1) (2) (3)\n" +
-						"(10) rblk (4)\n" +
-						"(16) 3\n" +
-						"(17) * (10) (16)\n" +
-						"(23) 5\n" +
-						"(24) + (17) (23)\n" +
-						"(31) target/testTemp/functions/lineage/LineageTraceTest/out/X\n" +
-						"(32) textcell\n" +
-						"(33) write (24) (31) (32)\n";
+				"(0) (LI) CP°createvar°pREADX°target/testTemp/functions/lineage/LineageTraceTest/in/X°false°MATRIX°textcell°10°5°-1°-1°-1°copy\n" +
+						"(2) (NI) rblk (0)\n" +
+						"(4) (LL) 3.SCALAR.INT64.true\n" +
+						"(5) (NI) * (2) (4)\n" +
+						"(7) (LL) 5.SCALAR.INT64.true\n" +
+						"(8) (NI) + (5) (7)\n" +
+						"(11) (LL) target/testTemp/functions/lineage/LineageTraceTest/out/X.SCALAR.STRING.true\n" +
+						"(12) (LL) textcell.SCALAR.STRING.true\n" +
+						"(13) (NI) write (8) (11) (12)\n ";
 		
 		LineageItem li = Lineage.parseLineage(lineage);
 //		should i can process this?

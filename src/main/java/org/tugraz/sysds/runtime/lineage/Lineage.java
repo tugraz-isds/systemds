@@ -29,6 +29,7 @@ import org.tugraz.sysds.runtime.util.HDFSTool;
 import org.tugraz.sysds.utils.Explain;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
@@ -87,11 +88,11 @@ public class Lineage {
 	}
 	
 	public static void addLineageItem(LineageItem li) {
-		if (lineage_traces.get(li.getKey()) != null) {
-			removeInputLinks(lineage_traces.get(li.getKey()));
-			lineage_traces.remove(li.getKey());
+		if (lineage_traces.get(li.getName()) != null) {
+			removeInputLinks(lineage_traces.get(li.getName()));
+			lineage_traces.remove(li.getName());
 		}
-		lineage_traces.put(li.getKey(), li);
+		lineage_traces.put(li.getName(), li);
 	}
 	
 	private static void processWriteLI(VariableCPInstruction inst, ExecutionContext ec) {
@@ -113,18 +114,17 @@ public class Lineage {
 	}
 	
 	private static void processMoveLI(LineageItem li) {
-		if (li.getKey().equals("__pred")) {
-			removeLineageItem(li.getInputs().get(0).getKey());
-		} else
+		if (li.getName().equals("__pred"))
+			removeLineageItem(li.getInputs().get(0).getName());
+		else
 			addLineageItem(li);
-		
 	}
 	
 	public static LineageItem getOrCreate(CPOperand variable) {
 		if (variable == null)
 			return null;
 		if (!lineage_traces.containsKey(variable.getName()))
-			return new LineageItem(variable);
+			return new LineageItem(variable, getOperandRepresentation(variable));
 		return lineage_traces.get(variable.getName());
 	}
 	
@@ -138,14 +138,28 @@ public class Lineage {
 		return lineage_traces.containsKey(variable.getName());
 	}
 	
+	public static LineageItem parseLineage(String lineageTrace) {
+		for (String line : lineageTrace.split("\\r?\\n"))
+		{
+			System.out.println(line);
+		}
+		return null;
+	}
+	
 	private static void removeInputLinks(LineageItem li) {
 		if (li.getOutputs().isEmpty()) {
 			List<LineageItem> inputs = li.getInputs();
 			li.removeAllInputs();
-			for (LineageItem input : inputs) {
-				input.getOutputs().remove(li);
-				removeInputLinks(input);
-			}
+			if (inputs != null)
+				for (LineageItem input : inputs) {
+					input.getOutputs().remove(li);
+					removeInputLinks(input);
+				}
 		}
+	}
+	
+	private static String getOperandRepresentation(CPOperand operand) {
+		return operand.getName() + "." + operand.getDataType().toString() + "."
+				+ operand.getValueType().toString() + "." + operand.isLiteral();
 	}
 }

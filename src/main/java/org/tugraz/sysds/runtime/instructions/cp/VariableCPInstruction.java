@@ -1117,17 +1117,9 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 	@Override
 	public LineageItem getLineageItem() {
 		switch (getVariableOpcode()) {
-			case CreateVariable: {
-				ArrayList<LineageItem> lineages = new ArrayList<>();
-				lineages.add(Lineage.getOrCreate(getInput2()));
-				lineages.add(Lineage.getOrCreate(getInput3()));
-				LineageItem li = new LineageItem(getInput1(), lineages, getOpcode());
-//				TODO bnyra: Add metadata and format properties as LineageItems inputs
-				return li;
-			}
-			case RemoveVariable: {
-				return null;
-			}
+			case CreateVariable:
+			case Read:
+				return new LineageItem(getInput1(), this.toString(), getOpcode());
 			case AssignVariable:
 			case CopyVariable: {
 				ArrayList<LineageItem> lineages = new ArrayList<>();
@@ -1137,16 +1129,14 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 					lineages.add(Lineage.getOrCreate(getInput1()));
 				return new LineageItem(getInput2(), lineages, getOpcode());
 			}
-			case Read:
 			case Write: {
 				ArrayList<LineageItem> lineages = new ArrayList<>();
 				for (CPOperand input : getInputs())
 					if (!input.getName().isEmpty())
 						lineages.add(Lineage.getOrCreate(input));
-				
-				LineageItem li = new LineageItem(getInput1(), lineages, getOpcode());
-//				TODO bnyra: Add format properties as lineage item inputs
-				return li;
+				if (_formatProperties != null && !_formatProperties.getDescription().isEmpty())
+					lineages.add(new LineageItem(_formatProperties.getDescription()));
+				return new LineageItem(getInput1(), lineages, getOpcode());
 			}
 			case MoveVariable: {
 				ArrayList<LineageItem> lineages = new ArrayList<>();
@@ -1159,6 +1149,7 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 				}
 				return new LineageItem(getInput2(), lineages, getOpcode());
 			}
+			case RemoveVariable:
 			default:
 				return null;
 		}

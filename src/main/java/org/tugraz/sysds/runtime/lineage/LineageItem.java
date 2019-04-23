@@ -30,32 +30,51 @@ public class LineageItem {
 	private final long _id;
 	private final String _opcode;
 	private final CPOperand _variable;
+	private final String _name;
+	private final String _representation;
 	private List<LineageItem> _inputs;
 	private List<LineageItem> _outputs;
 	private boolean _visited = false;
 	
-	public LineageItem(CPOperand variable) {
-		if (variable == null)
-			throw new DMLRuntimeException("Expected parameter CPOperand variable is null.");
-		
-		_id = _idSeq.getNextID();
-		_variable = new CPOperand(variable);
-		_opcode = "";
-		_inputs = new ArrayList<>();
-		_outputs = new ArrayList<>();
+	public LineageItem(CPOperand variable, String representation) {
+		this(variable, representation, "");
 	}
 	
 	public LineageItem(CPOperand variable, List<LineageItem> inputs, String opcode) {
+		this(variable, "", inputs, opcode);
+	}
+	
+	public LineageItem(CPOperand variable, String representation, String opcode) {
+		this(variable, representation, null, opcode);
+	}
+	
+	public LineageItem(CPOperand variable, String representation, List<LineageItem> inputs, String opcode) {
 		if (variable == null)
-			throw new DMLRuntimeException("");
+			throw new DMLRuntimeException("Parameter CPOperand variable is null.");
 		
 		_id = _idSeq.getNextID();
 		_variable = variable;
 		_opcode = opcode;
-		_inputs = new ArrayList<>(inputs);
+		_name = variable.getName();
+		_representation = representation;
+		
+		if (inputs != null) {
+			_inputs = new ArrayList<>(inputs);
+			for (LineageItem li : _inputs)
+				li._outputs.add(this);
+		} else
+			_inputs = null;
 		_outputs = new ArrayList<>();
-		for (LineageItem li : _inputs)
-			li._outputs.add(this);
+	}
+	
+	public LineageItem(String name) {
+		_id = _idSeq.getNextID();
+		_variable = null;
+		_opcode = "";
+		_name = name;
+		_representation = name;
+		_inputs = null;
+		_outputs = new ArrayList<>();
 	}
 	
 	public CPOperand getVariable() {
@@ -74,8 +93,12 @@ public class LineageItem {
 		return _outputs;
 	}
 	
-	public String getKey() {
-		return _variable.getName();
+	public String getName() {
+		return _name;
+	}
+	
+	public String getRepresentation() {
+		return _representation;
 	}
 	
 	public boolean isVisited() {
@@ -101,9 +124,10 @@ public class LineageItem {
 	public String explain() {
 		StringBuilder sb = new StringBuilder();
 		sb.append("(").append(_id).append(") ");
+		sb.append("(").append(getLineageItemType()).append(") ");
 		
 		if (isLeaf()) {
-			sb.append(_variable.getName()).append(" ");
+			sb.append(getRepresentation()).append(" ");
 		} else {
 			sb.append(_opcode).append(" ");
 			String ids = _inputs.stream()
@@ -115,7 +139,28 @@ public class LineageItem {
 	}
 	
 	private boolean isLeaf() {
+		if (_inputs == null)
+			return true;
 		return _inputs.isEmpty();
+	}
+	
+	private boolean isInstruction() {
+		return !_opcode.isEmpty();
+	}
+	
+	
+	private String getLineageItemType() {
+		StringBuilder sb = new StringBuilder();
+		if (isLeaf())
+			sb.append("L");
+		else
+			sb.append("N");
+		
+		if (isInstruction())
+			sb.append("I");
+		else
+			sb.append("L");
+		return sb.toString();
 	}
 	
 	public LineageItem resetVisitStatus() {

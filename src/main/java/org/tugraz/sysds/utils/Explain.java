@@ -599,6 +599,7 @@ public class Explain
 		StringBuilder sb = new StringBuilder();
 		String offset = createOffset(level);
 
+		if (li.getInputs() != null)
 		for( LineageItem input : li.getInputs() )
 			sb.append(explainLineageItem(input, level));
 
