@@ -1,0 +1,42 @@
+#-------------------------------------------------------------
+#
+# Copyright 2018 Graz University of Technology
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+#-------------------------------------------------------------
+
+m_scale = function(Matrix[Double] X, Boolean center, Boolean scale) return (Matrix[Double] Y) {
+    # This function centers scales and performs z-score on the input matrix X
+    Y = X;                  # return as is if both center and scale are FALSE
+    if (center == TRUE) {
+        cm = colMeans(X);
+	X = X - cm;
+	Y = X;
+    }
+
+    if (scale == TRUE) {
+	N = nrow(X);
+        cvars = (colSums(X^2));
+	if (center == TRUE) {
+	    cm = colMeans(X);
+	    cvars = (cvars - N*(cm^2))/(N-1);
+	}
+	else
+	    cvars = cvars/(N-1);
+
+	Y = (X)/sqrt(cvars);
+    }
+    Y = replace(target=Y, pattern=NaN, replacement=0); #replace NaNs with 0's
+    # DEBUG print: Y = print(toString(Y)); 
+}
