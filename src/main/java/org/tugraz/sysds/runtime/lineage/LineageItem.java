@@ -18,7 +18,6 @@ package org.tugraz.sysds.runtime.lineage;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.controlprogram.parfor.util.IDSequence;
@@ -36,23 +35,43 @@ public class LineageItem {
 	private List<LineageItem> _outputs;
 	private boolean _visited = false;
 	
+	public enum LineageItemType {Literal, Creation, Instruction}
+	
+	public LineageItem(long id, LineageItem li){
+		_id = id;
+		_variable = li._variable;
+		_opcode = li._opcode;
+		_name = li._name;
+		_representation = li._representation;
+		_inputs = li._inputs;
+		_outputs = li._outputs;
+	}
+	
+	public LineageItem(long id, CPOperand variable, String representation) {
+		this(id, variable, representation, null, "");
+	}
+	
 	public LineageItem(CPOperand variable, String representation) {
-		this(variable, representation, "");
+		this(_idSeq.getNextID(), variable, representation, null, "");
 	}
 	
 	public LineageItem(CPOperand variable, List<LineageItem> inputs, String opcode) {
-		this(variable, "", inputs, opcode);
+		this(_idSeq.getNextID(), variable, "", inputs, opcode);
 	}
 	
 	public LineageItem(CPOperand variable, String representation, String opcode) {
-		this(variable, representation, null, opcode);
+		this(_idSeq.getNextID(), variable, representation, null, opcode);
 	}
 	
 	public LineageItem(CPOperand variable, String representation, List<LineageItem> inputs, String opcode) {
+		this(_idSeq.getNextID(), variable, representation, inputs, opcode);
+	}
+	
+	public LineageItem(long id, CPOperand variable, String representation, List<LineageItem> inputs, String opcode) {
 		if (variable == null)
 			throw new DMLRuntimeException("Parameter CPOperand variable is null.");
 		
-		_id = _idSeq.getNextID();
+		_id = id;
 		_variable = variable;
 		_opcode = opcode;
 		_name = variable.getName();
@@ -68,7 +87,11 @@ public class LineageItem {
 	}
 	
 	public LineageItem(String name) {
-		_id = _idSeq.getNextID();
+		this(_idSeq.getNextID(), name);
+	}
+	
+	public LineageItem(long id, String name) {
+		_id = id;
 		_variable = null;
 		_opcode = "";
 		_name = name;
@@ -122,45 +145,22 @@ public class LineageItem {
 	}
 	
 	public String explain() {
-		StringBuilder sb = new StringBuilder();
-		sb.append("(").append(_id).append(") ");
-		sb.append("(").append(getLineageItemType()).append(") ");
-		
-		if (isLeaf()) {
-			sb.append(getRepresentation()).append(" ");
-		} else {
-			sb.append(_opcode).append(" ");
-			String ids = _inputs.stream()
-					.map(i -> String.format("(%d)", i._id))
-					.collect(Collectors.joining(" "));
-			sb.append(ids);
-		}
-		return sb.toString().trim();
+		return LineageItemUtils.explain(this);
 	}
 	
-	private boolean isLeaf() {
+	@Override
+	public String toString() {
+		return LineageItemUtils.explain(this);
+	}
+	
+	public boolean isLeaf() {
 		if (_inputs == null)
 			return true;
 		return _inputs.isEmpty();
 	}
 	
-	private boolean isInstruction() {
+	public boolean isInstruction() {
 		return !_opcode.isEmpty();
-	}
-	
-	
-	private String getLineageItemType() {
-		StringBuilder sb = new StringBuilder();
-		if (isLeaf())
-			sb.append("L");
-		else
-			sb.append("N");
-		
-		if (isInstruction())
-			sb.append("I");
-		else
-			sb.append("L");
-		return sb.toString();
 	}
 	
 	public LineageItem resetVisitStatus() {

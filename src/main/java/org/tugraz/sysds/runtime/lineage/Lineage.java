@@ -29,7 +29,6 @@ import org.tugraz.sysds.runtime.util.HDFSTool;
 import org.tugraz.sysds.utils.Explain;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
@@ -124,7 +123,7 @@ public class Lineage {
 		if (variable == null)
 			return null;
 		if (!lineage_traces.containsKey(variable.getName()))
-			return new LineageItem(variable, getOperandRepresentation(variable));
+			return new LineageItem(variable, variable.getInstructionRepresentation());
 		return lineage_traces.get(variable.getName());
 	}
 	
@@ -138,14 +137,6 @@ public class Lineage {
 		return lineage_traces.containsKey(variable.getName());
 	}
 	
-	public static LineageItem parseLineage(String lineageTrace) {
-		for (String line : lineageTrace.split("\\r?\\n"))
-		{
-			System.out.println(line);
-		}
-		return null;
-	}
-	
 	private static void removeInputLinks(LineageItem li) {
 		if (li.getOutputs().isEmpty()) {
 			List<LineageItem> inputs = li.getInputs();
@@ -156,10 +147,5 @@ public class Lineage {
 					removeInputLinks(input);
 				}
 		}
-	}
-	
-	private static String getOperandRepresentation(CPOperand operand) {
-		return operand.getName() + "." + operand.getDataType().toString() + "."
-				+ operand.getValueType().toString() + "." + operand.isLiteral();
 	}
 }

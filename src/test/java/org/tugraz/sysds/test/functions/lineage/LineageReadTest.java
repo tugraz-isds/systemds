@@ -20,6 +20,7 @@ import org.junit.Test;
 import org.tugraz.sysds.hops.OptimizerUtils;
 import org.tugraz.sysds.runtime.lineage.Lineage;
 import org.tugraz.sysds.runtime.lineage.LineageItem;
+import org.tugraz.sysds.runtime.lineage.LineageParser;
 import org.tugraz.sysds.test.AutomatedTestBase;
 import org.tugraz.sysds.test.TestUtils;
 
@@ -45,18 +46,15 @@ public class LineageReadTest extends AutomatedTestBase {
 		getAndLoadTestConfiguration(TEST_NAME);
 		
 		String lineage =
-				"(0) (LI) CP°createvar°pREADX°target/testTemp/functions/lineage/LineageTraceTest/in/X°false°MATRIX°textcell°10°5°-1°-1°-1°copy\n" +
-						"(2) (NI) rblk (0)\n" +
-						"(4) (LL) 3.SCALAR.INT64.true\n" +
-						"(5) (NI) * (2) (4)\n" +
-						"(7) (LL) 5.SCALAR.INT64.true\n" +
-						"(8) (NI) + (5) (7)\n" +
-						"(11) (LL) target/testTemp/functions/lineage/LineageTraceTest/out/X.SCALAR.STRING.true\n" +
-						"(12) (LL) textcell.SCALAR.STRING.true\n" +
-						"(13) (NI) write (8) (11) (12)\n ";
-		
-		LineageItem li = Lineage.parseLineage(lineage);
-//		should i can process this?
-//		How to test this? Comparing with output?I
+				"(0) (C) CP°createvar°pREADX°target/testTemp/functions/lineage/LineageTraceTest/in/X°false°MATRIX°textcell°10°5°-1°-1°-1°copy\n" +
+						"(2) (I) rblk (0)\n" +
+						"(4) (L) 3·SCALAR·INT64·true\n" +
+						"(5) (I) * (2) (4)\n" +
+						"(7) (L) 5·SCALAR·INT64·true\n" +
+						"(8) (I) + (5) (7)\n" +
+						"(11) (L) target/testTemp/functions/lineage/LineageTraceTest/out/X.SCALAR.STRING.true\n" +
+						"(12) (L) textcell·SCALAR·STRING·true\n" +
+						"(13) (I) write (8) (11) (12)\n ";
+		LineageItem li = LineageParser.parseLineage(lineage);
 	}
 }

@@ -132,4 +132,11 @@ public class CPOperand
 		return ToStringBuilder.reflectionToString(this, ToStringStyle.SHORT_PREFIX_STYLE);
 	}
 
+	public String getInstructionRepresentation() {
+		return getName() + Instruction.VALUETYPE_PREFIX +
+				getDataType().toString() + Instruction.VALUETYPE_PREFIX +
+				getValueType().toString() + Instruction.VALUETYPE_PREFIX +
+				isLiteral();
+	}
+	
 }
