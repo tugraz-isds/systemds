@@ -158,7 +158,7 @@ public abstract class AutomatedTestBase
 	 * Location of the SystemML config file that we use as a template when
 	 * generating the configs for each test case.
 	 */
-	private static final File CONFIG_TEMPLATE_FILE = new File(CONFIG_DIR, "SystemML-config.xml");
+	private static final File CONFIG_TEMPLATE_FILE = new File(CONFIG_DIR, "SystemDS-config.xml");
 
 	/**
 	 * Location under which we create local temporary directories for test cases.
@@ -331,7 +331,7 @@ public abstract class AutomatedTestBase
 	 * @return the location of the current test case's SystemML config file
 	 */
 	protected File getCurConfigFile() {
-		return new File(getCurLocalTempDir(), "SystemML-config.xml");
+		return new File(getCurLocalTempDir(), "SystemDS-config.xml");
 	}
 
 	/**
@@ -706,6 +706,10 @@ public abstract class AutomatedTestBase
 		return TestUtils.readDMLScalarFromHDFS(baseDirectory + OUTPUT_DIR + fileName);
 	}
 
+	protected static String readDMLLineageFromHDFS(String fileName) {
+		return TestUtils.readDMLString(baseDirectory + OUTPUT_DIR + fileName + ".lineage");
+	}
+
 
 	protected static FrameBlock readDMLFrameFromHDFS(String fileName, InputInfo iinfo) throws IOException {
 		//read frame data from hdfs
@@ -768,7 +772,7 @@ public abstract class AutomatedTestBase
 		try {
 			String fname = baseDirectory + OUTPUT_DIR + fileName +".mtd";
 			JSONObject meta = new DataExpression().readMetadataFile(fname, false);
-			return ValueType.valueOf(meta.get(DataExpression.VALUETYPEPARAM).toString().toUpperCase());
+			return ValueType.fromExternalString(meta.get(DataExpression.VALUETYPEPARAM).toString());
 		}
 		catch(Exception ex) {
 			throw new RuntimeException(ex);
@@ -1135,7 +1139,7 @@ public abstract class AutomatedTestBase
 	 *            specifies a maximum limit for the number of MR jobs. If set to
 	 *            -1 there is no limit.
 	 */
-	protected void runTest(boolean newWay, boolean exceptionExpected, Class<?> expectedException, String errMessage, int maxMRJobs) {
+	protected void runTest(boolean newWay, boolean exceptionExpected, Class<?> expectedException, String errMessage, int maxSparkInst) {
 
 		String executionFile = sourceDirectory + selectedTest + ".dml";
 
@@ -1207,9 +1211,9 @@ public abstract class AutomatedTestBase
 			DMLScript.main(dmlScriptArgs);
 
 			/** check number of MR jobs */
-			if (maxMRJobs > -1 && maxMRJobs < Statistics.getNoOfCompiledMRJobs())
-				fail("Limit of MR jobs is exceeded: expected: " + maxMRJobs + ", occurred: "
-						+ Statistics.getNoOfCompiledMRJobs());
+			if (maxSparkInst > -1 && maxSparkInst < Statistics.getNoOfCompiledSPInst())
+				fail("Limit of MR jobs is exceeded: expected: " + maxSparkInst + ", occurred: "
+						+ Statistics.getNoOfCompiledSPInst());
 
 			if (exceptionExpected)
 				fail("expected exception which has not been raised: " + expectedException);
@@ -1367,47 +1371,6 @@ public abstract class AutomatedTestBase
 				TestUtils.compareDMLMatrixWithJavaMatrixRowsOutOfOrder(comparisonFiles[i], outputDirectories[i], epsilon);
 			}
 		}
-	}
-
-	/**
-	 * Checks that the number of map-reduce jobs that the current test case has
-	 * compiled is equal to the expected number. Generates a JUnit error message
-	 * if the number is out of line.
-	 *
-	 * @param expectedNumCompiled
-	 *            number of map-reduce jobs that the current test case is
-	 *            expected to compile
-	 */
-	protected void checkNumCompiledMRJobs(int expectedNumCompiled) {
-
-		if( OptimizerUtils.isSparkExecutionMode() ) {
-			// Skip MapReduce-related checks when running in Spark mode.
-			return;
-		}
-
-		assertEquals("Unexpected number of compiled MR jobs.",
-				expectedNumCompiled, Statistics.getNoOfCompiledMRJobs());
-	}
-
-	/**
-	 * Checks that the number of map-reduce jobs that the current test case has
-	 * executed (as opposed to compiling into the execution plan) is equal to
-	 * the expected number. Generates a JUnit error message if the number is out
-	 * of line.
-	 *
-	 * @param expectedNumExecuted
-	 *            number of map-reduce jobs that the current test case is
-	 *            expected to run
-	 */
-	protected void checkNumExecutedMRJobs(int expectedNumExecuted) {
-
-		if( OptimizerUtils.isSparkExecutionMode() ) {
-			// Skip MapReduce-related checks when running in Spark mode.
-			return;
-		}
-
-		assertEquals("Unexpected number of executed MR jobs.",
-				expectedNumExecuted, Statistics.getNoOfExecutedMRJobs());
 	}
 
 	/**

@@ -95,7 +95,8 @@ public class DMLScript
 	public static long        EVICTION_SHADOW_BUFFER_CURR_BYTES = 0;                        // number of bytes to use for shadow buffer
 	public static double      GPU_MEMORY_UTILIZATION_FACTOR = 0.9;                          // fraction of available GPU memory to use
 	public static String      GPU_MEMORY_ALLOCATOR = "cuda";                                // GPU memory allocator to use
-	
+	public static boolean     LINEAGE = DMLOptions.defaultOptions.lineage;                  // whether compute lineage trace
+
 	public static boolean           USE_ACCELERATOR     = DMLOptions.defaultOptions.gpu;
 	public static boolean           FORCE_ACCELERATOR   = DMLOptions.defaultOptions.forceGPU;
 	// whether to synchronize GPU after every instruction
@@ -194,6 +195,7 @@ public class DMLScript
 			FORCE_ACCELERATOR   = dmlOptions.forceGPU;
 			EXPLAIN             = dmlOptions.explainType;
 			EXEC_MODE           = dmlOptions.execMode;
+			LINEAGE             = dmlOptions.lineage;
 
 			String fnameOptConfig = dmlOptions.configFile;
 			boolean isFile = dmlOptions.filePath != null;
@@ -203,7 +205,7 @@ public class DMLScript
 
 			if (help) {
 				HelpFormatter formatter = new HelpFormatter();
-				formatter.printHelp( "systemml", dmlOptions.options );
+				formatter.printHelp( "systemds", dmlOptions.options );
 				return true;
 			}
 
@@ -224,13 +226,13 @@ public class DMLScript
 		catch(AlreadySelectedException e) {
 			System.err.println("Mutually exclusive options were selected. " + e.getMessage());
 			HelpFormatter formatter = new HelpFormatter();
-			formatter.printHelp( "systemml", dmlOptions.options );
+			formatter.printHelp( "systemds", dmlOptions.options );
 			return false;
 		}
 		catch(org.apache.commons.cli.ParseException e) {
 			System.err.println(e.getMessage());
 			HelpFormatter formatter = new HelpFormatter();
-			formatter.printHelp( "systemml", dmlOptions.options );
+			formatter.printHelp( "systemds", dmlOptions.options );
 		}
 		catch (ParseException | DMLScriptException e) {
 			throw e;
@@ -503,7 +505,7 @@ public class DMLScript
 		boolean flagLocalFS = fsURI==null || fsURI.getScheme().equals("file");
 		boolean flagSecurity = perm.equals("yes"); 
 		
-		LOG.debug("SystemML security check: "
+		LOG.debug("SystemDS security check: "
 				+ "local.user.name = " + userName + ", "
 				+ "local.user.groups = " + Arrays.toString(groupNames.toArray()) + ", "
 				+ MRConfigurationNames.MR_JOBTRACKER_ADDRESS + " = " + job.get(MRConfigurationNames.MR_JOBTRACKER_ADDRESS) + ", "
@@ -597,7 +599,7 @@ public class DMLScript
 				LocalFileUtils.cleanupRcWorkingDirectory(localtmp);
 		}
 		catch(Exception ex) {
-			throw new DMLException("Failed to run SystemML workspace cleanup.", ex);
+			throw new DMLException("Failed to run SystemDS workspace cleanup.", ex);
 		}
 	}
 	

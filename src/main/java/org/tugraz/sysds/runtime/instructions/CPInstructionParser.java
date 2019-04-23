@@ -389,9 +389,9 @@ public class CPInstructionParser extends InstructionParser
 					return MatrixIndexingCPFileInstruction.parseInstruction(str);
 			
 			case Builtin: 
-				String []parts = InstructionUtils.getInstructionPartsWithValueType(str);
+				String[] parts = InstructionUtils.getInstructionPartsWithValueType(str);
 				if ( parts[0].equals("log") || parts[0].equals("log_nz") ) {
-					if ( parts.length == 3 || (parts.length == 4 &&
+					if ( parts.length == 3 || (parts.length == 5 &&
 						UtilFunctions.isIntegerNumber(parts[3])) ) {
 						// B=log(A), y=log(x)
 						return UnaryCPInstruction.parseInstruction(str);
@@ -400,9 +400,8 @@ public class CPInstructionParser extends InstructionParser
 						return BinaryCPInstruction.parseInstruction(str);
 					}
 				}
-				else {
-					throw new DMLRuntimeException("Invalid Builtin Instruction: " + str );
-				}
+				throw new DMLRuntimeException("Invalid Builtin Instruction: " + str );
+			
 			case MMTSJ:
 				return MMTSJCPInstruction.parseInstruction(str);
 			
