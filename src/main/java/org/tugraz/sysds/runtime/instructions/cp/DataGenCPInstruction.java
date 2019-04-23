@@ -267,6 +267,6 @@ public class DataGenCPInstruction extends UnaryCPInstruction {
 	
 	@Override
 	public LineageItem getLineageItem() {
-		return new LineageItem(output, instString, getOpcode());
+		return new LineageItem(output.getName(), instString, getOpcode());
 	}
 }

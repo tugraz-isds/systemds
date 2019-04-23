@@ -19,8 +19,10 @@ package org.tugraz.sysds.test.functions.lineage;
 import org.junit.Test;
 import org.tugraz.sysds.hops.OptimizerUtils;
 import org.tugraz.sysds.runtime.lineage.LineageItem;
+import org.tugraz.sysds.parser.LineageParser;
 import org.tugraz.sysds.test.AutomatedTestBase;
 import org.tugraz.sysds.test.TestUtils;
+import org.tugraz.sysds.utils.Explain;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -65,11 +67,12 @@ public class LineageTraceRandomTest extends AutomatedTestBase {
 			
 			String X_lineage = readDMLLineageFromHDFS("X");
 			String Y_lineage = readDMLLineageFromHDFS("Y");
-
-			System.out.print(X_lineage);
 			
-//			TestUtils.compareScalars(expected_X_lineage, X_lineage);
-//			TestUtils.compareScalars(expected_Y_lineage, Y_lineage);
+			LineageItem X_li = LineageParser.parseLineageTrace(X_lineage);
+			LineageItem Y_li = LineageParser.parseLineageTrace(Y_lineage);
+			
+			TestUtils.compareScalars(X_lineage, Explain.explain(X_li));
+			TestUtils.compareScalars(Y_lineage, Explain.explain(Y_li));
 		} finally {
 			OptimizerUtils.ALLOW_ALGEBRAIC_SIMPLIFICATION = old_simplification;
 			OptimizerUtils.ALLOW_SUM_PRODUCT_REWRITES = old_sum_product;

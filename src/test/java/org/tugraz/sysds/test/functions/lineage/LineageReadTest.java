@@ -18,14 +18,11 @@ package org.tugraz.sysds.test.functions.lineage;
 
 import org.junit.Test;
 import org.tugraz.sysds.hops.OptimizerUtils;
-import org.tugraz.sysds.runtime.lineage.Lineage;
 import org.tugraz.sysds.runtime.lineage.LineageItem;
-import org.tugraz.sysds.runtime.lineage.LineageParser;
+import org.tugraz.sysds.parser.LineageParser;
 import org.tugraz.sysds.test.AutomatedTestBase;
 import org.tugraz.sysds.test.TestUtils;
-
-import java.util.ArrayList;
-import java.util.List;
+import org.tugraz.sysds.utils.Explain;
 
 public class LineageReadTest extends AutomatedTestBase {
 	
@@ -54,7 +51,8 @@ public class LineageReadTest extends AutomatedTestBase {
 						"(8) (I) + (5) (7)\n" +
 						"(11) (L) target/testTemp/functions/lineage/LineageTraceTest/out/X.SCALAR.STRING.true\n" +
 						"(12) (L) textcell·SCALAR·STRING·true\n" +
-						"(13) (I) write (8) (11) (12)\n ";
-		LineageItem li = LineageParser.parseLineage(lineage);
+						"(13) (I) write (8) (11) (12)\n";
+		LineageItem li = LineageParser.parseLineageTrace(lineage);
+		TestUtils.compareScalars(lineage, Explain.explain(li));
 	}
 }

@@ -1119,7 +1119,7 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 		switch (getVariableOpcode()) {
 			case CreateVariable:
 			case Read:
-				return new LineageItem(getInput1(), this.toString(), getOpcode());
+				return new LineageItem(getInput1().getName(), this.toString(), getOpcode());
 			case AssignVariable:
 			case CopyVariable: {
 				ArrayList<LineageItem> lineages = new ArrayList<>();
@@ -1127,7 +1127,7 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 					lineages.add(Lineage.get(getInput1()));
 				else
 					lineages.add(Lineage.getOrCreate(getInput1()));
-				return new LineageItem(getInput2(), lineages, getOpcode());
+				return new LineageItem(getInput2().getName(), lineages, getOpcode());
 			}
 			case Write: {
 				ArrayList<LineageItem> lineages = new ArrayList<>();
@@ -1136,7 +1136,7 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 						lineages.add(Lineage.getOrCreate(input));
 				if (_formatProperties != null && !_formatProperties.getDescription().isEmpty())
 					lineages.add(new LineageItem(_formatProperties.getDescription()));
-				return new LineageItem(getInput1(), lineages, getOpcode());
+				return new LineageItem(getInput1().getName(), lineages, getOpcode());
 			}
 			case MoveVariable: {
 				ArrayList<LineageItem> lineages = new ArrayList<>();
@@ -1147,7 +1147,7 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 					if (getInput3() != null)
 						lineages.add(Lineage.getOrCreate(getInput3()));
 				}
-				return new LineageItem(getInput2(), lineages, getOpcode());
+				return new LineageItem(getInput2().getName(), lineages, getOpcode());
 			}
 			case RemoveVariable:
 			default:

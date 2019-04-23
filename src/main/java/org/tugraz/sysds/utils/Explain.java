@@ -600,12 +600,11 @@ public class Explain
 		String offset = createOffset(level);
 
 		if (li.getInputs() != null)
-		for( LineageItem input : li.getInputs() )
-			sb.append(explainLineageItem(input, level));
+			for( LineageItem input : li.getInputs() )
+				sb.append(explainLineageItem(input, level));
 
-		//indentation
 		sb.append(offset);
-		sb.append(li.explain());
+		sb.append(li.toString());
 		sb.append('\n');
 
 		li.setVisited();

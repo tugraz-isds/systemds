@@ -23,7 +23,8 @@ import org.tugraz.sysds.common.Types;
 import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.controlprogram.context.ExecutionContext;
 import org.tugraz.sysds.runtime.instructions.Instruction;
-import org.tugraz.sysds.runtime.instructions.cp.*;
+import org.tugraz.sysds.runtime.instructions.cp.CPOperand;
+import org.tugraz.sysds.runtime.instructions.cp.VariableCPInstruction;
 import org.tugraz.sysds.runtime.io.IOUtilFunctions;
 import org.tugraz.sysds.runtime.util.HDFSTool;
 import org.tugraz.sysds.utils.Explain;
@@ -123,7 +124,7 @@ public class Lineage {
 		if (variable == null)
 			return null;
 		if (!lineage_traces.containsKey(variable.getName()))
-			return new LineageItem(variable, variable.getInstructionRepresentation());
+			return new LineageItem(variable.getName(), variable.getLineageRepresentation());
 		return lineage_traces.get(variable.getName());
 	}
 	

@@ -22,8 +22,10 @@ import java.util.List;
 import org.junit.Test;
 import org.tugraz.sysds.hops.OptimizerUtils;
 import org.tugraz.sysds.runtime.lineage.LineageItem;
+import org.tugraz.sysds.parser.LineageParser;
 import org.tugraz.sysds.test.AutomatedTestBase;
 import org.tugraz.sysds.test.TestUtils;
+import org.tugraz.sysds.utils.Explain;
 
 public class LineageTraceTest extends AutomatedTestBase {
 	
@@ -69,44 +71,18 @@ public class LineageTraceTest extends AutomatedTestBase {
 			
 			double[][] X = getRandomMatrix(rows, cols, 0, 1, 0.8, -1);
 			writeInputMatrixWithMTD("X", X, true);
-//
-//			String expected_X_lineage =
-//					"(0) target/testTemp/functions/lineage/LineageTraceTest/in/X\n" +
-//							"(1) false\n" +
-//							"(2) createvar (0) (1)\n" +
-//							"(6) rblk (2)\n" +
-//							"(10) 3\n" +
-//							"(11) * (6) (10)\n" +
-//							"(15) 5\n" +
-//							"(16) + (11) (15)\n" +
-//							"(21) target/testTemp/applications/lineage_trace/LineageTraceDMLTest/out/X\n" +
-//							"(22) textcell\n" +
-//							"(23) write (16) (21) (22)\n";
-//
-//			String expected_Y_lineage =
-//					"(0) target/testTemp/applications/lineage_trace/LineageTraceDMLTest/in/X\n" +
-//							"(1) false\n" +
-//							"(2) createvar (0) (1)\n" +
-//							"(6) rblk (2)\n" +
-//							"(10) 3\n" +
-//							"(11) * (6) (10)\n" +
-//							"(15) 5\n" +
-//							"(16) + (11) (15)\n" +
-//							"(20) tsmm (16)\n" +
-//							"(24) target/testTemp/applications/lineage_trace/LineageTraceDMLTest/out/Y\n" +
-//							"(25) textcell\n" +
-//							"(26) write (20) (24) (25)\n";
-//
+			
 			LineageItem.resetIDSequence();
 			runTest(true, EXCEPTION_NOT_EXPECTED, null, -1);
 			
 			String X_lineage = readDMLLineageFromHDFS("X");
 			String Y_lineage = readDMLLineageFromHDFS("Y");
 			
-			System.out.print(X_lineage);
+			LineageItem X_li = LineageParser.parseLineageTrace(X_lineage);
+			LineageItem Y_li = LineageParser.parseLineageTrace(Y_lineage);
 			
-//			TestUtils.compareScalars(expected_X_lineage, X_lineage);
-//			TestUtils.compareScalars(expected_Y_lineage, Y_lineage);
+			TestUtils.compareScalars(X_lineage, Explain.explain(X_li));
+			TestUtils.compareScalars(Y_lineage, Explain.explain(Y_li));
 		} finally {
 			OptimizerUtils.ALLOW_ALGEBRAIC_SIMPLIFICATION = old_simplification;
 			OptimizerUtils.ALLOW_SUM_PRODUCT_REWRITES = old_sum_product;

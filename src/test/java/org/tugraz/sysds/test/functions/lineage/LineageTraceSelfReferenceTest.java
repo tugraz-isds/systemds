@@ -22,8 +22,10 @@ import java.util.List;
 import org.junit.Test;
 import org.tugraz.sysds.hops.OptimizerUtils;
 import org.tugraz.sysds.runtime.lineage.LineageItem;
+import org.tugraz.sysds.parser.LineageParser;
 import org.tugraz.sysds.test.AutomatedTestBase;
 import org.tugraz.sysds.test.TestUtils;
+import org.tugraz.sysds.utils.Explain;
 
 public class LineageTraceSelfReferenceTest extends AutomatedTestBase {
 	
@@ -51,8 +53,8 @@ public class LineageTraceSelfReferenceTest extends AutomatedTestBase {
 		try {
 			System.out.println("------------ BEGIN " + TEST_NAME + "------------");
 			
-			OptimizerUtils.ALLOW_ALGEBRAIC_SIMPLIFICATION = false;
-			OptimizerUtils.ALLOW_SUM_PRODUCT_REWRITES = false;
+//			OptimizerUtils.ALLOW_ALGEBRAIC_SIMPLIFICATION = false;
+//			OptimizerUtils.ALLOW_SUM_PRODUCT_REWRITES = false;
 			
 			int rows = numRecords;
 			int cols = numFeatures;
@@ -74,54 +76,17 @@ public class LineageTraceSelfReferenceTest extends AutomatedTestBase {
 			double[][] X = getRandomMatrix(rows, cols, 0, 1, 0.8, -1);
 			writeInputMatrixWithMTD("X", X, true);
 			
-			String expected_X_lineage =
-					"(0) target/testTemp/functions/lineage/LineageTraceSelfReferenceTest/in/X\n" +
-							"(1) false\n" +
-							"(2) createvar (0) (1)\n" +
-							"(6) rblk (2)\n" +
-							"(9) cpvar (6)\n" +
-							"(21) 7\n" +
-							"(22) + (9) (21)\n" +
-							"(23) cpvar (22)\n" +
-							"(38) * (23) (23)\n" +
-							"(42) * (38) (23)\n" +
-							"(43) cpvar (42)\n" +
-							"(58) 7\n" +
-							"(59) + (43) (58)\n" +
-							"(60) cpvar (59)\n" +
-							"(71) target/testTemp/applications/lineage_trace/LineageTraceSelfReferenceDMLTest/out/X\n" +
-							"(72) textcell\n" +
-							"(73) write (60) (71) (72)\n";
-			String expected_Y_lineage =
-					"(0) target/testTemp/applications/lineage_trace/LineageTraceSelfReferenceDMLTest/in/X\n" +
-							"(1) false\n" +
-							"(2) createvar (0) (1)\n" +
-							"(6) rblk (2)\n" +
-							"(9) cpvar (6)\n" +
-							"(21) 7\n" +
-							"(22) + (9) (21)\n" +
-							"(23) cpvar (22)\n" +
-							"(38) * (23) (23)\n" +
-							"(42) * (38) (23)\n" +
-							"(43) cpvar (42)\n" +
-							"(58) 7\n" +
-							"(59) + (43) (58)\n" +
-							"(60) cpvar (59)\n" +
-							"(70) tsmm (60)\n" +
-							"(74) target/testTemp/applications/lineage_trace/LineageTraceSelfReferenceDMLTest/out/Y\n" +
-							"(75) textcell\n" +
-							"(76) write (70) (74) (75)\n";
-			
 			LineageItem.resetIDSequence();
 			runTest(true, EXCEPTION_NOT_EXPECTED, null, -1);
 			
 			String X_lineage = readDMLLineageFromHDFS("X");
 			String Y_lineage = readDMLLineageFromHDFS("Y");
 			
-			System.out.print(X_lineage);
+			LineageItem X_li = LineageParser.parseLineageTrace(X_lineage);
+			LineageItem Y_li = LineageParser.parseLineageTrace(Y_lineage);
 			
-//			TestUtils.compareScalars(expected_X_lineage, X_lineage);
-//			TestUtils.compareScalars(expected_Y_lineage, Y_lineage);
+			TestUtils.compareScalars(X_lineage, Explain.explain(X_li));
+			TestUtils.compareScalars(Y_lineage, Explain.explain(Y_li));
 		} finally {
 			OptimizerUtils.ALLOW_ALGEBRAIC_SIMPLIFICATION = old_simplification;
 			OptimizerUtils.ALLOW_SUM_PRODUCT_REWRITES = old_sum_product;
