@@ -1,6 +1,6 @@
 #-------------------------------------------------------------
 #
-# Copyright 2018 Graz University of Technology
+# Copyright 2019 Graz University of Technology
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,26 +17,25 @@
 #-------------------------------------------------------------
 
 m_scale = function(Matrix[Double] X, Boolean center, Boolean scale) return (Matrix[Double] Y) {
-    # This function centers scales and performs z-score on the input matrix X
-    Y = X;                  # return as is if both center and scale are FALSE
+  # This function centers scales and performs z-score on the input matrix X
+
+  if (center) {
+    cm = colMeans(X);
+    X = X - cm;
+  }
+
+  if (scale) {
+    N = nrow(X);
+    cvars = (colSums(X^2));
     if (center == TRUE) {
-        cm = colMeans(X);
-	X = X - cm;
-	Y = X;
+      cm = colMeans(X);
+      cvars = (cvars - N*(cm^2))/(N-1);
     }
+    else
+      cvars = cvars/(N-1);
 
-    if (scale == TRUE) {
-	N = nrow(X);
-        cvars = (colSums(X^2));
-	if (center == TRUE) {
-	    cm = colMeans(X);
-	    cvars = (cvars - N*(cm^2))/(N-1);
-	}
-	else
-	    cvars = cvars/(N-1);
-
-	Y = (X)/sqrt(cvars);
-    }
-    Y = replace(target=Y, pattern=NaN, replacement=0); #replace NaNs with 0's
-    # DEBUG print: Y = print(toString(Y)); 
+    X = X/sqrt(cvars);
+    X = replace(target=X, pattern=NaN, replacement=0); #replace NaNs with 0's
+  }
+  Y = X;
 }
