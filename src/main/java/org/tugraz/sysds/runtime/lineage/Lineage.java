@@ -52,7 +52,10 @@ public class Lineage {
 			
 			switch (vcp_inst.getVariableOpcode()) {
 				case AssignVariable:
-				case CopyVariable:
+				case CopyVariable: {
+					processCopyLI(li);
+					break;
+				}
 				case Read:
 				case CreateVariable: {
 					addLineageItem(li);
@@ -77,6 +80,17 @@ public class Lineage {
 			}
 		} else
 			addLineageItem(li);
+	}
+	
+	private static void processCopyLI(LineageItem li) {
+		if (li.getInputs().size() != 1)
+			throw new DMLRuntimeException("AssignVariable and CopyVaribale must have one input lineage item!");
+		
+		if (lineage_traces.get(li.getName()) != null) {
+			removeInputLinks(lineage_traces.get(li.getName()));
+			lineage_traces.remove(li.getName());
+		}
+		lineage_traces.put(li.getName(), li.getInputs().get(0));
 	}
 	
 	public static void removeLineageItem(String key) {

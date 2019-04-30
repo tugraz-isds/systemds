@@ -45,6 +45,7 @@ public class DataGenCPInstruction extends UnaryCPInstruction {
 	private final double minValue, maxValue, sparsity;
 	private final String pdf, pdfParams;
 	private final long seed;
+	private long runtimeSeed;
 
 	// sequence specific attributes
 	private final CPOperand seq_from, seq_to, seq_incr;
@@ -134,6 +135,8 @@ public class DataGenCPInstruction extends UnaryCPInstruction {
 	public long getSeed() {
 		return seed;
 	}
+	
+	public long getRuntimeSeed() { return seed == DataGenOp.UNSPECIFIED_SEED ? runtimeSeed : seed; }
 
 	public static DataGenCPInstruction parseInstruction(String str)
 	{
@@ -223,8 +226,10 @@ public class DataGenCPInstruction extends UnaryCPInstruction {
 			
 			//generate pseudo-random seed (because not specified) 
 			long lSeed = seed; //seed per invocation
-			if( lSeed == DataGenOp.UNSPECIFIED_SEED ) 
+			if( lSeed == DataGenOp.UNSPECIFIED_SEED ) {
 				lSeed = DataGenOp.generateRandomSeed();
+				runtimeSeed = lSeed;
+			}
 			
 			if( LOG.isTraceEnabled() )
 				LOG.trace("Process DataGenCPInstruction rand with seed = "+lSeed+".");
@@ -279,6 +284,19 @@ public class DataGenCPInstruction extends UnaryCPInstruction {
 	
 	@Override
 	public LineageItem getLineageItem() {
-		return new LineageItem(output.getName(), instString, getOpcode());
+		if (getSeed() == DataGenOp.UNSPECIFIED_SEED) {
+			return new LineageItem(output.getName(), instString, getOpcode());
+			
+////			TODO is it that complex to change only -1 to a number???
+//			String[] s = InstructionUtils.getInstructionPartsWithValueType(instString);
+//			String asdf = Explain.explain(this);
+//			if (method == DataGenMethod.RAND) {
+//				long seed = !s[8].contains(Lop.VARIABLE_NAME_PLACEHOLDER) ?
+//						Long.valueOf(s[8]).longValue() : -1;
+//			} else if (method == DataGenMethod.SAMPLE) {
+//				long seed = Long.parseLong(s[4]);
+//			}
+		} else
+			return new LineageItem(output.getName(), instString, getOpcode());
 	}
 }
