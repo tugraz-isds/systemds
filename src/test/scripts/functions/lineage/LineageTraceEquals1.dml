@@ -16,11 +16,28 @@
 #
 #-------------------------------------------------------------
 
-X = rand(rows=$3, cols=$4, seed=7);
+# How to invoke this dml script LineageTrace.dml?
+# Assume LR_HOME is set to the home of the dml script
+# Assume rows = 20 and cols = 20 for X
+# hadoop jar SystemML.jar -f $LR_HOME/LineageTrace.dml -args "$INPUT_DIR/X" "$OUTPUT_DIR/X" "$OUTPUT_DIR/Y"
 
-R = X;
-for(i in 1:7)
-  R = R + 1 / 2;
-R = R + X;
+X = read($1);
+X = X * 3;
+X = X + 5;
+print(lineage(X))
+write(X, $2, format="text");
 
-write(R, $2);
+while (FALSE) {}
+
+Z = read($1);
+Z = Z * 3;
+Z = Z + 5;
+
+print(lineage(Z))
+
+# Y = t(X) %*% X;
+#
+# print(lineage(X))
+# print(lineage(Z))
+
+write(Z, $3, format="text");

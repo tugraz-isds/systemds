@@ -28,6 +28,7 @@ import org.tugraz.sysds.common.Types.DataType;
 import org.tugraz.sysds.common.Types.ValueType;
 import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.controlprogram.context.ExecutionContext;
+import org.tugraz.sysds.runtime.instructions.Instruction;
 import org.tugraz.sysds.runtime.instructions.InstructionUtils;
 import org.tugraz.sysds.runtime.lineage.LineageItem;
 import org.tugraz.sysds.runtime.matrix.data.LibMatrixDatagen;
@@ -136,8 +137,6 @@ public class DataGenCPInstruction extends UnaryCPInstruction {
 		return seed;
 	}
 	
-	public long getRuntimeSeed() { return seed == DataGenOp.UNSPECIFIED_SEED ? runtimeSeed : seed; }
-
 	public static DataGenCPInstruction parseInstruction(String str)
 	{
 		DataGenMethod method = DataGenMethod.INVALID;
@@ -236,7 +235,7 @@ public class DataGenCPInstruction extends UnaryCPInstruction {
 			
 			RandomMatrixGenerator rgen = LibMatrixDatagen.createRandomMatrixGenerator(
 				pdf, (int) lrows, (int) lcols, rowsInBlock, colsInBlock, sparsity, minValue, maxValue, pdfParams);
-			soresBlock = MatrixBlock.randOperations(rgen, seed, numThreads);
+			soresBlock = MatrixBlock.randOperations(rgen, lSeed, numThreads);
 		}
 		else if ( method == DataGenMethod.SEQ ) 
 		{
@@ -285,17 +284,19 @@ public class DataGenCPInstruction extends UnaryCPInstruction {
 	@Override
 	public LineageItem getLineageItem() {
 		if (getSeed() == DataGenOp.UNSPECIFIED_SEED) {
-			return new LineageItem(output.getName(), instString, getOpcode());
+			int position = 0;
+			if (method == DataGenMethod.RAND)
+				position = 9;
+			else if (method == DataGenMethod.SAMPLE)
+				position = 5;
 			
-////			TODO is it that complex to change only -1 to a number???
-//			String[] s = InstructionUtils.getInstructionPartsWithValueType(instString);
-//			String asdf = Explain.explain(this);
-//			if (method == DataGenMethod.RAND) {
-//				long seed = !s[8].contains(Lop.VARIABLE_NAME_PLACEHOLDER) ?
-//						Long.valueOf(s[8]).longValue() : -1;
-//			} else if (method == DataGenMethod.SAMPLE) {
-//				long seed = Long.parseLong(s[4]);
-//			}
+			int index = 0;
+			for (int i = 0; i < position; i++)
+				index = instString.indexOf(Instruction.OPERAND_DELIM, index + 1);
+			
+			String newInstrString = instString.substring(0, index);
+			newInstrString += instString.substring(index).replaceFirst("-1", String.valueOf(runtimeSeed));
+			return new LineageItem(output.getName(), newInstrString, getOpcode());
 		} else
 			return new LineageItem(output.getName(), instString, getOpcode());
 	}
