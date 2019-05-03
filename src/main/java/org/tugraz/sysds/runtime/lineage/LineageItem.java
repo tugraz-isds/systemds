@@ -159,7 +159,16 @@ public class LineageItem {
 		if (!(o instanceof LineageItem))
 			return false;
 		
-		LineageItem that = ((LineageItem) o);
+		resetVisitStatus();
+		boolean ret = equalsLI((LineageItem) o);
+		resetVisitStatus();
+		return ret;
+	}
+	
+	private boolean equalsLI(LineageItem that) {
+		if (isVisited())
+			return true;
+		
 		boolean ret = _opcode.equals(that._opcode);
 		
 		//If this is LineageItemType.Creation, remove _name in _data
@@ -170,15 +179,11 @@ public class LineageItem {
 		} else
 			ret &= _data.equals(that._data);
 		
-		if (_inputs == null)
-			return ret;
+		if (_inputs != null)
+			for (int i = 0; i < _inputs.size(); i++)
+				ret &= _inputs.get(i).equalsLI(that._inputs.get(i));
 		
-		for (int i = 0; i < _inputs.size(); i++)
-		{
-			System.out.println(ret + " id: " + _id);
-			ret &= _inputs.get(i).equals(that._inputs.get(i));
-		}
-		
+		setVisited();
 		return ret;
 	}
 	

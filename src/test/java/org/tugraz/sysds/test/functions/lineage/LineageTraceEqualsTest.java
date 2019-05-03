@@ -28,10 +28,13 @@ import org.tugraz.sysds.test.TestConfiguration;
 import org.tugraz.sysds.test.TestUtils;
 import org.tugraz.sysds.utils.Explain;
 
+import static junit.framework.TestCase.assertTrue;
+
 public class LineageTraceEqualsTest extends AutomatedTestBase {
 	
 	protected static final String TEST_DIR = "functions/lineage/";
 	protected static final String TEST_NAME1 = "LineageTraceEquals1";
+	protected static final String TEST_NAME2 = "LineageTraceEquals2";
 	protected String TEST_CLASS_DIR = TEST_DIR + LineageTraceEqualsTest.class.getSimpleName() + "/";
 	
 	protected static final int numRecords = 10;
@@ -42,12 +45,16 @@ public class LineageTraceEqualsTest extends AutomatedTestBase {
 	public void setUp() {
 		TestUtils.clearAssertionInformation();
 		addTestConfiguration(TEST_NAME1, new TestConfiguration(TEST_CLASS_DIR, TEST_NAME1));
+		addTestConfiguration(TEST_NAME2, new TestConfiguration(TEST_CLASS_DIR, TEST_NAME2));
 	}
 	
 	@Test
 	public void testLineageTrace1() {
 		testLineageTrace(TEST_NAME1);
 	}
+	
+	@Test
+	public void testLineageTrace2() { testLineageTrace(TEST_NAME2); }
 	
 	public void testLineageTrace(String testname) {
 		boolean old_simplification = OptimizerUtils.ALLOW_ALGEBRAIC_SIMPLIFICATION;
@@ -68,7 +75,7 @@ public class LineageTraceEqualsTest extends AutomatedTestBase {
 			
 			proArgs.add("-stats");
 			proArgs.add("-lineage");
-			proArgs.add("-explain");
+//			proArgs.add("-explain");
 			proArgs.add("-args");
 			proArgs.add(input("M"));
 			proArgs.add(output("X"));
@@ -87,12 +94,10 @@ public class LineageTraceEqualsTest extends AutomatedTestBase {
 			String Z_lineage = readDMLLineageFromHDFS("Z");
 			
 			LineageItem X_li = LineageParser.parseLineageTrace(X_lineage);
-			LineageItem Z_li = LineageParser.parseLineageTrace(Z_lineage );
+			LineageItem Z_li = LineageParser.parseLineageTrace(Z_lineage);
 			
-			boolean equal = X_li.equals(Z_li);
-			System.out.print("Test");
-			//			TestUtils.compareScalars(X_lineage, Explain.explain(X_li));
-//			TestUtils.compareScalars(Y_lineage, Explain.explain(Y_li));
+			assertTrue(X_li.hashCode() == Z_li.hashCode());
+			assertTrue(X_li.equals(Z_li));
 		} finally {
 			OptimizerUtils.ALLOW_ALGEBRAIC_SIMPLIFICATION = old_simplification;
 			OptimizerUtils.ALLOW_SUM_PRODUCT_REWRITES = old_sum_product;

@@ -67,7 +67,6 @@ public class Lineage {
 					break;
 				}
 				case Write: {
-					addLineageItem(li);
 					processWriteLI(vcp_inst, ec);
 					break;
 				}
