@@ -197,6 +197,7 @@ public class DMLScript
 			EXPLAIN             = dmlOptions.explainType;
 			EXEC_MODE           = dmlOptions.execMode;
 			LINEAGE             = dmlOptions.lineage;
+			LINEAGE_DEDUP       = dmlOptions.lineage_dedup;
 
 			String fnameOptConfig = dmlOptions.configFile;
 			boolean isFile = dmlOptions.filePath != null;

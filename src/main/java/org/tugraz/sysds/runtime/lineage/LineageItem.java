@@ -35,7 +35,8 @@ public class LineageItem {
 	private boolean _visited = false;
 	private int _hash = 0;
 	
-	public enum LineageItemType {Literal, Creation, Instruction}
+	public enum LineageItemType {Literal, Creation, Instruction, Dedup}
+	public static final String dedupItemOpcode = "dedup";
 	
 	public LineageItem(long id, LineageItem li) {
 		_id = id;
@@ -139,6 +140,8 @@ public class LineageItem {
 	}
 	
 	public LineageItemType getType() {
+		if (_opcode.equals(dedupItemOpcode))
+			return LineageItemType.Dedup;
 		if (isLeaf() && isInstruction())
 			return LineageItemType.Creation;
 		else if (isLeaf() && !isInstruction())

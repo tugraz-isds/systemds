@@ -17,6 +17,7 @@
 package org.tugraz.sysds.test.functions.lineage;
 
 import org.junit.Test;
+import org.tugraz.sysds.common.Types;
 import org.tugraz.sysds.hops.OptimizerUtils;
 import org.tugraz.sysds.runtime.lineage.LineageItem;
 import org.tugraz.sysds.runtime.lineage.LineageParser;
@@ -54,12 +55,14 @@ public class LineageTraceDedupTest extends AutomatedTestBase {
 	public void testLineageTrace(String testname) {
 		boolean old_simplification = OptimizerUtils.ALLOW_ALGEBRAIC_SIMPLIFICATION;
 		boolean old_sum_product = OptimizerUtils.ALLOW_SUM_PRODUCT_REWRITES;
+		Types.ExecMode old_rtplatform = AutomatedTestBase.rtplatform;
 		
 		try {
 			System.out.println("------------ BEGIN " + testname + "------------");
 			
 			OptimizerUtils.ALLOW_ALGEBRAIC_SIMPLIFICATION = false;
 			OptimizerUtils.ALLOW_SUM_PRODUCT_REWRITES = false;
+			AutomatedTestBase.rtplatform = Types.ExecMode.SINGLE_NODE;
 			
 			int rows = numRecords;
 			int cols = numFeatures;
@@ -91,6 +94,7 @@ public class LineageTraceDedupTest extends AutomatedTestBase {
 			proArgs.add("-stats");
 			proArgs.add("-lineage");
 			proArgs.add("dedup");
+			proArgs.add("-explain");
 			proArgs.add("-args");
 			proArgs.add(input("X"));
 			proArgs.add(output("X"));
@@ -100,12 +104,13 @@ public class LineageTraceDedupTest extends AutomatedTestBase {
 			runTest(true, EXCEPTION_NOT_EXPECTED, null, -1);
 			
 			String dedup_trace = readDMLLineageFromHDFS("X");
-			LineageItem dedup_li = LineageParser.parseLineageTrace(dedup_trace);
 			System.out.print(dedup_trace);
+//			LineageItem dedup_li = LineageParser.parseLineageTrace(dedup_trace);
 //			assertEquals(dedup_li, li);
 		} finally {
 			OptimizerUtils.ALLOW_ALGEBRAIC_SIMPLIFICATION = old_simplification;
 			OptimizerUtils.ALLOW_SUM_PRODUCT_REWRITES = old_sum_product;
+			AutomatedTestBase.rtplatform = old_rtplatform;
 		}
 	}
 }

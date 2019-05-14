@@ -237,7 +237,6 @@ public class ProgramBlock implements ParseInfo
 			// start time measurement for statistics
 			long t0 = (DMLScript.STATISTICS || LOG.isTraceEnabled()) ?
 				System.nanoTime() : 0;
-
 			// pre-process instruction (debug state, inst patching, listeners)
 			Instruction tmp = currInst.preprocessInstruction( ec );
 

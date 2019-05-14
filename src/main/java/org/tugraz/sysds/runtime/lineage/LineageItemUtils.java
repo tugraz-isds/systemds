@@ -48,7 +48,9 @@ import org.tugraz.sysds.runtime.instructions.cp.VariableCPInstruction;
 import org.tugraz.sysds.runtime.instructions.spark.SPInstruction.SPType;
 import org.tugraz.sysds.runtime.instructions.cp.CPInstruction.CPType;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class LineageItemUtils {
@@ -64,6 +66,8 @@ public class LineageItemUtils {
 					return LineageItemType.Literal;
 				case "I":
 					return LineageItemType.Instruction;
+				case "D":
+					return LineageItemType.Dedup;
 				default:
 					throw new DMLRuntimeException("Unknown LineageItemType given!");
 			}
@@ -79,6 +83,8 @@ public class LineageItemUtils {
 				return "L";
 			case Instruction:
 				return "I";
+			case Dedup:
+				return "D";
 			default:
 				throw new DMLRuntimeException("Unknown LineageItemType given!");
 		}
@@ -106,8 +112,8 @@ public class LineageItemUtils {
 	}
 	
 	public static Data computeByLineage(LineageItem root) {
-		long rootId = root.getOpcode().equals("write") ? 
-			root.getInputs().get(0).getId() : root.getId();
+		long rootId = root.getOpcode().equals("write") ?
+				root.getInputs().get(0).getId() : root.getId();
 		String varname = LVARPREFIX + rootId;
 		
 		//recursively construct hops 
@@ -122,33 +128,33 @@ public class LineageItemUtils {
 		ProgramBlock pb = new ProgramBlock(new Program());
 		Dag<Lop> dag = new Dag<>();
 		Lop lops = out.constructLops();
-		lops.addToDag( dag );
+		lops.addToDag(dag);
 		pb.setInstructions(dag.getJobs(null,
-			ConfigurationManager.getDMLConfig()));
+				ConfigurationManager.getDMLConfig()));
 		
 		//execute instructions and get result
 		pb.execute(ec);
 		return ec.getVariable(varname);
 	}
 	
-	private static void rConstructHops(LineageItem item, HashMap<Long,Hop> operands) {
-		if( item.isVisited() )
+	private static void rConstructHops(LineageItem item, HashMap<Long, Hop> operands) {
+		if (item.isVisited())
 			return;
 		
 		//recursively process children (ordering by data dependencies)
-		if( !item.isLeaf() )
-			for( LineageItem c : item.getInputs() )
+		if (!item.isLeaf())
+			for (LineageItem c : item.getInputs())
 				rConstructHops(c, operands);
 		
 		//process current lineage item
 		//NOTE: we generate instructions from hops (but without rewrites) to automatically
 		//handle execution types, rmvar instructions, and rewiring of inputs/outputs
-		switch( item.getType() ) {
+		switch (item.getType()) {
 			case Creation: {
 				Instruction inst = InstructionParser.parseSingleInstruction(item.getData());
 				
-				if( inst instanceof DataGenCPInstruction ) {
-					DataGenCPInstruction rand = (DataGenCPInstruction)inst;
+				if (inst instanceof DataGenCPInstruction) {
+					DataGenCPInstruction rand = (DataGenCPInstruction) inst;
 					HashMap<String, Hop> params = new HashMap<>();
 					params.put(DataExpression.RAND_ROWS, new LiteralOp(rand.getRows()));
 					params.put(DataExpression.RAND_COLS, new LiteralOp(rand.getCols()));
@@ -161,12 +167,11 @@ public class LineageItemUtils {
 					Hop datagen = new DataGenOp(DataGenMethod.RAND, new DataIdentifier("tmp"), params);
 					datagen.setOutputBlocksizes(rand.getRowsInBlock(), rand.getColsInBlock());
 					operands.put(item.getId(), datagen);
-				}
-				else if( inst instanceof VariableCPInstruction
-					&& ((VariableCPInstruction)inst).isCreateVariable()) {
+				} else if (inst instanceof VariableCPInstruction
+						&& ((VariableCPInstruction) inst).isCreateVariable()) {
 					String parts[] = InstructionUtils.getInstructionPartsWithValueType(inst.toString());
 					DataType dt = DataType.valueOf(parts[4]);
-					ValueType vt = dt==DataType.MATRIX ? ValueType.FP64 : ValueType.STRING;
+					ValueType vt = dt == DataType.MATRIX ? ValueType.FP64 : ValueType.STRING;
 					HashMap<String, Hop> params = new HashMap<>();
 					params.put(DataExpression.IO_FILENAME, new LiteralOp(parts[2]));
 					params.put(DataExpression.READROWPARAM, new LiteralOp(Long.parseLong(parts[6])));
@@ -183,8 +188,8 @@ public class LineageItemUtils {
 				CPType ctype = InstructionUtils.getCPTypeByOpcode(item.getOpcode());
 				SPType stype = InstructionUtils.getSPTypeByOpcode(item.getOpcode());
 				
-				if( ctype != null ) {
-					switch( ctype ) {
+				if (ctype != null) {
+					switch (ctype) {
 						case AggregateUnary: {
 							Hop input = operands.get(item.getInputs().get(0).getId());
 							Hop aggunary = HopRewriteUtils.createAggUnaryOp(input, item.getOpcode());
@@ -210,27 +215,37 @@ public class LineageItemUtils {
 						}
 						default:
 							throw new DMLRuntimeException("Unsupported instruction "
-								+ "type: "+ctype.name()+" ("+item.getOpcode()+").");
+									+ "type: " + ctype.name() + " (" + item.getOpcode() + ").");
 					}
-				}
-				else if( stype == SPType.Reblock ) {
+				} else if (stype == SPType.Reblock) {
 					Hop input = operands.get(item.getInputs().get(0).getId());
 					input.setOutputBlocksizes(ConfigurationManager.getBlocksize(), ConfigurationManager.getBlocksize());
 					input.setRequiresReblock(true);
 					operands.put(item.getId(), input);
-				}
-				else 
-					throw new DMLRuntimeException("Unsupported instruction: "+item.getOpcode());
+				} else
+					throw new DMLRuntimeException("Unsupported instruction: " + item.getOpcode());
 				break;
 			}
 			case Literal: {
 				CPOperand op = new CPOperand(item.getData());
 				operands.put(item.getId(), ScalarObjectFactory
-					.createLiteralOp(op.getValueType(), op.getName()));
+						.createLiteralOp(op.getValueType(), op.getName()));
 				break;
 			}
 		}
 		
 		item.setVisited();
+	}
+	
+	public static void removeInputLinks(LineageItem li) {
+		if (li.getOutputs().isEmpty()) {
+			List<LineageItem> inputs = li.getInputs();
+			li.removeAllInputs();
+			if (inputs != null)
+				for (LineageItem input : inputs) {
+					input.getOutputs().remove(li);
+					removeInputLinks(input);
+				}
+		}
 	}
 }
