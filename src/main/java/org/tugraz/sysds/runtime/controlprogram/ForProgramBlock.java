@@ -133,8 +133,9 @@ public class ForProgramBlock extends ProgramBlock
 				//execute all child blocks
 				for(int i=0 ; i < this._childBlocks.size() ; i++) {
 					_childBlocks.get(i).execute(ec);
-					// TODO bnyra: some stuff
-					Lineage.trace(-1);
+					// TODO bnyra: some stuff for branch detection...
+					if (DMLScript.LINEAGE_DEDUP)
+						Lineage.trace(0);
 				}
 			}
 			

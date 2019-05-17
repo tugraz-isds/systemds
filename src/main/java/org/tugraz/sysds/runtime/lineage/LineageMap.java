@@ -24,6 +24,15 @@ public class LineageMap {
 	
 	private Map<String, LineageItem> _traces = new HashMap<>();
 	
+	public LineageMap() {
+	}
+	
+	public LineageMap(LineageMap other) {
+		for (Map.Entry<String, LineageItem> entry : other._traces.entrySet()) {
+			this._traces.put(entry.getKey(), new LineageItem(entry.getValue()));
+		}
+	}
+	
 	public void trace(Instruction inst, ExecutionContext ec) {
 		if (!(inst instanceof LineageTraceable))
 			throw new DMLRuntimeException("Unknown Instruction (" + inst.getOpcode() + ") traced.");
@@ -67,13 +76,10 @@ public class LineageMap {
 	public void processDedupItem(LineageMap lm) {
 		for (Map.Entry<String, LineageItem> entry : lm._traces.entrySet()) {
 			if (_traces.containsKey(entry.getKey())) {
-				
 				ArrayList<LineageItem> list = new ArrayList<>();
 				list.add(_traces.get(entry.getKey()));
 				list.add(entry.getValue());
 				addLineageItem(new LineageItem(entry.getKey(), list, LineageItem.dedupItemOpcode));
-				// Create a lineageDedupItem which holds the dedup key the map and the input connection for decompressing
-				
 			}
 		}
 //		if (li.getInputs().size() != 1)

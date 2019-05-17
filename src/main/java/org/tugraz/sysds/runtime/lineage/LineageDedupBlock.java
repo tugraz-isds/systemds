@@ -11,6 +11,7 @@ import java.util.Map;
 public class LineageDedupBlock {
 	private Map<Integer, LineageMap> _distinctPaths = new HashMap<>();
 	private Integer _activePath = null;
+	private Integer _branches = 0;
 	
 	public LineageMap getActiveMap() {
 		if (_activePath == null || !_distinctPaths.containsKey(_activePath))
@@ -18,46 +19,78 @@ public class LineageDedupBlock {
 		return _distinctPaths.get(_activePath);
 	}
 	
-	public LineageMap getMap(int path) {
+	public LineageMap getMap(Integer path) {
 		if (!_distinctPaths.containsKey(path))
 			throw new DMLRuntimeException("Given path in LineageDedupBlock could not be found.");
 		return _distinctPaths.get(path);
 	}
 	
-	void addBranch(IfProgramBlock ipb, ExecutionContext ec) {
-		Integer size = _distinctPaths.size();
-
-//		if (ipb.getChildBlocksIfBody() != null) {
-//			if (ipb.getChildBlocksIfBody().size() == 1)
-//				items.add(computeLineage(ipb.getChildBlocksIfBody().get(0), ec));
-//			else
-//				throw new DMLRuntimeException("Deduplication does not support multiple program blocks in a branch!");
-//		}
-//		if (ipb.getChildBlocksElseBody() != null) {
-//			if (ipb.getChildBlocksElseBody().size() == 1)
-//				items.add(computeLineage(ipb.getChildBlocksElseBody().get(0), ec));
-//			else
-//				throw new DMLRuntimeException("Deduplication does not support multiple program blocks in a branch!");
-//		}
+	public void traceIfProgramBlock(IfProgramBlock ipb, ExecutionContext ec) {
+		addPathsForBranch();
+		traceIfBodyInstructions(ipb, ec);
+		traceElseBodyInstructions(ipb, ec);
 	}
 	
-	void addLineage(ProgramBlock pb, ExecutionContext ec) {
-		//TODO bnyra: This is very bad!!!
-		if (pb instanceof WhileProgramBlock ||
-				pb instanceof FunctionProgramBlock ||
-				pb instanceof ForProgramBlock ||
-				pb instanceof IfProgramBlock)
-			throw new DMLRuntimeException("Function only supports ProgramBlock");
-		
+	public void traceProgramBlock(ProgramBlock pb, ExecutionContext ec) {
 		if (_distinctPaths.size() == 0)
-			_distinctPaths.put(-1, new LineageMap());
+			_distinctPaths.put(0, new LineageMap());
 		
-		for (Instruction inst : pb.getInstructions()) {
-			for (Map.Entry<Integer, LineageMap> entry : _distinctPaths.entrySet()) {
+		traceInstructions(pb, ec);
+	}
+	
+	private void traceInstructions(ProgramBlock pb, ExecutionContext ec) {
+		for (Map.Entry<Integer, LineageMap> entry : _distinctPaths.entrySet()) {
+			for (Instruction inst : pb.getInstructions()) {
 				_activePath = entry.getKey();
 				entry.getValue().trace(inst, ec);
 			}
 		}
 		_activePath = null;
 	}
+	
+	private void traceIfBodyInstructions(IfProgramBlock ipb, ExecutionContext ec) {
+		// Add IfBody instructions to lower half of LineageMaps
+		if (ipb.getChildBlocksIfBody() != null && ipb.getChildBlocksIfBody().size() == 1) {
+			for (Map.Entry<Integer, LineageMap> entry : _distinctPaths.entrySet()) {
+				if (entry.getKey() < _branches) {
+					for (Instruction inst : ipb.getChildBlocksIfBody().get(0).getInstructions()) {
+						_activePath = entry.getKey();
+						entry.getValue().trace(inst, ec);
+					}
+				} else
+					break;
+			}
+		}
+	}
+	
+	private void traceElseBodyInstructions(IfProgramBlock ipb, ExecutionContext ec) {
+		// Add ElseBody instructions to upper half of LineageMaps
+		if (ipb.getChildBlocksElseBody() != null && ipb.getChildBlocksElseBody().size() == 1) {
+			for (Map.Entry<Integer, LineageMap> entry : _distinctPaths.entrySet()) {
+				if (entry.getKey() >= _branches) {
+					for (Instruction inst : ipb.getChildBlocksElseBody().get(0).getInstructions()) {
+						_activePath = entry.getKey();
+						entry.getValue().trace(inst, ec);
+					}
+				}
+			}
+		}
+		_activePath = null;
+	}
+	
+	private void addPathsForBranch() {
+		if (_distinctPaths.size() == 0) {
+			_distinctPaths.put(0, new LineageMap());
+			_distinctPaths.put(1, new LineageMap());
+		} else {
+			Map<Integer, LineageMap> elseBranches = new HashMap<>();
+			for (Map.Entry<Integer, LineageMap> entry : _distinctPaths.entrySet()) {
+				Integer pathIndex = entry.getKey() | 1 << _branches;
+				elseBranches.put(pathIndex, new LineageMap(entry.getValue()));
+			}
+			_distinctPaths.putAll(elseBranches);
+		}
+		_branches++;
+	}
+	
 }

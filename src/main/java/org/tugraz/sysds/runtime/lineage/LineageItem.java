@@ -30,8 +30,8 @@ public class LineageItem {
 	private final String _opcode;
 	private final String _name;
 	private final String _data;
-	private List<LineageItem> _inputs;
-	private List<LineageItem> _outputs;
+	private final List<LineageItem> _inputs;
+	private final List<LineageItem> _outputs;
 	private boolean _visited = false;
 	private int _hash = 0;
 	
@@ -99,12 +99,31 @@ public class LineageItem {
 		_outputs = new ArrayList<>();
 	}
 	
+	public LineageItem(LineageItem other) {
+		_id = _idSeq.getNextID();
+		_opcode = other._opcode;
+		_name = other._name;
+		_data = other._data;
+		_visited = other._visited;
+		_hash = other._hash;
+		_outputs = new ArrayList<>();
+		_inputs = new ArrayList<>();
+		
+		if (other._inputs != null)
+			for (LineageItem li : other._inputs) {
+				LineageItem input = new LineageItem(li);
+				_inputs.add(input);
+				input._outputs.add(this);
+			}
+	}
+	
 	public List<LineageItem> getInputs() {
 		return _inputs;
 	}
 	
 	public void removeAllInputs() {
-		_inputs = new ArrayList<>();
+		if (_inputs != null)
+			_inputs.clear();
 	}
 	
 	public List<LineageItem> getOutputs() {

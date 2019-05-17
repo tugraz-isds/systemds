@@ -6,7 +6,7 @@ import org.tugraz.sysds.runtime.controlprogram.context.ExecutionContext;
 
 public class LineageDedupUtils {
 
-	static LineageDedupBlock computeDistinctPaths(ForProgramBlock fpb, ExecutionContext ec) {
+	public static LineageDedupBlock computeDistinctPaths(ForProgramBlock fpb, ExecutionContext ec) {
 		LineageDedupBlock ldb = new LineageDedupBlock();
 		Lineage.setInitDedupBlock(ldb);
 		
@@ -16,14 +16,9 @@ public class LineageDedupUtils {
 				throw new DMLRuntimeException("Deduplication is not supported for nested while for or function calls!");
 
 			if (pb instanceof IfProgramBlock)
-			{
-				assert false;
-				System.out.println("Skip if program block");
-				// TODO bnyra: implement addBranch stuff
-//				ldi.addBranch((IfProgramBlock) pb, ec);
-			}
+				ldb.traceIfProgramBlock((IfProgramBlock) pb, ec);
 			else
-				ldb.addLineage(pb, ec);
+				ldb.traceProgramBlock(pb, ec);
 		}
 		
 		Lineage.setInitDedupBlock(null);
