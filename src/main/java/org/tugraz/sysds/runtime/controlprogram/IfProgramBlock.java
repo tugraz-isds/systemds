@@ -21,6 +21,7 @@ package org.tugraz.sysds.runtime.controlprogram;
 
 import java.util.ArrayList;
 
+import org.tugraz.sysds.api.DMLScript;
 import org.tugraz.sysds.parser.IfStatementBlock;
 import org.tugraz.sysds.common.Types.ValueType;
 import org.tugraz.sysds.runtime.DMLRuntimeException;
@@ -96,8 +97,11 @@ public class IfProgramBlock extends ProgramBlock
 	@Override
 	public void execute(ExecutionContext ec) 
 	{
-		BooleanObject predResult = executePredicate(ec); 
-	
+		BooleanObject predResult = executePredicate(ec);
+		
+		if (DMLScript.LINEAGE_DEDUP)
+			ec.setBranchPredicateValue(predResult.getBooleanValue());
+			
 		//execute if statement
 		if(predResult.getBooleanValue())
 		{	

@@ -38,40 +38,19 @@ public class LineageItem {
 	public enum LineageItemType {Literal, Creation, Instruction, Dedup}
 	public static final String dedupItemOpcode = "dedup";
 	
-	public LineageItem(long id, LineageItem li) {
-		_id = id;
-		_opcode = li._opcode;
-		_name = li._name;
-		_data = li._data;
-		_inputs = li._inputs;
-		_outputs = li._outputs;
-	}
+	public LineageItem(long id, String name, String data) { this(id, name, data, "", null); }
 	
-	public LineageItem(long id, String name, String data) {
-		this(id, name, data, null, "");
-	}
+	public LineageItem(long id, String name,  String opcode, List<LineageItem> inputs) { this(id, name, "", opcode ,inputs); }
 	
-	public LineageItem(long id, String name, List<LineageItem> inputs, String opcode) {
-		this(id, name, "", inputs, opcode);
-	}
+	public LineageItem(String name) { this(_idSeq.getNextID(), name, name, "", null); }
 	
-	public LineageItem(String name, String data) {
-		this(_idSeq.getNextID(), name, data, null, "");
-	}
+	public LineageItem(String name, String data) { this(_idSeq.getNextID(), name, data, "", null); }
 	
-	public LineageItem(String name, String data, String opcode) {
-		this(_idSeq.getNextID(), name, data, null, opcode);
-	}
+	public LineageItem(String name, String data, String opcode) { this(_idSeq.getNextID(), name, data, opcode, null); }
 	
-	public LineageItem(String name, String data, List<LineageItem> inputs, String opcode) {
-		this(_idSeq.getNextID(), name, data, inputs, opcode);
-	}
+	public LineageItem(String name, String opcode, List<LineageItem> inputs) { this(_idSeq.getNextID(), name, "", opcode, inputs); }
 	
-	public LineageItem(String name, List<LineageItem> inputs, String opcode) {
-		this(_idSeq.getNextID(), name, "", inputs, opcode);
-	}
-	
-	public LineageItem(long id, String name, String data, List<LineageItem> inputs, String opcode) {
+	public LineageItem(long id, String name, String data, String opcode, List<LineageItem> inputs) {
 		_id = id;
 		_opcode = opcode;
 		_name = name;
@@ -86,17 +65,13 @@ public class LineageItem {
 		_outputs = new ArrayList<>();
 	}
 	
-	public LineageItem(String name) {
-		this(_idSeq.getNextID(), name);
-	}
-	
-	public LineageItem(long id, String name) {
+	public LineageItem(long id, LineageItem li) {
 		_id = id;
-		_opcode = "";
-		_name = name;
-		_data = name;
-		_inputs = null;
-		_outputs = new ArrayList<>();
+		_opcode = li._opcode;
+		_name = li._name;
+		_data = li._data;
+		_inputs = li._inputs;
+		_outputs = li._outputs;
 	}
 	
 	public LineageItem(LineageItem other) {

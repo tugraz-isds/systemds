@@ -35,6 +35,7 @@ public class LineageTraceDedupTest extends AutomatedTestBase {
 	
 	protected static final String TEST_DIR = "functions/lineage/";
 	protected static final String TEST_NAME1 = "LineageTraceDedup1";
+	protected static final String TEST_NAME2 = "LineageTraceDedup2";
 	protected String TEST_CLASS_DIR = TEST_DIR + LineageTraceDedupTest.class.getSimpleName() + "/";
 	
 	protected static final int numRecords = 10;
@@ -45,11 +46,17 @@ public class LineageTraceDedupTest extends AutomatedTestBase {
 	public void setUp() {
 		TestUtils.clearAssertionInformation();
 		addTestConfiguration(TEST_NAME1, new TestConfiguration(TEST_CLASS_DIR, TEST_NAME1));
+		addTestConfiguration(TEST_NAME2, new TestConfiguration(TEST_CLASS_DIR, TEST_NAME2));
 	}
 	
 	@Test
 	public void testLineageTrace1() {
 		testLineageTrace(TEST_NAME1);
+	}
+	
+	@Test
+	public void testLineageTrace2() {
+		testLineageTrace(TEST_NAME2);
 	}
 	
 	public void testLineageTrace(String testname) {
@@ -80,13 +87,13 @@ public class LineageTraceDedupTest extends AutomatedTestBase {
 //			proArgs.add("-lineage");
 //			proArgs.add("-args");
 //			proArgs.add(input("X"));
-//			proArgs.add(output("X"));
+//			proArgs.add(output("R"));
 //			programArgs = proArgs.toArray(new String[proArgs.size()]);
 //
 //			LineageItem.resetIDSequence();
 //			runTest(true, EXCEPTION_NOT_EXPECTED, null, -1);
 //
-//			String trace = readDMLLineageFromHDFS("X");
+//			String trace = readDMLLineageFromHDFS("R");
 //			LineageItem li = LineageParser.parseLineageTrace(trace);
 //
 			// w/ lineage deduplication
@@ -97,13 +104,13 @@ public class LineageTraceDedupTest extends AutomatedTestBase {
 			proArgs.add("-explain");
 			proArgs.add("-args");
 			proArgs.add(input("X"));
-			proArgs.add(output("X"));
+			proArgs.add(output("R"));
 			programArgs = proArgs.toArray(new String[proArgs.size()]);
 			
 			LineageItem.resetIDSequence();
 			runTest(true, EXCEPTION_NOT_EXPECTED, null, -1);
 			
-			String dedup_trace = readDMLLineageFromHDFS("X");
+			String dedup_trace = readDMLLineageFromHDFS("R");
 			System.out.print(dedup_trace);
 //			LineageItem dedup_li = LineageParser.parseLineageTrace(dedup_trace);
 //			assertEquals(dedup_li, li);

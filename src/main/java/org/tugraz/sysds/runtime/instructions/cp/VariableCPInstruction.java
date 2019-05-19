@@ -1092,14 +1092,14 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 			case AssignVariable:{
 				ArrayList<LineageItem> lineages = new ArrayList<>();
 				lineages.add(Lineage.getOrCreate(getInput1()));
-				return new LineageItem(getInput2().getName(), lineages, getOpcode());
+				return new LineageItem(getInput2().getName(), getOpcode(), lineages);
 			}
 			case CopyVariable: {
 				ArrayList<LineageItem> lineages = new ArrayList<>();
 				if (!Lineage.contains(getInput1()))
 					throw new DMLRuntimeException("Could not find LineageItem for " + getInput1().getName());
 				lineages.add(Lineage.get(getInput1()));
-				return new LineageItem(getInput2().getName(), lineages, getOpcode());
+				return new LineageItem(getInput2().getName(), getOpcode(), lineages);
 			}
 			case Write: {
 				ArrayList<LineageItem> lineages = new ArrayList<>();
@@ -1108,7 +1108,7 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 						lineages.add(Lineage.getOrCreate(input));
 				if (_formatProperties != null && !_formatProperties.getDescription().isEmpty())
 					lineages.add(new LineageItem(_formatProperties.getDescription()));
-				return new LineageItem(getInput1().getName(), lineages, getOpcode());
+				return new LineageItem(getInput1().getName(), getOpcode(), lineages);
 			}
 			case MoveVariable: {
 				ArrayList<LineageItem> lineages = new ArrayList<>();
@@ -1119,7 +1119,7 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 					if (getInput3() != null)
 						lineages.add(Lineage.getOrCreate(getInput3()));
 				}
-				return new LineageItem(getInput2().getName(), lineages, getOpcode());
+				return new LineageItem(getInput2().getName(), getOpcode(), lineages);
 			}
 			case RemoveVariable:
 			default:

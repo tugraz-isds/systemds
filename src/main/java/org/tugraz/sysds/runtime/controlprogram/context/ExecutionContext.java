@@ -21,6 +21,7 @@ package org.tugraz.sysds.runtime.controlprogram.context;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -69,7 +70,10 @@ public class ExecutionContext {
 	 * List of {@link GPUContext}s owned by this {@link ExecutionContext}
 	 */
 	protected List<GPUContext> _gpuContexts = new ArrayList<>();
-
+	
+	protected BitSet _lastBranch = null;
+	protected int _branchCounter = 0;
+	
 	protected ExecutionContext()
 	{
 		//protected constructor to force use of ExecutionContextFactory
@@ -650,5 +654,37 @@ public class ExecutionContext {
 		catch(Exception ex) {
 			throw new DMLRuntimeException(ex);
 		}
+	}
+	
+	public void initLastBranch(){
+		_lastBranch = new BitSet();
+		_branchCounter = 0;
+	}
+	
+	public void removeLastBranch(){
+		_lastBranch = null;
+		_branchCounter = 0;
+	}
+	
+	public void clearLastBranch(){
+		if (_lastBranch != null)
+			_lastBranch.clear();
+		_branchCounter = 0;
+	}
+	
+	public void setBranchPredicateValue(Boolean value){
+		if (_lastBranch != null){
+			if (value)
+				_lastBranch.set(_branchCounter);
+			_branchCounter++;
+		}
+	}
+	public Long getLastBranch(){
+		if (_lastBranch != null)
+			if (_lastBranch.toLongArray().length == 1)
+				return _lastBranch.toLongArray()[0];
+			else
+				return 0L;
+		return 0L;
 	}
 }

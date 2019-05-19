@@ -79,17 +79,9 @@ public class LineageMap {
 				ArrayList<LineageItem> list = new ArrayList<>();
 				list.add(_traces.get(entry.getKey()));
 				list.add(entry.getValue());
-				addLineageItem(new LineageItem(entry.getKey(), list, LineageItem.dedupItemOpcode));
+				addLineageItem(new LineageItem(entry.getKey(),  LineageItem.dedupItemOpcode, list));
 			}
 		}
-//		if (li.getInputs().size() != 1)
-//			throw new DMLRuntimeException("AssignVariable and CopyVariable must have one input lineage item!");
-//
-//		if (_traces.get(li.getName()) != null) {
-//			removeInputLinks(_traces.get(li.getName()));
-//			_traces.remove(li.getName());
-//		}
-//		_traces.put(li.getName(), li.getInputs().get(0));
 	}
 	
 	public LineageItem getOrCreate(CPOperand variable) {

@@ -33,14 +33,11 @@ public class Lineage {
 	public static void trace(Instruction inst, ExecutionContext ec) {
 		if (_activeDedupBlock == null)
 			_globalLineages.trace(inst, ec);
-		else
-			System.out.println("Skip instruction in ForProgramBlock");
 	}
 	
-	public static void trace(Integer path) {
+	public static void traceBranch(Long path) {
 		LineageMap lm = _activeDedupBlock.getMap(path);
 		_globalLineages.processDedupItem(lm);
-		System.out.println("Trace ForProgramBlock!");
 	}
 	
 	public static LineageItem getOrCreate(CPOperand variable) {
@@ -71,11 +68,13 @@ public class Lineage {
 		_initDedupBlock = ldb;
 	}
 	
-	public static void computeDedupItem(ForProgramBlock fpb, ExecutionContext ec) {
+	public static void computeDedupBlock(ForProgramBlock fpb, ExecutionContext ec) {
 		_activeDedupBlock = LineageDedupUtils.computeDistinctPaths(fpb, ec);
+		ec.initLastBranch();
 	}
 	
-	public static void clearDedupItem() {
+	public static void clearDedupBlock(ExecutionContext ec) {
 		_activeDedupBlock = null;
+		ec.removeLastBranch();
 	}
 }

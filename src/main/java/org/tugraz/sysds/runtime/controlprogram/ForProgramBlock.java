@@ -34,7 +34,6 @@ import org.tugraz.sysds.runtime.instructions.Instruction;
 import org.tugraz.sysds.runtime.instructions.cp.IntObject;
 import org.tugraz.sysds.runtime.instructions.cp.ScalarObject;
 import org.tugraz.sysds.runtime.lineage.Lineage;
-import org.tugraz.sysds.runtime.lineage.LineageDedupUtils;
 
 public class ForProgramBlock extends ProgramBlock
 {
