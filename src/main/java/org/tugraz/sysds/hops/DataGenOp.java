@@ -114,6 +114,22 @@ public class DataGenOp extends MultiThreadedHop
 		refreshSizeInformation();
 	}
 
+	public DataGenOp(DataGenMethod mthd, DataIdentifier id)
+	{
+		super(id.getName(), DataType.SCALAR, ValueType.INT64);
+		
+		_id = id;
+		_op = mthd;
+
+		//generate base dir
+		String scratch = ConfigurationManager.getScratchSpace();
+		_baseDir = scratch + Lop.FILE_SEPARATOR + Lop.PROCESS_PREFIX + DMLScript.getUUID() + Lop.FILE_SEPARATOR 
+			+ Lop.FILE_SEPARATOR + Lop.CP_ROOT_THREAD_ID + Lop.FILE_SEPARATOR;
+		
+		//compute unknown dims and nnz
+		refreshSizeInformation();
+	}
+
 	@Override
 	public void checkArity() {
 		int sz = _input.size();
@@ -286,6 +302,9 @@ public class DataGenOp extends MultiThreadedHop
 		if( _op == DataGenMethod.SINIT )
 			_etype = ExecType.CP;
 		
+		if(_op == DataGenMethod.TIME )
+			_etype = ExecType.CP;
+		
 		return _etype;
 	}
 	
@@ -331,6 +350,13 @@ public class DataGenOp extends MultiThreadedHop
 				setDim2(1);
 				_incr = incr;
 			}
+		}
+		else if (_op == DataGenMethod.TIME )
+		{
+			setDim1(0);
+			setDim2(0);
+			_dataType = DataType.SCALAR;
+			_valueType = ValueType.INT64;
 		}
 		
 		//refresh nnz information (for seq, sparsity is always -1)
@@ -467,6 +493,15 @@ public class DataGenOp extends MultiThreadedHop
 	public boolean compare( Hop that )
 	{
 		if( !(that instanceof DataGenOp) )
+			return false;
+		
+		 /*
+		 * NOTE:
+		 * This compare() method currently is invoked from Hops RewriteCommonSubexpressionElimination,
+		 * which tries to merge two hops if this function returns true. However, two TIME hops should
+		 * never be merged, and hence returning false.
+		 */
+		if (_op == DataGenMethod.TIME)
 			return false;
 		
 		DataGenOp that2 = (DataGenOp)that;	

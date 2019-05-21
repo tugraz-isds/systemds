@@ -509,11 +509,17 @@ public class BuiltinFunctionExpression extends DataIdentifier
 		DataIdentifier output = new DataIdentifier(outputName);
 		output.setParseInfo(this);
 		
-		if (this.getFirstExpr() == null) {
+		if ((this.getFirstExpr() == null) &&
+			(this.getOpCode() != this.getOpCode().TIME)) {  // as time() doesn't have any arguments 
 			raiseValidateError("Function " + this + " has no arguments.", false);
 		}
-		Identifier id = this.getFirstExpr().getOutput();
-		output.setProperties(this.getFirstExpr().getOutput());
+		Identifier id;
+		if (_args.length != 0)
+			id = this.getFirstExpr().getOutput();
+		else
+			id = null;
+		if (_args.length != 0)
+			output.setProperties(this.getFirstExpr().getOutput());
 		output.setNnz(-1); //conservatively, cannot use input nnz!
 		this.setOutput(output);
 		
@@ -1441,6 +1447,15 @@ public class BuiltinFunctionExpression extends DataIdentifier
 				checkMatrixParam(input2);
 			break;
 		}
+		case TIME: 
+			checkNumParameters(0);
+			// Output of TIME() is scalar and long
+			output.setDataType(DataType.SCALAR);
+			output.setValueType(ValueType.INT64);
+			output.setDimensions(0, 0);
+			output.setBlockDimensions(0, 0);
+			break;
+
 		default:
 			if( isMathFunction() ) {
 				checkMathFunctionParam();
@@ -1672,10 +1687,14 @@ public class BuiltinFunctionExpression extends DataIdentifier
 	}
 
 	protected void checkNumParameters(int count) { //always unconditional
-		if (getFirstExpr() == null) {
+		if ((getFirstExpr() == null) && (_args.length > 0)) {
 			raiseValidateError("Missing argument for function " + this.getOpCode(), false,
 					LanguageErrorCodes.INVALID_PARAMETERS);
 		}
+		int tmp = _args.length;
+		int tmp1;
+		if (_args != null)
+			tmp1 =5;
 		
 		// Not sure the rationale for the first two if loops, but will keep them for backward compatibility
 		if (((count == 1) && (getSecondExpr() != null || getThirdExpr() != null))
@@ -1689,6 +1708,10 @@ public class BuiltinFunctionExpression extends DataIdentifier
 		} else if(count > 0 && (_args == null || _args.length < count)) {
 			raiseValidateError("Missing argument for function " + this.getOpCode(), false,
 					LanguageErrorCodes.INVALID_PARAMETERS);
+		} else if (count == 0 && (_args.length > 0
+				|| getSecondExpr() != null || getThirdExpr() != null)) {
+			raiseValidateError("Missing argument for function " + this.getOpCode()
+				+ "(). This function doesn't take any arguments.", false);
 		}
 	}
 
@@ -1807,8 +1830,11 @@ public class BuiltinFunctionExpression extends DataIdentifier
 		
 		// check if the function name is built-in function
 		//	(assign built-in function op if function is built-in
+		
+				
 		return (Builtins.contains(functionName, false, false) 
-			&& paramExprsPassed.stream().anyMatch(p -> p.getName()==null)) ? //at least one unnamed
+			&& (paramExprsPassed.stream().anyMatch(p -> p.getName()==null) //at least one unnamed
+			    || paramExprsPassed.size() == 0)) ? 
 			new BuiltinFunctionExpression(ctx, Builtins.get(functionName), paramExprsPassed, filename) : null;
 	}
 	
