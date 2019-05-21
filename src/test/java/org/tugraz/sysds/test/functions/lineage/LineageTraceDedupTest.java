@@ -81,21 +81,21 @@ public class LineageTraceDedupTest extends AutomatedTestBase {
 			writeInputMatrixWithMTD("X", m, true);
 			List<String> proArgs;
 
-//			// w/o lineage deduplication
-//			proArgs = new ArrayList<String>();
-//			proArgs.add("-stats");
-//			proArgs.add("-lineage");
-//			proArgs.add("-args");
-//			proArgs.add(input("X"));
-//			proArgs.add(output("R"));
-//			programArgs = proArgs.toArray(new String[proArgs.size()]);
-//
-//			LineageItem.resetIDSequence();
-//			runTest(true, EXCEPTION_NOT_EXPECTED, null, -1);
-//
-//			String trace = readDMLLineageFromHDFS("R");
-//			LineageItem li = LineageParser.parseLineageTrace(trace);
-//
+			// w/o lineage deduplication
+			proArgs = new ArrayList<String>();
+			proArgs.add("-stats");
+			proArgs.add("-lineage");
+			proArgs.add("-args");
+			proArgs.add(input("X"));
+			proArgs.add(output("R"));
+			programArgs = proArgs.toArray(new String[proArgs.size()]);
+
+			LineageItem.resetIDSequence();
+			runTest(true, EXCEPTION_NOT_EXPECTED, null, -1);
+
+			String trace = readDMLLineageFromHDFS("R");
+			LineageItem li = LineageParser.parseLineageTrace(trace);
+			
 			// w/ lineage deduplication
 			proArgs = new ArrayList<String>();
 			proArgs.add("-stats");
@@ -111,9 +111,8 @@ public class LineageTraceDedupTest extends AutomatedTestBase {
 			runTest(true, EXCEPTION_NOT_EXPECTED, null, -1);
 			
 			String dedup_trace = readDMLLineageFromHDFS("R");
-			System.out.print(dedup_trace);
-//			LineageItem dedup_li = LineageParser.parseLineageTrace(dedup_trace);
-//			assertEquals(dedup_li, li);
+			LineageItem dedup_li = LineageParser.parseLineageTrace(dedup_trace);
+			assertEquals(dedup_li, li);
 		} finally {
 			OptimizerUtils.ALLOW_ALGEBRAIC_SIMPLIFICATION = old_simplification;
 			OptimizerUtils.ALLOW_SUM_PRODUCT_REWRITES = old_sum_product;

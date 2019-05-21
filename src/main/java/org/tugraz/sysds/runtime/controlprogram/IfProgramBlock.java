@@ -98,7 +98,7 @@ public class IfProgramBlock extends ProgramBlock
 	public void execute(ExecutionContext ec) 
 	{
 		BooleanObject predResult = executePredicate(ec);
-		
+	
 		if (DMLScript.LINEAGE_DEDUP)
 			ec.setBranchPredicateValue(predResult.getBooleanValue());
 			

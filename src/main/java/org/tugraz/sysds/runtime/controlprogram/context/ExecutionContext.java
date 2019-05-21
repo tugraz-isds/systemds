@@ -70,7 +70,6 @@ public class ExecutionContext {
 	 * List of {@link GPUContext}s owned by this {@link ExecutionContext}
 	 */
 	protected List<GPUContext> _gpuContexts = new ArrayList<>();
-	
 	protected BitSet _lastBranch = null;
 	protected int _branchCounter = 0;
 	
@@ -679,6 +678,7 @@ public class ExecutionContext {
 			_branchCounter++;
 		}
 	}
+	
 	public Long getLastBranch(){
 		if (_lastBranch != null)
 			if (_lastBranch.toLongArray().length == 1)

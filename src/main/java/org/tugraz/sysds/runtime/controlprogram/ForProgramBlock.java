@@ -118,29 +118,32 @@ public class ForProgramBlock extends ProgramBlock
 			// prepare update in-place variables
 			UpdateType[] flags = prepareUpdateInPlaceVariables(ec, _tid);
 			
-			// observe all distinct paths compute a LineageDedupBlock and stores them globally
+			// observe all distinct paths, compute a LineageDedupBlock and stores them globally
 			if (DMLScript.LINEAGE_DEDUP)
-				Lineage.computeDedupItem(this, ec);
+				Lineage.computeDedupBlock(this, ec);
 			
 			// run for loop body for each instance of predicate sequence 
 			SequenceIterator seqIter = new SequenceIterator(from, to, incr);
 			for( IntObject iterVar : seqIter ) 
 			{
+				if (DMLScript.LINEAGE_DEDUP)
+					ec.clearLastBranch();
+				
 				//set iteration variable
 				ec.setVariable(_iterPredVar, iterVar); 
 				
 				//execute all child blocks
 				for(int i=0 ; i < this._childBlocks.size() ; i++) {
 					_childBlocks.get(i).execute(ec);
-					// TODO bnyra: some stuff for branch detection...
-					if (DMLScript.LINEAGE_DEDUP)
-						Lineage.trace(0);
 				}
+				
+				if (DMLScript.LINEAGE_DEDUP)
+					Lineage.traceBranch(ec.getLastBranch());
 			}
 			
 			// clear current LineageDedupBlock
 			if (DMLScript.LINEAGE_DEDUP)
-				Lineage.clearDedupItem();
+				Lineage.clearDedupBlock(ec);
 			
 			// reset update-in-place variables
 			resetUpdateInPlaceVariableFlags(ec, flags);

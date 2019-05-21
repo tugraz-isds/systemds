@@ -248,4 +248,50 @@ public class LineageItemUtils {
 				}
 		}
 	}
+	
+	public static LineageItem rDecompress(LineageItem item) {
+		if (item.getType() == LineageItemType.Dedup) {
+			LineageItem dedupInput = rDecompress(item.getInputs().get(0));
+			ArrayList<LineageItem> inputs = new ArrayList<>();
+			
+			for (LineageItem li : item.getInputs().get(1).getInputs())
+				inputs.add(rDecompress(li));
+			
+			LineageItem li = new LineageItem(item.getInputs().get(1).getName(),
+					item.getInputs().get(1).getData(),
+					item.getInputs().get(1).getOpcode(),
+					inputs);
+			
+			li.resetVisitStatus();
+			rSetDedupInputOntoOutput(item.getName(), li, dedupInput);
+			li.resetVisitStatus();
+			return li;
+		} else {
+			ArrayList<LineageItem> inputs = new ArrayList<>();
+			if (item.getInputs() != null) {
+				for (LineageItem li : item.getInputs())
+					inputs.add(rDecompress(li));
+			}
+			return new LineageItem(item.getName(), item.getData(), item.getOpcode(), inputs);
+		}
+	}
+	
+	private static void rSetDedupInputOntoOutput(String name, LineageItem item, LineageItem dedupInput) {
+		if (item.isVisited())
+			return;
+		
+		if (item.getInputs() != null && !item.getInputs().isEmpty())
+			for (int i = 0; i < item.getInputs().size(); i++) {
+				LineageItem li = item.getInputs().get(i);
+				
+				if (li.getName().equals(name)){
+					item.getInputs().set(i, dedupInput);
+					dedupInput.getOutputs().add(item);
+				}
+				
+				rSetDedupInputOntoOutput(name, li, dedupInput);
+			}
+		
+		item.setVisited();
+	}
 }

@@ -133,9 +133,6 @@ public class CPOperand
 	}
 
 	public String getLineageLiteral() {
-		// TODO bnyra: Is this really necessary?
-//		if( !isLiteral() )
-//			throw new DMLRuntimeException("CPOperand is not a literal.");
 		StringBuilder sb = new StringBuilder(getName());
 		sb.append(Instruction.VALUETYPE_PREFIX);
 		sb.append(getDataType().toString());

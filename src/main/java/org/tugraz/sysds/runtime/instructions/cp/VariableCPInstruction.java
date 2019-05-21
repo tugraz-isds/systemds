@@ -65,7 +65,7 @@ import org.tugraz.sysds.runtime.util.UtilFunctions;
 import org.tugraz.sysds.utils.Statistics;
 
 public class VariableCPInstruction extends CPInstruction implements LineageTraceable {
-	
+
 	/*
 	 * Supported Operations
 	 * --------------------
@@ -83,8 +83,9 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 	 *	    allocate a new file object with name FP, and associate it with variable x
 	 *     createvar x FP [dimensions] [formatinfo]
 	 */
-	
-	public enum VariableOperationCode {
+
+	public enum VariableOperationCode
+	{
 		CreateVariable,
 		AssignVariable,
 		CopyVariable,
@@ -103,7 +104,7 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 	}
 	
 	private static final IDSequence _uniqueVarID = new IDSequence(true);
-	private static final int CREATEVAR_FILE_NAME_VAR_POS = 3;
+	private static final int CREATEVAR_FILE_NAME_VAR_POS=3;
 	
 	private final VariableOperationCode opcode;
 	private final List<CPOperand> inputs;
@@ -116,9 +117,9 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 	
 	// CSV related members (used only in createvar instructions)
 	private final FileFormatProperties _formatProperties;
-	
+
 	private VariableCPInstruction(VariableOperationCode op, CPOperand in1, CPOperand in2, CPOperand in3, CPOperand out,
-								  MetaData meta, FileFormatProperties fprops, String schema, UpdateType utype, String sopcode, String istr) {
+			MetaData meta, FileFormatProperties fprops, String schema, UpdateType utype, String sopcode, String istr) {
 		super(CPType.Variable, sopcode, istr);
 		opcode = op;
 		inputs = new ArrayList<>();
@@ -133,68 +134,68 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 	}
 	
 	private VariableCPInstruction(VariableOperationCode op, CPOperand in1, CPOperand in2, CPOperand in3, CPOperand out,
-								  String sopcode, String istr) {
+			String sopcode, String istr) {
 		this(op, in1, in2, in3, out, null, null, null, null, sopcode, istr);
 	}
-	
+
 	// This version of the constructor is used only in case of CreateVariable
 	private VariableCPInstruction(VariableOperationCode op, CPOperand in1, CPOperand in2, CPOperand in3, MetaData md,
-								  UpdateType updateType, String schema, String sopcode, String istr) {
+			UpdateType updateType, String schema, String sopcode, String istr) {
 		this(op, in1, in2, in3, null, md, null, schema, updateType, sopcode, istr);
 	}
-	
+
 	// This version of the constructor is used only in case of CreateVariable
 	private VariableCPInstruction(VariableOperationCode op, CPOperand in1, CPOperand in2, CPOperand in3, MetaData md,
-								  UpdateType updateType, FileFormatProperties formatProperties, String schema, String sopcode,
-								  String istr) {
+			UpdateType updateType, FileFormatProperties formatProperties, String schema, String sopcode,
+			String istr) {
 		this(op, in1, in2, in3, null, md, formatProperties, schema, updateType, sopcode, istr);
 	}
-	
-	private static VariableOperationCode getVariableOperationCode(String str) {
+
+	private static VariableOperationCode getVariableOperationCode ( String str ) {
 		
-		if (str.equalsIgnoreCase("createvar"))
+		if ( str.equalsIgnoreCase("createvar"))
 			return VariableOperationCode.CreateVariable;
 		
-		else if (str.equalsIgnoreCase("assignvar"))
+		else if ( str.equalsIgnoreCase("assignvar"))
 			return VariableOperationCode.AssignVariable;
 		
-		else if (str.equalsIgnoreCase("cpvar"))
+		else if ( str.equalsIgnoreCase("cpvar"))
 			return VariableOperationCode.CopyVariable;
 		
-		else if (str.equalsIgnoreCase("mvvar"))
+		else if ( str.equalsIgnoreCase("mvvar"))
 			return VariableOperationCode.MoveVariable;
 		
-		else if (str.equalsIgnoreCase("rmvar"))
+		else if ( str.equalsIgnoreCase("rmvar") )
 			return VariableOperationCode.RemoveVariable;
 		
-		else if (str.equalsIgnoreCase("rmfilevar"))
+		else if ( str.equalsIgnoreCase("rmfilevar") )
 			return VariableOperationCode.RemoveVariableAndFile;
 		
-		else if (str.equalsIgnoreCase(UnaryCP.CAST_AS_SCALAR_OPCODE))
+		else if ( str.equalsIgnoreCase(UnaryCP.CAST_AS_SCALAR_OPCODE) )
 			return VariableOperationCode.CastAsScalarVariable;
 		
-		else if (str.equalsIgnoreCase(UnaryCP.CAST_AS_MATRIX_OPCODE))
+		else if ( str.equalsIgnoreCase(UnaryCP.CAST_AS_MATRIX_OPCODE) )
 			return VariableOperationCode.CastAsMatrixVariable;
 		
-		else if (str.equalsIgnoreCase(UnaryCP.CAST_AS_FRAME_OPCODE))
+		else if ( str.equalsIgnoreCase(UnaryCP.CAST_AS_FRAME_OPCODE) )
 			return VariableOperationCode.CastAsFrameVariable;
 		
-		else if (str.equalsIgnoreCase(UnaryCP.CAST_AS_DOUBLE_OPCODE))
+		else if ( str.equalsIgnoreCase(UnaryCP.CAST_AS_DOUBLE_OPCODE) )
 			return VariableOperationCode.CastAsDoubleVariable;
 		
-		else if (str.equalsIgnoreCase(UnaryCP.CAST_AS_INT_OPCODE))
+		else if ( str.equalsIgnoreCase(UnaryCP.CAST_AS_INT_OPCODE) )
 			return VariableOperationCode.CastAsIntegerVariable;
 		
-		else if (str.equalsIgnoreCase(UnaryCP.CAST_AS_BOOLEAN_OPCODE))
+		else if ( str.equalsIgnoreCase(UnaryCP.CAST_AS_BOOLEAN_OPCODE) )
 			return VariableOperationCode.CastAsBooleanVariable;
 		
-		else if (str.equalsIgnoreCase("write"))
+		else if ( str.equalsIgnoreCase("write") )
 			return VariableOperationCode.Write;
 		
-		else if (str.equalsIgnoreCase("read"))
+		else if ( str.equalsIgnoreCase("read") )
 			return VariableOperationCode.Read;
 		
-		else if (str.equalsIgnoreCase("setfilename"))
+		else if ( str.equalsIgnoreCase("setfilename") )
 			return VariableOperationCode.SetFileName;
 		
 		else
@@ -208,9 +209,9 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 	 * @return true if rmvar instruction including varName
 	 */
 	public boolean isRemoveVariable(String varName) {
-		if (isRemoveVariable()) {
-			for (CPOperand input : inputs)
-				if (input.getName().equalsIgnoreCase(varName))
+		if( isRemoveVariable() ) {
+			for( CPOperand input : inputs )
+				if(input.getName().equalsIgnoreCase(varName))
 					return true;
 		}
 		return false;
@@ -222,9 +223,9 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 	
 	public boolean isRemoveVariable() {
 		return (opcode == VariableOperationCode.RemoveVariable
-				|| opcode == VariableOperationCode.RemoveVariableAndFile);
+			|| opcode == VariableOperationCode.RemoveVariableAndFile);
 	}
-	
+
 	public boolean isAssignVariable() {
 		return (opcode == VariableOperationCode.AssignVariable);
 	}
@@ -232,11 +233,11 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 	public boolean isCreateVariable() {
 		return (opcode == VariableOperationCode.CreateVariable);
 	}
-	
+
 	public VariableOperationCode getVariableOpcode() {
 		return opcode;
 	}
-	
+
 	public FileFormatProperties getFormatProperties() {
 		return _formatProperties;
 	}
@@ -262,25 +263,25 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 	}
 	
 	public CPOperand getInput(int index) {
-		if (inputs.size() <= index)
+		if( inputs.size() <= index )
 			return null;
 		return inputs.get(index);
 	}
 	
 	public void addInput(CPOperand input) {
-		if (input != null)
+		if( input != null )
 			inputs.add(input);
 	}
 	
-	public String getOutputVariableName() {
+	public String getOutputVariableName(){
 		String ret = null;
-		if (output != null)
+		if( output != null )
 			ret = output.getName();
 		return ret;
 	}
-	
+
 	private static int getArity(VariableOperationCode op) {
-		switch (op) {
+		switch(op) {
 			case Write:
 			case SetFileName:
 				return 3;
@@ -289,412 +290,435 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 		}
 	}
 	
-	public static VariableCPInstruction parseInstruction(String str) {
-		String[] parts = InstructionUtils.getInstructionPartsWithValueType(str);
+	public static VariableCPInstruction parseInstruction ( String str ) {
+		String[] parts = InstructionUtils.getInstructionPartsWithValueType ( str );
 		String opcode = parts[0];
 		VariableOperationCode voc = getVariableOperationCode(opcode);
 		
-		if (voc == VariableOperationCode.CreateVariable) {
-			if (parts.length < 5)  //&& parts.length != 10 )
+		if ( voc == VariableOperationCode.CreateVariable ){
+			if ( parts.length < 5 )  //&& parts.length != 10 )
 				throw new DMLRuntimeException("Invalid number of operands in createvar instruction: " + str);
-		} else if (voc == VariableOperationCode.MoveVariable) {
+		}
+		else if ( voc == VariableOperationCode.MoveVariable) {
 			// mvvar tempA A; or mvvar mvar5 "data/out.mtx" "binary"
-			if (parts.length != 3 && parts.length != 4)
+			if ( parts.length !=3 && parts.length != 4)
 				throw new DMLRuntimeException("Invalid number of operands in mvvar instruction: " + str);
-		} else if (voc == VariableOperationCode.Write) {
+		}
+		else if ( voc == VariableOperationCode.Write ) {
 			// All write instructions have 3 parameters, except in case of delimited/csv file.
 			// Write instructions for csv files also include three additional parameters (hasHeader, delimiter, sparse)
-			if (parts.length != 5 && parts.length != 8)
+			if ( parts.length != 5 && parts.length != 8 )
 				throw new DMLRuntimeException("Invalid number of operands in write instruction: " + str);
-		} else {
-			if (voc != VariableOperationCode.RemoveVariable)
-				InstructionUtils.checkNumFields(parts, getArity(voc)); // no output
+		}
+		else {
+			if( voc != VariableOperationCode.RemoveVariable )
+				InstructionUtils.checkNumFields ( parts, getArity(voc) ); // no output
 		}
 		
-		CPOperand in1 = null, in2 = null, in3 = null, in4 = null, out = null;
+		CPOperand in1=null, in2=null, in3=null, in4=null, out=null;
 		
 		switch (voc) {
+		
+		case CreateVariable:
+			// variable name
+			DataType dt = DataType.valueOf(parts[4]);
+			ValueType vt = dt==DataType.MATRIX ? ValueType.FP64 : ValueType.STRING;
+			int extSchema = (dt==DataType.FRAME && parts.length>=13) ? 1 : 0;
+			in1 = new CPOperand(parts[1], vt, dt);
+			// file name
+			in2 = new CPOperand(parts[2], ValueType.STRING, DataType.SCALAR);
+			// file name override flag (always literal)
+			in3 = new CPOperand(parts[3], ValueType.BOOLEAN, DataType.SCALAR);
 			
-			case CreateVariable:
-				// variable name
-				DataType dt = DataType.valueOf(parts[4]);
-				ValueType vt = dt == DataType.MATRIX ? ValueType.FP64 : ValueType.STRING;
-				int extSchema = (dt == DataType.FRAME && parts.length >= 13) ? 1 : 0;
-				in1 = new CPOperand(parts[1], vt, dt);
-				// file name
-				in2 = new CPOperand(parts[2], ValueType.STRING, DataType.SCALAR);
-				// file name override flag (always literal)
-				in3 = new CPOperand(parts[3], ValueType.BOOLEAN, DataType.SCALAR);
-				
-				// format
-				String fmt = parts[5];
-				if (fmt.equalsIgnoreCase("csv")) {
-					// Cretevar instructions for CSV format either has 13 or 14 inputs.
-					// 13 inputs: createvar corresponding to WRITE -- includes properties hasHeader, delim, and sparse
-					// 14 inputs: createvar corresponding to READ -- includes properties hasHeader, delim, fill, and fillValue
-					if (parts.length < 15 + extSchema || parts.length > 17 + extSchema)
-						throw new DMLRuntimeException("Invalid number of operands in createvar instruction: " + str);
-				} else {
-					if (parts.length != 6 && parts.length != 12 + extSchema)
-						throw new DMLRuntimeException("Invalid number of operands in createvar instruction: " + str);
-				}
-				OutputInfo oi = OutputInfo.stringToOutputInfo(fmt);
-				InputInfo ii = OutputInfo.getMatchingInputInfo(oi);
-				
-				MatrixCharacteristics mc = new MatrixCharacteristics();
-				if (parts.length == 6) {
-					// do nothing
-				} else if (parts.length >= 11) {
-					// matrix characteristics
-					mc.setDimension(Long.parseLong(parts[6]), Long.parseLong(parts[7]));
-					mc.setBlockSize(Integer.parseInt(parts[8]), Integer.parseInt(parts[9]));
-					mc.setNonZeros(Long.parseLong(parts[10]));
-				} else {
+			// format
+			String fmt = parts[5];
+			if ( fmt.equalsIgnoreCase("csv") ) {
+				// Cretevar instructions for CSV format either has 13 or 14 inputs.
+				// 13 inputs: createvar corresponding to WRITE -- includes properties hasHeader, delim, and sparse
+				// 14 inputs: createvar corresponding to READ -- includes properties hasHeader, delim, fill, and fillValue
+				if ( parts.length < 15+extSchema || parts.length > 17+extSchema )
 					throw new DMLRuntimeException("Invalid number of operands in createvar instruction: " + str);
+			}
+			else {
+				if ( parts.length != 6 && parts.length != 12+extSchema )
+					throw new DMLRuntimeException("Invalid number of operands in createvar instruction: " + str);
+			}
+			OutputInfo oi = OutputInfo.stringToOutputInfo(fmt);
+			InputInfo ii = OutputInfo.getMatchingInputInfo(oi);
+			
+			MatrixCharacteristics mc = new MatrixCharacteristics();
+			if ( parts.length == 6 ) {
+				// do nothing
+			}
+			else if ( parts.length >= 11 ) {
+				// matrix characteristics
+				mc.setDimension(Long.parseLong(parts[6]), Long.parseLong(parts[7]));
+				mc.setBlockSize(Integer.parseInt(parts[8]), Integer.parseInt(parts[9]));
+				mc.setNonZeros(Long.parseLong(parts[10]));
+			}
+			else {
+				throw new DMLRuntimeException("Invalid number of operands in createvar instruction: " + str);
+			}
+			MetaDataFormat iimd = new MetaDataFormat(mc, oi, ii);
+			UpdateType updateType = UpdateType.COPY;
+			if ( parts.length >= 12 )
+				updateType = UpdateType.valueOf(parts[11].toUpperCase());
+			
+			//handle frame schema
+			String schema = (dt==DataType.FRAME && parts.length>=13) ? parts[parts.length-1] : null;
+			
+			if ( fmt.equalsIgnoreCase("csv") ) {
+				// Cretevar instructions for CSV format either has 13 or 14 inputs.
+				// 13 inputs: createvar corresponding to WRITE -- includes properties hasHeader, delim, and sparse
+				// 14 inputs: createvar corresponding to READ -- includes properties hasHeader, delim, fill, and fillValue
+				FileFormatProperties fmtProperties = null;
+				if ( parts.length == 15+extSchema ) {
+					boolean hasHeader = Boolean.parseBoolean(parts[12]);
+					String delim = parts[13];
+					boolean sparse = Boolean.parseBoolean(parts[14]);
+					fmtProperties = new FileFormatPropertiesCSV(hasHeader, delim, sparse) ;
 				}
-				MetaDataFormat iimd = new MetaDataFormat(mc, oi, ii);
-				UpdateType updateType = UpdateType.COPY;
-				if (parts.length >= 12)
-					updateType = UpdateType.valueOf(parts[11].toUpperCase());
-				
-				//handle frame schema
-				String schema = (dt == DataType.FRAME && parts.length >= 13) ? parts[parts.length - 1] : null;
-				
-				if (fmt.equalsIgnoreCase("csv")) {
-					// Cretevar instructions for CSV format either has 13 or 14 inputs.
-					// 13 inputs: createvar corresponding to WRITE -- includes properties hasHeader, delim, and sparse
-					// 14 inputs: createvar corresponding to READ -- includes properties hasHeader, delim, fill, and fillValue
-					FileFormatProperties fmtProperties = null;
-					if (parts.length == 15 + extSchema) {
-						boolean hasHeader = Boolean.parseBoolean(parts[12]);
-						String delim = parts[13];
-						boolean sparse = Boolean.parseBoolean(parts[14]);
-						fmtProperties = new FileFormatPropertiesCSV(hasHeader, delim, sparse);
-					} else {
-						boolean hasHeader = Boolean.parseBoolean(parts[12]);
-						String delim = parts[13];
-						boolean fill = Boolean.parseBoolean(parts[14]);
-						double fillValue = UtilFunctions.parseToDouble(parts[15]);
-						String naStrings = null;
-						if (parts.length == 17 + extSchema)
-							naStrings = parts[16];
-						fmtProperties = new FileFormatPropertiesCSV(hasHeader, delim, fill, fillValue, naStrings);
-					}
-					return new VariableCPInstruction(VariableOperationCode.CreateVariable, in1, in2, in3, iimd, updateType, fmtProperties, schema, opcode, str);
-				} else {
-					return new VariableCPInstruction(VariableOperationCode.CreateVariable, in1, in2, in3, iimd, updateType, schema, opcode, str);
+				else {
+					boolean hasHeader = Boolean.parseBoolean(parts[12]);
+					String delim = parts[13];
+					boolean fill = Boolean.parseBoolean(parts[14]);
+					double fillValue = UtilFunctions.parseToDouble(parts[15]);
+					String naStrings = null;
+					if ( parts.length == 17+extSchema )
+						naStrings = parts[16];
+					fmtProperties = new FileFormatPropertiesCSV(hasHeader, delim, fill, fillValue, naStrings) ;
 				}
-			case AssignVariable:
-				in1 = new CPOperand(parts[1]);
-				in2 = new CPOperand(parts[2]);
-				break;
+				return new VariableCPInstruction(VariableOperationCode.CreateVariable, in1, in2, in3, iimd, updateType, fmtProperties, schema, opcode, str);
+			}
+			else {
+				return new VariableCPInstruction(VariableOperationCode.CreateVariable, in1, in2, in3, iimd, updateType, schema, opcode, str);
+			}
+		case AssignVariable:
+			in1 = new CPOperand(parts[1]);
+			in2 = new CPOperand(parts[2]);
+			break;
 			
-			case CopyVariable:
-				// Value types are not given here
-				in1 = new CPOperand(parts[1], ValueType.UNKNOWN, DataType.UNKNOWN);
-				in2 = new CPOperand(parts[2], ValueType.UNKNOWN, DataType.UNKNOWN);
-				break;
+		case CopyVariable:
+			// Value types are not given here
+			in1 = new CPOperand(parts[1], ValueType.UNKNOWN, DataType.UNKNOWN);
+			in2 = new CPOperand(parts[2], ValueType.UNKNOWN, DataType.UNKNOWN);
+			break;
 			
-			case MoveVariable:
-				in1 = new CPOperand(parts[1], ValueType.UNKNOWN, DataType.UNKNOWN);
-				in2 = new CPOperand(parts[2], ValueType.UNKNOWN, DataType.UNKNOWN);
-				if (parts.length > 3)
-					in3 = new CPOperand(parts[3], ValueType.UNKNOWN, DataType.UNKNOWN);
-				break;
+		case MoveVariable:
+			in1 = new CPOperand(parts[1], ValueType.UNKNOWN, DataType.UNKNOWN);
+			in2 = new CPOperand(parts[2], ValueType.UNKNOWN, DataType.UNKNOWN);
+			if(parts.length > 3)
+				in3 = new CPOperand(parts[3], ValueType.UNKNOWN, DataType.UNKNOWN);
+			break;
 			
-			case RemoveVariable:
-				VariableCPInstruction rminst = new VariableCPInstruction(
-						getVariableOperationCode(opcode), null, null, null, out, opcode, str);
-				for (int i = 1; i < parts.length; i++)
-					rminst.addInput(new CPOperand(parts[i], ValueType.UNKNOWN, DataType.SCALAR));
-				return rminst;
+		case RemoveVariable:
+			VariableCPInstruction rminst = new VariableCPInstruction(
+				getVariableOperationCode(opcode), null, null, null, out, opcode, str);
+			for( int i=1; i<parts.length; i++ )
+				rminst.addInput(new CPOperand(parts[i], ValueType.UNKNOWN, DataType.SCALAR));
+			return rminst;
 			
-			case RemoveVariableAndFile:
-				in1 = new CPOperand(parts[1]);
-				in2 = new CPOperand(parts[2]);
-				// second argument must be a boolean
-				if (in2.getValueType() != ValueType.BOOLEAN)
-					throw new DMLRuntimeException("Unexpected value type for second argument in: " + str);
-				break;
+		case RemoveVariableAndFile:
+			in1 = new CPOperand(parts[1]);
+			in2 = new CPOperand(parts[2]);
+			// second argument must be a boolean
+			if ( in2.getValueType() != ValueType.BOOLEAN)
+				throw new DMLRuntimeException("Unexpected value type for second argument in: " + str);
+			break;
 			
-			case CastAsScalarVariable:
-			case CastAsMatrixVariable:
-			case CastAsFrameVariable:
-			case CastAsDoubleVariable:
-			case CastAsIntegerVariable:
-			case CastAsBooleanVariable:
-				in1 = new CPOperand(parts[1]); // first operand is a variable name => string value type
-				out = new CPOperand(parts[2]); // output variable name
-				break;
+		case CastAsScalarVariable:
+		case CastAsMatrixVariable:
+		case CastAsFrameVariable:
+		case CastAsDoubleVariable:
+		case CastAsIntegerVariable:
+		case CastAsBooleanVariable:
+			in1 = new CPOperand(parts[1]); // first operand is a variable name => string value type
+			out = new CPOperand(parts[2]); // output variable name
+			break;
+	
+		case Write:
+			in1 = new CPOperand(parts[1]);
+			in2 = new CPOperand(parts[2]);
+			in3 = new CPOperand(parts[3]);
 			
-			case Write:
-				in1 = new CPOperand(parts[1]);
-				in2 = new CPOperand(parts[2]);
-				in3 = new CPOperand(parts[3]);
-				
-				FileFormatProperties fprops = null;
-				if (in3.getName().equalsIgnoreCase("csv")) {
-					boolean hasHeader = Boolean.parseBoolean(parts[4]);
-					String delim = parts[5];
-					boolean sparse = Boolean.parseBoolean(parts[6]);
-					fprops = new FileFormatPropertiesCSV(hasHeader, delim, sparse);
-					in4 = new CPOperand(parts[7]); // description
-				} else {
-					fprops = new FileFormatProperties();
-					in4 = new CPOperand(parts[4]); // description
-				}
-				VariableCPInstruction inst = new VariableCPInstruction(
-						getVariableOperationCode(opcode), in1, in2, in3, out, null, fprops, null, null, opcode, str);
-				inst.addInput(in4);
-				
-				return inst;
+			FileFormatProperties fprops = null;
+			if ( in3.getName().equalsIgnoreCase("csv") ) {
+				boolean hasHeader = Boolean.parseBoolean(parts[4]);
+				String delim = parts[5];
+				boolean sparse = Boolean.parseBoolean(parts[6]);
+				fprops = new FileFormatPropertiesCSV(hasHeader, delim, sparse);
+				in4 = new CPOperand(parts[7]); // description
+			} else {
+				fprops = new FileFormatProperties();
+				in4 = new CPOperand(parts[4]); // description
+			}
+			VariableCPInstruction inst = new VariableCPInstruction(
+				getVariableOperationCode(opcode), in1, in2, in3, out, null, fprops, null, null, opcode, str);
+			inst.addInput(in4);
 			
-			case Read:
-				in1 = new CPOperand(parts[1]);
-				in2 = new CPOperand(parts[2]);
-				out = null;
-				break;
+			return inst;
 			
-			case SetFileName:
-				in1 = new CPOperand(parts[1]); // variable name
-				in2 = new CPOperand(parts[2], ValueType.UNKNOWN, DataType.UNKNOWN); // file name
-				in3 = new CPOperand(parts[3], ValueType.UNKNOWN, DataType.UNKNOWN); // option: remote or local
-				//return new VariableCPInstruction(getVariableOperationCode(opcode), in1, in2, in3, str);
-				break;
+		case Read:
+			in1 = new CPOperand(parts[1]);
+			in2 = new CPOperand(parts[2]);
+			out = null;
+			break;
 			
+		case SetFileName:
+			in1 = new CPOperand(parts[1]); // variable name
+			in2 = new CPOperand(parts[2], ValueType.UNKNOWN, DataType.UNKNOWN); // file name
+			in3 = new CPOperand(parts[3], ValueType.UNKNOWN, DataType.UNKNOWN); // option: remote or local
+			//return new VariableCPInstruction(getVariableOperationCode(opcode), in1, in2, in3, str);
+			break;
+		
 		}
 		return new VariableCPInstruction(getVariableOperationCode(opcode), in1, in2, in3, out, opcode, str);
 	}
 	
 	@Override
 	public void processInstruction(ExecutionContext ec) {
-		switch (opcode) {
-			case CreateVariable:
-				
-				if (getInput1().getDataType() == DataType.MATRIX) {
-					//create new variable for symbol table and cache
-					//(existing objects gets cleared through rmvar instructions)
-					String fname = getInput2().getName();
-					// check if unique filename needs to be generated
-					if (Boolean.parseBoolean(getInput3().getName())) {
-						fname = new StringBuilder(fname.length() + 16).append(fname)
-								.append('_').append(_uniqueVarID.getNextID()).toString();
-					}
-					MatrixObject mobj = new MatrixObject(getInput1().getValueType(), fname);
-					//clone meta data because it is updated on copy-on-write, otherwise there
-					//is potential for hidden side effects between variables.
-					mobj.setMetaData((MetaData) metadata.clone());
-					mobj.setFileFormatProperties(_formatProperties);
-					mobj.setUpdateType(_updateType);
-					mobj.enableCleanup(!getInput1().getName()
-							.startsWith(org.tugraz.sysds.lops.Data.PREAD_PREFIX));
-					ec.setVariable(getInput1().getName(), mobj);
-					if (DMLScript.STATISTICS && _updateType.isInPlace())
-						Statistics.incrementTotalUIPVar();
-				} else if (getInput1().getDataType() == DataType.FRAME) {
-					String fname = getInput2().getName();
-					FrameObject fobj = new FrameObject(fname);
-					fobj.setMetaData((MetaData) metadata.clone());
-					fobj.setFileFormatProperties(_formatProperties);
-					if (_schema != null)
-						fobj.setSchema(_schema); //after metadata
-					fobj.enableCleanup(!getInput1().getName()
-							.startsWith(org.tugraz.sysds.lops.Data.PREAD_PREFIX));
-					ec.setVariable(getInput1().getName(), fobj);
-				} else if (getInput1().getDataType() == DataType.SCALAR) {
-					//created variable not called for scalars
-					ec.setScalarOutput(getInput1().getName(), null);
-				} else {
-					throw new DMLRuntimeException("Unexpected data type: " + getInput1().getDataType());
+		switch ( opcode )
+		{
+		case CreateVariable:
+			
+			if ( getInput1().getDataType() == DataType.MATRIX ) {
+				//create new variable for symbol table and cache
+				//(existing objects gets cleared through rmvar instructions)
+				String fname = getInput2().getName();
+				// check if unique filename needs to be generated
+				if( Boolean.parseBoolean(getInput3().getName()) ) {
+					fname = new StringBuilder(fname.length()+16).append(fname)
+						.append('_').append(_uniqueVarID.getNextID()).toString();
 				}
-				break;
+				MatrixObject mobj = new MatrixObject(getInput1().getValueType(), fname );
+				//clone meta data because it is updated on copy-on-write, otherwise there
+				//is potential for hidden side effects between variables.
+				mobj.setMetaData((MetaData)metadata.clone());
+				mobj.setFileFormatProperties(_formatProperties);
+				mobj.setUpdateType(_updateType);
+				mobj.enableCleanup(!getInput1().getName()
+					.startsWith(org.tugraz.sysds.lops.Data.PREAD_PREFIX));
+				ec.setVariable(getInput1().getName(), mobj);
+				if(DMLScript.STATISTICS && _updateType.isInPlace())
+					Statistics.incrementTotalUIPVar();
+			}
+			else if( getInput1().getDataType() == DataType.FRAME ) {
+				String fname = getInput2().getName();
+				FrameObject fobj = new FrameObject(fname);
+				fobj.setMetaData((MetaData)metadata.clone());
+				fobj.setFileFormatProperties(_formatProperties);
+				if( _schema != null )
+					fobj.setSchema(_schema); //after metadata
+				fobj.enableCleanup(!getInput1().getName()
+					.startsWith(org.tugraz.sysds.lops.Data.PREAD_PREFIX));
+				ec.setVariable(getInput1().getName(), fobj);
+			}
+			else if ( getInput1().getDataType() == DataType.SCALAR ){
+				//created variable not called for scalars
+				ec.setScalarOutput(getInput1().getName(), null);
+			}
+			else {
+				throw new DMLRuntimeException("Unexpected data type: " + getInput1().getDataType());
+			}
+			break;
+		
+		case AssignVariable:
+			// assign value of variable to the other
+			ec.setScalarOutput(getInput2().getName(), ec.getScalarInput(getInput1()));
+			break;
 			
-			case AssignVariable:
-				// assign value of variable to the other
-				ec.setScalarOutput(getInput2().getName(), ec.getScalarInput(getInput1()));
-				break;
+		case CopyVariable:
+			processCopyInstruction(ec);
+			break;
 			
-			case CopyVariable:
-				processCopyInstruction(ec);
-				break;
+		case MoveVariable:
+			processMoveInstruction(ec);
+			break;
 			
-			case MoveVariable:
-				processMoveInstruction(ec);
-				break;
+		case RemoveVariable:
+			for( CPOperand input : inputs )
+				processRemoveVariableInstruction(ec, input.getName());
+			break;
 			
-			case RemoveVariable:
-				for (CPOperand input : inputs)
-					processRemoveVariableInstruction(ec, input.getName());
-				break;
+		case RemoveVariableAndFile:
+			 // Remove the variable from HashMap _variables, and possibly delete the data on disk.
+			boolean del = ( (BooleanObject) ec.getScalarInput(getInput2().getName(), getInput2().getValueType(), true) ).getBooleanValue();
+			MatrixObject m = (MatrixObject) ec.removeVariable(getInput1().getName());
 			
-			case RemoveVariableAndFile:
-				// Remove the variable from HashMap _variables, and possibly delete the data on disk.
-				boolean del = ((BooleanObject) ec.getScalarInput(getInput2().getName(), getInput2().getValueType(), true)).getBooleanValue();
-				MatrixObject m = (MatrixObject) ec.removeVariable(getInput1().getName());
+			if ( !del ) {
+				// HDFS file should be retailed after clearData(),
+				// therefore data must be exported if dirty flag is set
+				if ( m.isDirty() )
+					m.exportData();
+			}
+			else {
+				//throw new DMLRuntimeException("rmfilevar w/ true is not expected! " + instString);
+				//cleanDataOnHDFS(pb, input1.getName());
+				cleanDataOnHDFS( m );
+			}
+			
+			// check if in-memory object can be cleaned up
+			if ( !ec.getVariables().hasReferences(m) ) {
+				// no other variable in the symbol table points to the same Data object as that of input1.getName()
 				
-				if (!del) {
-					// HDFS file should be retailed after clearData(),
-					// therefore data must be exported if dirty flag is set
-					if (m.isDirty())
-						m.exportData();
-				} else {
-					//throw new DMLRuntimeException("rmfilevar w/ true is not expected! " + instString);
-					//cleanDataOnHDFS(pb, input1.getName());
-					cleanDataOnHDFS(m);
-				}
-				
-				// check if in-memory object can be cleaned up
-				if (!ec.getVariables().hasReferences(m)) {
-					// no other variable in the symbol table points to the same Data object as that of input1.getName()
-					
-					//remove matrix object from cache
-					m.clearData();
-				}
-				
-				break;
+				//remove matrix object from cache
+				m.clearData();
+			}
+
+			break;
 			
-			case CastAsScalarVariable: //castAsScalarVariable
-				if (getInput1().getDataType().isFrame()) {
-					FrameBlock fBlock = ec.getFrameInput(getInput1().getName());
-					if (fBlock.getNumRows() != 1 || fBlock.getNumColumns() != 1)
-						throw new DMLRuntimeException("Dimension mismatch - unable to cast frame '" + getInput1().getName() + "' of dimension (" + fBlock.getNumRows() + " x " + fBlock.getNumColumns() + ") to scalar.");
-					Object value = fBlock.get(0, 0);
-					ec.releaseFrameInput(getInput1().getName());
-					ec.setScalarOutput(output.getName(),
-							ScalarObjectFactory.createScalarObject(fBlock.getSchema()[0], value));
-				} else if (getInput1().getDataType().isMatrix()) {
-					MatrixBlock mBlock = ec.getMatrixInput(getInput1().getName(), getExtendedOpcode());
-					if (mBlock.getNumRows() != 1 || mBlock.getNumColumns() != 1)
-						throw new DMLRuntimeException("Dimension mismatch - unable to cast matrix '" + getInput1().getName() + "' of dimension (" + mBlock.getNumRows() + " x " + mBlock.getNumColumns() + ") to scalar.");
-					double value = mBlock.getValue(0, 0);
-					ec.releaseMatrixInput(getInput1().getName(), getExtendedOpcode());
-					ec.setScalarOutput(output.getName(), new DoubleObject(value));
-				} else if (getInput1().getDataType().isList()) {
-					//TODO handling of cleanup status, potentially new object
-					ListObject list = (ListObject) ec.getVariable(getInput1().getName());
-					ec.setVariable(output.getName(), list.slice(0));
-				} else {
-					throw new DMLRuntimeException("Unsupported data type "
-							+ "in as.scalar(): " + getInput1().getDataType().name());
-				}
-				break;
-			case CastAsMatrixVariable: {
-				if (getInput1().getDataType().isFrame()) {
-					FrameBlock fin = ec.getFrameInput(getInput1().getName());
-					MatrixBlock out = DataConverter.convertToMatrixBlock(fin);
-					ec.releaseFrameInput(getInput1().getName());
+		case CastAsScalarVariable: //castAsScalarVariable
+			if( getInput1().getDataType().isFrame() ) {
+				FrameBlock fBlock = ec.getFrameInput(getInput1().getName());
+				if( fBlock.getNumRows()!=1 || fBlock.getNumColumns()!=1 )
+					throw new DMLRuntimeException("Dimension mismatch - unable to cast frame '"+getInput1().getName()+"' of dimension ("+fBlock.getNumRows()+" x "+fBlock.getNumColumns()+") to scalar.");
+				Object value = fBlock.get(0,0);
+				ec.releaseFrameInput(getInput1().getName());
+				ec.setScalarOutput(output.getName(),
+						ScalarObjectFactory.createScalarObject(fBlock.getSchema()[0], value));
+			}
+			else if( getInput1().getDataType().isMatrix() ) {
+				MatrixBlock mBlock = ec.getMatrixInput(getInput1().getName(), getExtendedOpcode());
+				if( mBlock.getNumRows()!=1 || mBlock.getNumColumns()!=1 )
+					throw new DMLRuntimeException("Dimension mismatch - unable to cast matrix '"+getInput1().getName()+"' of dimension ("+mBlock.getNumRows()+" x "+mBlock.getNumColumns()+") to scalar.");
+				double value = mBlock.getValue(0,0);
+				ec.releaseMatrixInput(getInput1().getName(), getExtendedOpcode());
+				ec.setScalarOutput(output.getName(), new DoubleObject(value));
+			}
+			else if( getInput1().getDataType().isList() ) {
+				//TODO handling of cleanup status, potentially new object
+				ListObject list = (ListObject)ec.getVariable(getInput1().getName());
+				ec.setVariable(output.getName(), list.slice(0));
+			}
+			else {
+				throw new DMLRuntimeException("Unsupported data type "
+					+ "in as.scalar(): "+getInput1().getDataType().name());
+			}
+			break;
+		case CastAsMatrixVariable:{
+			if( getInput1().getDataType().isFrame() ) {
+				FrameBlock fin = ec.getFrameInput(getInput1().getName());
+				MatrixBlock out = DataConverter.convertToMatrixBlock(fin);
+				ec.releaseFrameInput(getInput1().getName());
+				ec.setMatrixOutput(output.getName(), out, getExtendedOpcode());
+			}
+			else if( getInput1().getDataType().isScalar() ) {
+				ScalarObject scalarInput = ec.getScalarInput(
+					getInput1().getName(), getInput1().getValueType(), getInput1().isLiteral());
+				MatrixBlock out = new MatrixBlock(scalarInput.getDoubleValue());
+				ec.setMatrixOutput(output.getName(), out, getExtendedOpcode());
+			}
+			else if( getInput1().getDataType().isList() ) {
+				//TODO handling of cleanup status, potentially new object
+				ListObject list = (ListObject)ec.getVariable(getInput1().getName());
+				if( list.getLength() > 1 ) {
+					if( !list.checkAllDataTypes(DataType.SCALAR) )
+						throw new DMLRuntimeException("as.matrix over multi-entry list only allows scalars.");
+					MatrixBlock out = new MatrixBlock(list.getLength(), 1, false);
+					for( int i=0; i<list.getLength(); i++ )
+						out.quickSetValue(i, 0, ((ScalarObject)list.slice(i)).getDoubleValue());
 					ec.setMatrixOutput(output.getName(), out, getExtendedOpcode());
-				} else if (getInput1().getDataType().isScalar()) {
-					ScalarObject scalarInput = ec.getScalarInput(
-							getInput1().getName(), getInput1().getValueType(), getInput1().isLiteral());
-					MatrixBlock out = new MatrixBlock(scalarInput.getDoubleValue());
-					ec.setMatrixOutput(output.getName(), out, getExtendedOpcode());
-				} else if (getInput1().getDataType().isList()) {
-					//TODO handling of cleanup status, potentially new object
-					ListObject list = (ListObject) ec.getVariable(getInput1().getName());
-					if (list.getLength() > 1) {
-						if (!list.checkAllDataTypes(DataType.SCALAR))
-							throw new DMLRuntimeException("as.matrix over multi-entry list only allows scalars.");
-						MatrixBlock out = new MatrixBlock(list.getLength(), 1, false);
-						for (int i = 0; i < list.getLength(); i++)
-							out.quickSetValue(i, 0, ((ScalarObject) list.slice(i)).getDoubleValue());
+				}
+				else {
+					//pass through matrix input or create 1x1 matrix for scalar
+					Data tmp = list.slice(0);
+					if( tmp instanceof ScalarObject && tmp.getValueType()!=ValueType.STRING ) {
+						MatrixBlock out = new MatrixBlock(((ScalarObject)tmp).getDoubleValue());
 						ec.setMatrixOutput(output.getName(), out, getExtendedOpcode());
-					} else {
-						//pass through matrix input or create 1x1 matrix for scalar
-						Data tmp = list.slice(0);
-						if (tmp instanceof ScalarObject && tmp.getValueType() != ValueType.STRING) {
-							MatrixBlock out = new MatrixBlock(((ScalarObject) tmp).getDoubleValue());
-							ec.setMatrixOutput(output.getName(), out, getExtendedOpcode());
-						} else {
-							ec.setVariable(output.getName(), tmp);
-						}
 					}
-				} else {
-					throw new DMLRuntimeException("Unsupported data type "
-							+ "in as.matrix(): " + getInput1().getDataType().name());
+					else {
+						ec.setVariable(output.getName(), tmp);
+					}
 				}
-				break;
 			}
-			case CastAsFrameVariable: {
-				FrameBlock out = null;
-				if (getInput1().getDataType() == DataType.SCALAR) {
-					ScalarObject scalarInput = ec.getScalarInput(getInput1());
-					out = new FrameBlock(1, getInput1().getValueType());
-					out.ensureAllocatedColumns(1);
-					out.set(0, 0, scalarInput.getStringValue());
-				} else { //DataType.FRAME
-					MatrixBlock min = ec.getMatrixInput(getInput1().getName(), getExtendedOpcode());
-					out = DataConverter.convertToFrameBlock(min);
-					ec.releaseMatrixInput(getInput1().getName(), getExtendedOpcode());
-				}
-				ec.setFrameOutput(output.getName(), out);
-				break;
+			else {
+				throw new DMLRuntimeException("Unsupported data type "
+					+ "in as.matrix(): "+getInput1().getDataType().name());
 			}
-			case CastAsDoubleVariable: {
-				ScalarObject in = ec.getScalarInput(getInput1());
-				ec.setScalarOutput(output.getName(), ScalarObjectFactory.castToDouble(in));
-				break;
-			}
-			case CastAsIntegerVariable: {
-				ScalarObject in = ec.getScalarInput(getInput1());
-				ec.setScalarOutput(output.getName(), ScalarObjectFactory.castToLong(in));
-				break;
-			}
-			case CastAsBooleanVariable: {
+			break;
+		}
+		case CastAsFrameVariable:{
+			FrameBlock out = null;
+			if( getInput1().getDataType()==DataType.SCALAR ) {
 				ScalarObject scalarInput = ec.getScalarInput(getInput1());
-				ec.setScalarOutput(output.getName(), new BooleanObject(scalarInput.getBooleanValue()));
-				break;
+				out = new FrameBlock(1, getInput1().getValueType());
+				out.ensureAllocatedColumns(1);
+				out.set(0, 0, scalarInput.getStringValue());
 			}
+			else { //DataType.FRAME
+				MatrixBlock min = ec.getMatrixInput(getInput1().getName(), getExtendedOpcode());
+				out = DataConverter.convertToFrameBlock(min);
+				ec.releaseMatrixInput(getInput1().getName(), getExtendedOpcode());
+			}
+			ec.setFrameOutput(output.getName(), out);
+			break;
+		}
+		case CastAsDoubleVariable:{
+			ScalarObject in = ec.getScalarInput(getInput1());
+			ec.setScalarOutput(output.getName(), ScalarObjectFactory.castToDouble(in));
+			break;
+		}
+		case CastAsIntegerVariable:{
+			ScalarObject in = ec.getScalarInput(getInput1());
+			ec.setScalarOutput(output.getName(), ScalarObjectFactory.castToLong(in));
+			break;
+		}
+		case CastAsBooleanVariable:{
+			ScalarObject scalarInput = ec.getScalarInput(getInput1());
+			ec.setScalarOutput(output.getName(), new BooleanObject(scalarInput.getBooleanValue()));
+			break;
+		}
 			
-			case Read:
-				ScalarObject res = null;
-				try {
-					switch (getInput1().getValueType()) {
-						case FP64:
-							double d = HDFSTool.readDoubleFromHDFSFile(getInput2().getName());
-							res = (ScalarObject) new DoubleObject(d);
-							break;
-						case INT64:
-							long i = HDFSTool.readIntegerFromHDFSFile(getInput2().getName());
-							res = (ScalarObject) new IntObject(i);
-							break;
-						case BOOLEAN:
-							boolean b = HDFSTool.readBooleanFromHDFSFile(getInput2().getName());
-							res = (ScalarObject) new BooleanObject(b);
-							break;
-						case STRING:
-							String s = HDFSTool.readStringFromHDFSFile(getInput2().getName());
-							res = (ScalarObject) new StringObject(s);
-							break;
-						default:
-							throw new DMLRuntimeException("Invalid value type (" + getInput1().getValueType() + ") while processing readScalar instruction.");
-					}
-				} catch (IOException e) {
-					throw new DMLRuntimeException(e);
+		case Read:
+			ScalarObject res = null;
+			try {
+				switch(getInput1().getValueType()) {
+				case FP64:
+					double d = HDFSTool.readDoubleFromHDFSFile(getInput2().getName());
+					res = (ScalarObject) new DoubleObject(d);
+					break;
+				case INT64:
+					long i = HDFSTool.readIntegerFromHDFSFile(getInput2().getName());
+					res = (ScalarObject) new IntObject(i);
+					break;
+				case BOOLEAN:
+					boolean b = HDFSTool.readBooleanFromHDFSFile(getInput2().getName());
+					res = (ScalarObject) new BooleanObject(b);
+					break;
+				case STRING:
+					String s = HDFSTool.readStringFromHDFSFile(getInput2().getName());
+					res = (ScalarObject) new StringObject(s);
+					break;
+					default:
+						throw new DMLRuntimeException("Invalid value type (" + getInput1().getValueType() + ") while processing readScalar instruction.");
 				}
-				ec.setScalarOutput(getInput1().getName(), res);
-				
-				break;
+			} catch ( IOException e ) {
+				throw new DMLRuntimeException(e);
+			}
+			ec.setScalarOutput(getInput1().getName(), res);
 			
-			case Write:
-				processWriteInstruction(ec);
-				break;
+			break;
 			
-			case SetFileName:
-				Data data = ec.getVariable(getInput1().getName());
-				if (data.getDataType() == DataType.MATRIX) {
-					if (getInput3().getName().equalsIgnoreCase("remote")) {
-						((MatrixObject) data).setFileName(getInput2().getName());
-					} else {
-						throw new DMLRuntimeException("Invalid location (" + getInput3().getName() + ") in SetFileName instruction: " + instString);
-					}
-				} else {
-					throw new DMLRuntimeException("Invalid data type (" + getInput1().getDataType() + ") in SetFileName instruction: " + instString);
+		case Write:
+			processWriteInstruction(ec);
+			break;
+			
+		case SetFileName:
+			Data data = ec.getVariable(getInput1().getName());
+			if ( data.getDataType() == DataType.MATRIX ) {
+				if ( getInput3().getName().equalsIgnoreCase("remote") ) {
+					((MatrixObject)data).setFileName(getInput2().getName());
 				}
-				break;
-			
-			default:
-				throw new DMLRuntimeException("Unknown opcode: " + opcode);
+				else {
+					throw new DMLRuntimeException("Invalid location (" + getInput3().getName() + ") in SetFileName instruction: " + instString);
+				}
+			} else{
+				throw new DMLRuntimeException("Invalid data type (" + getInput1().getDataType() + ") in SetFileName instruction: " + instString);
+			}
+			break;
+	
+		default:
+			throw new DMLRuntimeException("Unknown opcode: " + opcode );
 		}
 	}
 	
@@ -709,48 +733,51 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 	@SuppressWarnings("rawtypes")
 	private void processMoveInstruction(ExecutionContext ec) {
 		
-		if (getInput3() == null) {
+		if ( getInput3() == null ) {
 			// example: mvvar tempA A
 			
 			// get source variable 
 			Data srcData = ec.getVariable(getInput1().getName());
 			
-			if (srcData == null) {
+			if ( srcData == null ) {
 				throw new DMLRuntimeException("Unexpected error: could not find a data object "
-						+ "for variable name:" + getInput1().getName() + ", while processing instruction ");
+					+ "for variable name:" + getInput1().getName() + ", while processing instruction ");
 			}
 			
-			if (getInput2().getDataType().isMatrix() || getInput2().getDataType().isFrame()) {
+			if( getInput2().getDataType().isMatrix() || getInput2().getDataType().isFrame() ) {
 				// remove existing variable bound to target name
 				Data tgt = ec.removeVariable(getInput2().getName());
 				
 				//cleanup matrix data on fs/hdfs (if necessary)
-				if (tgt != null)
+				if( tgt != null )
 					ec.cleanupDataObject(tgt);
 			}
 			
 			// do the actual move
 			ec.setVariable(getInput2().getName(), srcData);
 			ec.removeVariable(getInput1().getName());
-		} else {
+		}
+		else {
 			// example instruction: mvvar <srcVar> <destFile> <format>
-			if (ec.getVariable(getInput1().getName()) == null)
-				throw new DMLRuntimeException("Unexpected error: could not find a data object for variable name:" + getInput1().getName() + ", while processing instruction " + this.toString());
+			if ( ec.getVariable(getInput1().getName()) == null )
+				throw new DMLRuntimeException("Unexpected error: could not find a data object for variable name:" + getInput1().getName() + ", while processing instruction " +this.toString());
 			
 			Object object = ec.getVariable(getInput1().getName());
 			
-			if (getInput3().getName().equalsIgnoreCase("binaryblock")) {
+			if ( getInput3().getName().equalsIgnoreCase("binaryblock") ) {
 				boolean success = false;
-				success = ((CacheableData) object).moveData(getInput2().getName(), getInput3().getName());
+				success = ((CacheableData)object).moveData(getInput2().getName(), getInput3().getName());
 				if (!success) {
 					throw new DMLRuntimeException("Failed to move var " + getInput1().getName() + " to file " + getInput2().getName() + ".");
 				}
-			} else if (object instanceof MatrixObject)
-				throw new DMLRuntimeException("Unexpected formats while copying: from matrix blocks ["
-						+ ((MatrixObject) object).getNumRowsPerBlock() + "," + ((MatrixObject) object).getNumColumnsPerBlock() + "] to " + getInput3().getName());
-			else if (object instanceof FrameObject)
-				throw new DMLRuntimeException("Unexpected formats while copying: from fram object ["
-						+ ((FrameObject) object).getNumColumns() + "," + ((FrameObject) object).getNumColumns() + "] to " + getInput3().getName());
+			}
+			else
+				if(object instanceof MatrixObject)
+					throw new DMLRuntimeException("Unexpected formats while copying: from matrix blocks ["
+							+ ((MatrixObject)object).getNumRowsPerBlock() + "," + ((MatrixObject)object).getNumColumnsPerBlock() + "] to " + getInput3().getName());
+				else if (object instanceof FrameObject)
+					throw new DMLRuntimeException("Unexpected formats while copying: from fram object ["
+							+ ((FrameObject)object).getNumColumns() + "," + ((FrameObject)object).getNumColumns() + "] to " + getInput3().getName());
 		}
 	}
 	
@@ -764,14 +791,14 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 		// get source variable 
 		Data dd = ec.getVariable(getInput1().getName());
 		
-		if (dd == null)
-			throw new DMLRuntimeException("Unexpected error: could not find a data object for variable name:" + getInput1().getName() + ", while processing instruction " + this.toString());
-		
+		if ( dd == null )
+			throw new DMLRuntimeException("Unexpected error: could not find a data object for variable name:" + getInput1().getName() + ", while processing instruction " +this.toString());
+			
 		// remove existing variable bound to target name
 		Data input2_data = ec.removeVariable(getInput2().getName());
 		
 		//cleanup matrix data on fs/hdfs (if necessary)
-		if (input2_data != null)
+		if( input2_data != null )
 			ec.cleanupDataObject(input2_data);
 		
 		// do the actual copy!
@@ -780,7 +807,7 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 	
 	/**
 	 * Handler for write instructions.
-	 * <p>
+	 *
 	 * Non-native formats like MM and CSV are handled through specialized helper functions.
 	 * The default behavior is to write out the specified matrix from the instruction, in
 	 * the format given by the corresponding symbol table entry.
@@ -793,20 +820,22 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 		String desc = ec.getScalarInput(getInput4().getName(), ValueType.STRING, getInput4().isLiteral()).getStringValue();
 		_formatProperties.setDescription(desc);
 		
-		if (getInput1().getDataType() == DataType.SCALAR) {
+		if( getInput1().getDataType() == DataType.SCALAR ) {
 			writeScalarToHDFS(ec, fname);
-		} else if (getInput1().getDataType() == DataType.MATRIX) {
+		}
+		else if( getInput1().getDataType() == DataType.MATRIX ) {
 			String outFmt = getInput3().getName();
 			if (outFmt.equalsIgnoreCase("matrixmarket"))
 				writeMMFile(ec, fname);
-			else if (outFmt.equalsIgnoreCase("csv"))
+			else if (outFmt.equalsIgnoreCase("csv") )
 				writeCSVFile(ec, fname);
 			else {
 				// Default behavior
 				MatrixObject mo = ec.getMatrixObject(getInput1().getName());
 				mo.exportData(fname, outFmt, _formatProperties);
 			}
-		} else if (getInput1().getDataType() == DataType.FRAME) {
+		}
+		else if( getInput1().getDataType() == DataType.FRAME ) {
 			String outFmt = getInput3().getName();
 			FrameObject mo = ec.getFrameObject(getInput1().getName());
 			mo.exportData(fname, outFmt, _formatProperties);
@@ -817,46 +846,49 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 	 * Remove variable instruction externalized as a static function in order to allow various
 	 * cleanup procedures to use the same codepath as the actual rmVar instruction
 	 *
-	 * @param ec      execution context
+	 * @param ec execution context
 	 * @param varname variable name
 	 */
-	public static void processRemoveVariableInstruction(ExecutionContext ec, String varname) {
+	public static void processRemoveVariableInstruction( ExecutionContext ec, String varname ) {
 		// remove variable from symbol table
 		Data dat = ec.removeVariable(varname);
 		//cleanup matrix data on fs/hdfs (if necessary)
-		if (dat != null)
+		if( dat != null )
 			ec.cleanupDataObject(dat);
 	}
 	
 	/**
 	 * Helper function to write CSV files to HDFS.
 	 *
-	 * @param ec    execution context
+	 * @param ec execution context
 	 * @param fname file name
 	 */
 	private void writeCSVFile(ExecutionContext ec, String fname) {
 		MatrixObject mo = ec.getMatrixObject(getInput1().getName());
 		String outFmt = "csv";
 		
-		if (mo.isDirty()) {
+		if(mo.isDirty()) {
 			// there exist data computed in CP that is not backed up on HDFS
 			// i.e., it is either in-memory or in evicted space
 			mo.exportData(fname, outFmt, _formatProperties);
-		} else {
+		}
+		else {
 			try {
-				OutputInfo oi = ((MetaDataFormat) mo.getMetaData()).getOutputInfo();
-				MatrixCharacteristics mc = ((MetaDataFormat) mo.getMetaData()).getMatrixCharacteristics();
-				if (oi == OutputInfo.CSVOutputInfo) {
-					WriterTextCSV writer = new WriterTextCSV((FileFormatPropertiesCSV) _formatProperties);
+				OutputInfo oi = ((MetaDataFormat)mo.getMetaData()).getOutputInfo();
+				MatrixCharacteristics mc = ((MetaDataFormat)mo.getMetaData()).getMatrixCharacteristics();
+				if(oi == OutputInfo.CSVOutputInfo) {
+					WriterTextCSV writer = new WriterTextCSV((FileFormatPropertiesCSV)_formatProperties);
 					writer.addHeaderToCSV(mo.getFileName(), fname, mc.getRows(), mc.getCols());
-				} else if (oi == OutputInfo.BinaryBlockOutputInfo || oi == OutputInfo.TextCellOutputInfo) {
+				}
+				else if ( oi == OutputInfo.BinaryBlockOutputInfo || oi == OutputInfo.TextCellOutputInfo ) {
 					mo.exportData(fname, outFmt, _formatProperties);
-				} else {
+				}
+				else {
 					throw new DMLRuntimeException("Unexpected data format (" + OutputInfo.outputInfoToString(oi) + "): can not export into CSV format.");
 				}
 				
 				// Write Metadata file
-				HDFSTool.writeMetaDataFile(fname + ".mtd", mo.getValueType(), mc, OutputInfo.CSVOutputInfo, _formatProperties);
+				HDFSTool.writeMetaDataFile (fname + ".mtd", mo.getValueType(), mc, OutputInfo.CSVOutputInfo, _formatProperties);
 			} catch (IOException e) {
 				throw new DMLRuntimeException(e);
 			}
@@ -866,53 +898,55 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 	/**
 	 * Helper function to write MM files to HDFS.
 	 *
-	 * @param ec    execution context
+	 * @param ec execution context
 	 * @param fname file name
 	 */
 	private void writeMMFile(ExecutionContext ec, String fname) {
 		MatrixObject mo = ec.getMatrixObject(getInput1().getName());
 		String outFmt = "matrixmarket";
-		if (mo.isDirty()) {
+		if(mo.isDirty()) {
 			// there exist data computed in CP that is not backed up on HDFS
 			// i.e., it is either in-memory or in evicted space
 			mo.exportData(fname, outFmt);
-		} else {
-			OutputInfo oi = ((MetaDataFormat) mo.getMetaData()).getOutputInfo();
+		}
+		else {
+			OutputInfo oi = ((MetaDataFormat)mo.getMetaData()).getOutputInfo();
 			MatrixCharacteristics mc = mo.getMatrixCharacteristics();
-			if (oi == OutputInfo.TextCellOutputInfo) {
+			if(oi == OutputInfo.TextCellOutputInfo) {
 				try {
 					WriterMatrixMarket.mergeTextcellToMatrixMarket(mo.getFileName(),
-							fname, mc.getRows(), mc.getCols(), mc.getNonZeros());
+						fname, mc.getRows(), mc.getCols(), mc.getNonZeros());
 				} catch (IOException e) {
 					throw new DMLRuntimeException(e);
 				}
-			} else if (oi == OutputInfo.BinaryBlockOutputInfo) {
+			}
+			else if ( oi == OutputInfo.BinaryBlockOutputInfo) {
 				mo.exportData(fname, outFmt);
-			} else {
+			}
+			else {
 				throw new DMLRuntimeException("Unexpected data format (" + OutputInfo.outputInfoToString(oi) + "): can not export into MatrixMarket format.");
 			}
 		}
 	}
-	
 	/**
 	 * Helper function to write scalars to HDFS based on its value type.
 	 *
-	 * @param ec    execution context
+	 * @param ec execution context
 	 * @param fname file name
 	 */
 	private void writeScalarToHDFS(ExecutionContext ec, String fname) {
 		try {
 			ScalarObject scalar = ec.getScalarInput(getInput1());
 			HDFSTool.writeObjectToHDFS(scalar.getValue(), fname);
-			HDFSTool.writeScalarMetaDataFile(fname + ".mtd", getInput1().getValueType());
-			
+			HDFSTool.writeScalarMetaDataFile(fname +".mtd", getInput1().getValueType());
+
 			FileSystem fs = IOUtilFunctions.getFileSystem(fname);
 			if (fs instanceof LocalFileSystem) {
 				Path path = new Path(fname);
 				IOUtilFunctions.deleteCrcFilesFromLocalFileSystem(fs, path);
 			}
-			
-		} catch (IOException e) {
+
+		} catch ( IOException e ) {
 			throw new DMLRuntimeException(e);
 		}
 	}
@@ -934,7 +968,7 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 		sb.append("CP");
 		sb.append(Lop.OPERAND_DELIMITOR);
 		sb.append("rmvar");
-		for (String varName : varNames) {
+		for( String varName : varNames ) {
 			sb.append(Lop.OPERAND_DELIMITOR);
 			sb.append(varName);
 		}
@@ -986,7 +1020,7 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 		//note: the filename override property leads to concatenation of unique ids in order to 
 		//ensure conflicting filenames for objects that originate from the same instruction
 		boolean lfNameOverride = fNameOverride && !ConfigurationManager
-				.getCompilerConfigFlag(ConfigType.IGNORE_TEMPORARY_FILENAMES);
+			.getCompilerConfigFlag(ConfigType.IGNORE_TEMPORARY_FILENAMES);
 		
 		StringBuilder sb = new StringBuilder();
 		sb.append("CP");
@@ -995,8 +1029,8 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 		sb.append(Lop.OPERAND_DELIMITOR);
 		sb.append(varName);
 		sb.append(Lop.OPERAND_DELIMITOR);
-		sb.append(fileName);        // Constant CREATEVAR_FILE_NAME_VAR_POS is used to find a position of filename within a string generated through this function.
-		// If this position of filename within this string changes then constant CREATEVAR_FILE_NAME_VAR_POS to be updated.
+		sb.append(fileName);		// Constant CREATEVAR_FILE_NAME_VAR_POS is used to find a position of filename within a string generated through this function.
+									// If this position of filename within this string changes then constant CREATEVAR_FILE_NAME_VAR_POS to be updated.
 		sb.append(Lop.OPERAND_DELIMITOR);
 		sb.append(lfNameOverride);
 		sb.append(Lop.OPERAND_DELIMITOR);
@@ -1009,7 +1043,7 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 	public static Instruction prepareCreateMatrixVariableInstruction(String varName, String fileName, boolean fNameOverride, String format) {
 		return parseInstruction(getBasicCreateVarString(varName, fileName, fNameOverride, DataType.MATRIX, format));
 	}
-	
+
 	public static Instruction prepareCreateVariableInstruction(String varName, String fileName, boolean fNameOverride, DataType dt, String format, MatrixCharacteristics mc, UpdateType update) {
 		StringBuilder sb = new StringBuilder();
 		sb.append(getBasicCreateVarString(varName, fileName, fNameOverride, dt, format));
@@ -1028,7 +1062,7 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 		sb.append(update.toString().toLowerCase());
 		
 		String str = sb.toString();
-		
+
 		return parseInstruction(str);
 	}
 	
@@ -1057,27 +1091,28 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 		sb.append(sparse);
 		
 		String str = sb.toString();
-		
+
 		return parseInstruction(str);
 	}
 	
 	@Override
 	public void updateInstructionThreadID(String pattern, String replace) {
-		if (opcode == VariableOperationCode.CreateVariable
-				|| opcode == VariableOperationCode.SetFileName) {
+		if(    opcode == VariableOperationCode.CreateVariable
+			|| opcode == VariableOperationCode.SetFileName )
+		{
 			//replace in-memory instruction
 			getInput2().setName(getInput2().getName().replaceAll(pattern, replace));
-			
+
 			// Find a start position of file name string.
 			int iPos = StringUtils.ordinalIndexOf(instString, Lop.OPERAND_DELIMITOR, CREATEVAR_FILE_NAME_VAR_POS);
 			// Find a end position of file name string.
-			int iPos2 = StringUtils.indexOf(instString, Lop.OPERAND_DELIMITOR, iPos + 1);
+			int iPos2 = StringUtils.indexOf(instString, Lop.OPERAND_DELIMITOR, iPos+1);
 			
 			StringBuilder sb = new StringBuilder();
-			sb.append(instString.substring(0, iPos + 1));            // It takes first part before file name.
+			sb.append(instString.substring(0,iPos+1));			// It takes first part before file name.
 			// This will replace 'pattern' with 'replace' string from file name.
-			sb.append(ProgramConverter.saveReplaceFilenameThreadID(instString.substring(iPos + 1, iPos2 + 1), pattern, replace));
-			sb.append(instString.substring(iPos2 + 1));            // It takes last part after file name.
+			sb.append(ProgramConverter.saveReplaceFilenameThreadID(instString.substring(iPos+1, iPos2+1), pattern, replace));
+			sb.append(instString.substring(iPos2+1));			// It takes last part after file name.
 			
 			instString = sb.toString();
 		}
@@ -1129,10 +1164,10 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 	
 	public boolean isVariableCastInstruction() {
 		return opcode == VariableOperationCode.CastAsScalarVariable
-				|| opcode == VariableOperationCode.CastAsMatrixVariable
-				|| opcode == VariableOperationCode.CastAsFrameVariable
-				|| opcode == VariableOperationCode.CastAsIntegerVariable
-				|| opcode == VariableOperationCode.CastAsDoubleVariable
-				|| opcode == VariableOperationCode.CastAsBooleanVariable;
+			|| opcode == VariableOperationCode.CastAsMatrixVariable
+			|| opcode == VariableOperationCode.CastAsFrameVariable
+			|| opcode == VariableOperationCode.CastAsIntegerVariable
+			|| opcode == VariableOperationCode.CastAsDoubleVariable
+			|| opcode == VariableOperationCode.CastAsBooleanVariable;
 	}
 }

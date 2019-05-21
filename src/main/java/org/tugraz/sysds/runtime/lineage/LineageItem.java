@@ -49,6 +49,8 @@ public class LineageItem {
 	public LineageItem(String name, String data, String opcode) { this(_idSeq.getNextID(), name, data, opcode, null); }
 	
 	public LineageItem(String name, String opcode, List<LineageItem> inputs) { this(_idSeq.getNextID(), name, "", opcode, inputs); }
+
+	public LineageItem(String name, String data, String opcode, List<LineageItem> inputs) { this(_idSeq.getNextID(), name, data, opcode, inputs); }
 	
 	public LineageItem(long id, String name, String data, String opcode, List<LineageItem> inputs) {
 		_id = id;
