@@ -48,20 +48,15 @@ public class Lineage {
 	}
 	
 	public static boolean contains(CPOperand variable) {
-		boolean ret = false;
-		if (_initDedupBlock != null)
-			ret = _initDedupBlock.getActiveMap().containsKey(variable.getName());
-		ret |= _globalLineages.containsKey(variable.getName());
-		return ret;
+		return _initDedupBlock != null ?
+				_initDedupBlock.getActiveMap().containsKey(variable.getName()) :
+				_globalLineages.containsKey(variable.getName());
 	}
 	
 	public static LineageItem get(CPOperand variable) {
-		LineageItem li = null;
-		if (_initDedupBlock != null)
-			li = _initDedupBlock.getActiveMap().get(variable);
-		if (li == null)
-			li = _globalLineages.get(variable);
-		return li;
+		return _initDedupBlock != null ?
+				_initDedupBlock.getActiveMap().get(variable) :
+				_globalLineages.get(variable);
 	}
 	
 	public static void setInitDedupBlock(LineageDedupBlock ldb) {
@@ -70,11 +65,11 @@ public class Lineage {
 	
 	public static void computeDedupBlock(ForProgramBlock fpb, ExecutionContext ec) {
 		_activeDedupBlock = LineageDedupUtils.computeDistinctPaths(fpb, ec);
-		ec.initLastBranch();
+		ec.getLineagePath().initLastBranch();
 	}
 	
 	public static void clearDedupBlock(ExecutionContext ec) {
 		_activeDedupBlock = null;
-		ec.removeLastBranch();
+		ec.getLineagePath().removeLastBranch();
 	}
 }

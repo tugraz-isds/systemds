@@ -21,7 +21,6 @@ package org.tugraz.sysds.runtime.controlprogram.context;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.BitSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -44,6 +43,7 @@ import org.tugraz.sysds.runtime.instructions.cp.ScalarObject;
 import org.tugraz.sysds.runtime.instructions.cp.ScalarObjectFactory;
 import org.tugraz.sysds.runtime.instructions.gpu.context.GPUContext;
 import org.tugraz.sysds.runtime.instructions.gpu.context.GPUObject;
+import org.tugraz.sysds.runtime.lineage.LineagePath;
 import org.tugraz.sysds.runtime.matrix.data.FrameBlock;
 import org.tugraz.sysds.runtime.matrix.data.InputInfo;
 import org.tugraz.sysds.runtime.matrix.data.MatrixBlock;
@@ -70,8 +70,7 @@ public class ExecutionContext {
 	 * List of {@link GPUContext}s owned by this {@link ExecutionContext}
 	 */
 	protected List<GPUContext> _gpuContexts = new ArrayList<>();
-	protected BitSet _lastBranch = null;
-	protected int _branchCounter = 0;
+	protected LineagePath _lineagePath = new LineagePath();
 	
 	protected ExecutionContext()
 	{
@@ -86,6 +85,10 @@ public class ExecutionContext {
 		else
 			_variables = null;
 		_prog = prog;
+	}
+	
+	public LineagePath getLineagePath(){
+		return _lineagePath;
 	}
 	
 	public Program getProgram(){
@@ -653,38 +656,5 @@ public class ExecutionContext {
 		catch(Exception ex) {
 			throw new DMLRuntimeException(ex);
 		}
-	}
-	
-	public void initLastBranch(){
-		_lastBranch = new BitSet();
-		_branchCounter = 0;
-	}
-	
-	public void removeLastBranch(){
-		_lastBranch = null;
-		_branchCounter = 0;
-	}
-	
-	public void clearLastBranch(){
-		if (_lastBranch != null)
-			_lastBranch.clear();
-		_branchCounter = 0;
-	}
-	
-	public void setBranchPredicateValue(Boolean value){
-		if (_lastBranch != null){
-			if (value)
-				_lastBranch.set(_branchCounter);
-			_branchCounter++;
-		}
-	}
-	
-	public Long getLastBranch(){
-		if (_lastBranch != null)
-			if (_lastBranch.toLongArray().length == 1)
-				return _lastBranch.toLongArray()[0];
-			else
-				return 0L;
-		return 0L;
 	}
 }

@@ -13,7 +13,7 @@ public class LineageDedupUtils {
 		for (ProgramBlock pb : fpb.getChildBlocks()) {
 			//TODO: This kind of type checking is very bad!!!
 			if (pb instanceof WhileProgramBlock || pb instanceof FunctionProgramBlock || pb instanceof ForProgramBlock)
-				throw new DMLRuntimeException("Deduplication is not supported for nested while for or function calls!");
+				throw new DMLRuntimeException("Deduplication is not supported for nested while, for, or function calls!");
 
 			if (pb instanceof IfProgramBlock)
 				ldb.traceIfProgramBlock((IfProgramBlock) pb, ec);

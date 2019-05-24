@@ -29,53 +29,46 @@ public class LineageDedupBlock {
 		addPathsForBranch();
 		traceElseBodyInstructions(ipb, ec);
 		traceIfBodyInstructions(ipb, ec);
+		_activePath = null;
+		
 	}
 	
 	public void traceProgramBlock(ProgramBlock pb, ExecutionContext ec) {
 		if (_distinctPaths.size() == 0)
 			_distinctPaths.put(0L, new LineageMap());
-		
-		traceInstructions(pb, ec);
-	}
-	
-	private void traceInstructions(ProgramBlock pb, ExecutionContext ec) {
-		for (Map.Entry<Long, LineageMap> entry : _distinctPaths.entrySet()) {
-			for (Instruction inst : pb.getInstructions()) {
-				_activePath = entry.getKey();
-				entry.getValue().trace(inst, ec);
-			}
-		}
+		for (Map.Entry<Long, LineageMap> entry : _distinctPaths.entrySet())
+			traceInstructions(pb, ec, entry);
 		_activePath = null;
 	}
 	
 	private void traceIfBodyInstructions(IfProgramBlock ipb, ExecutionContext ec) {
 		// Add IfBody instructions to lower half of LineageMaps
-		if (ipb.getChildBlocksIfBody() != null && ipb.getChildBlocksIfBody().size() == 1) {
-			for (Map.Entry<Long, LineageMap> entry : _distinctPaths.entrySet()) {
-				if (entry.getKey() >= _branches) {
-					for (Instruction inst : ipb.getChildBlocksIfBody().get(0).getInstructions()) {
-						_activePath = entry.getKey();
-						entry.getValue().trace(inst, ec);
-					}
-				}
-			}
-		}
+		for (Map.Entry<Long, LineageMap> entry : _distinctPaths.entrySet())
+			if (entry.getKey() >= _branches)
+				for (ProgramBlock pb : ipb.getChildBlocksIfBody())
+					traceInstructions(pb, ec, entry);
 	}
 	
 	private void traceElseBodyInstructions(IfProgramBlock ipb, ExecutionContext ec) {
 		// Add ElseBody instructions to upper half of LineageMaps
-		if (ipb.getChildBlocksElseBody() != null && ipb.getChildBlocksElseBody().size() == 1) {
-			for (Map.Entry<Long, LineageMap> entry : _distinctPaths.entrySet()) {
-				if (entry.getKey() < _branches) {
-					for (Instruction inst : ipb.getChildBlocksElseBody().get(0).getInstructions()) {
-						_activePath = entry.getKey();
-						entry.getValue().trace(inst, ec);
-					}
-				} else
-					break;
-			}
+		for (Map.Entry<Long, LineageMap> entry : _distinctPaths.entrySet()) {
+			if (entry.getKey() < _branches)
+				for (ProgramBlock pb : ipb.getChildBlocksElseBody())
+					traceInstructions(pb, ec, entry);
+			else
+				break;
 		}
-		_activePath = null;
+	}
+	
+	private void traceInstructions(ProgramBlock pb, ExecutionContext ec, Map.Entry<Long, LineageMap> entry) {
+		//TODO: This kind of type checking is very bad!!!
+		if (pb instanceof WhileProgramBlock || pb instanceof FunctionProgramBlock || pb instanceof ForProgramBlock || pb instanceof IfProgramBlock)
+			throw new DMLRuntimeException("Only ProgramBLocks are allowed inside an LineageDedupBlock!");
+		
+		for (Instruction inst : pb.getInstructions()) {
+			_activePath = entry.getKey();
+			entry.getValue().trace(inst, ec);
+		}
 	}
 	
 	private void addPathsForBranch() {

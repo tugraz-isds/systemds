@@ -127,7 +127,7 @@ public class ForProgramBlock extends ProgramBlock
 			for( IntObject iterVar : seqIter ) 
 			{
 				if (DMLScript.LINEAGE_DEDUP)
-					ec.clearLastBranch();
+					ec.getLineagePath().clearLastBranch();
 				
 				//set iteration variable
 				ec.setVariable(_iterPredVar, iterVar); 
@@ -138,7 +138,7 @@ public class ForProgramBlock extends ProgramBlock
 				}
 				
 				if (DMLScript.LINEAGE_DEDUP)
-					Lineage.traceBranch(ec.getLastBranch());
+					Lineage.traceBranch(ec.getLineagePath().getLastBranch());
 			}
 			
 			// clear current LineageDedupBlock
