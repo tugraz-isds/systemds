@@ -24,9 +24,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.List;
 import java.util.Map.Entry;
 
-import org.tugraz.sysds.api.DMLScript;
 import org.tugraz.sysds.hops.Hop;
 import org.tugraz.sysds.hops.LiteralOp;
 import org.tugraz.sysds.hops.OptimizerUtils;
@@ -62,7 +62,6 @@ import org.tugraz.sysds.runtime.instructions.spark.CSVReblockSPInstruction;
 import org.tugraz.sysds.runtime.instructions.spark.ReblockSPInstruction;
 import org.tugraz.sysds.runtime.instructions.spark.SPInstruction;
 import org.tugraz.sysds.runtime.lineage.LineageItem;
-import org.tugraz.sysds.runtime.lineage.LineageItemUtils;
 
 public class Explain
 {
