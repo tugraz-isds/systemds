@@ -138,7 +138,7 @@ public class ForProgramBlock extends ProgramBlock
 				}
 				
 				if (DMLScript.LINEAGE_DEDUP)
-					Lineage.traceBranch(ec.getLineagePath().getLastBranch());
+					Lineage.tracePath(ec.getLineagePath().getLastBranch());
 			}
 			
 			// clear current LineageDedupBlock

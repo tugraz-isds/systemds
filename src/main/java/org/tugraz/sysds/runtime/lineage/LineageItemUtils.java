@@ -17,6 +17,11 @@
 
 package org.tugraz.sysds.runtime.lineage;
 
+import org.apache.commons.lang.NotImplementedException;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocalFileSystem;
+import org.apache.hadoop.fs.Path;
+import org.tugraz.sysds.runtime.io.IOUtilFunctions;
 import org.tugraz.sysds.runtime.lineage.LineageItem.LineageItemType;
 import org.tugraz.sysds.common.Types.DataType;
 import org.tugraz.sysds.common.Types.ValueType;
@@ -47,7 +52,10 @@ import org.tugraz.sysds.runtime.instructions.cp.ScalarObjectFactory;
 import org.tugraz.sysds.runtime.instructions.cp.VariableCPInstruction;
 import org.tugraz.sysds.runtime.instructions.spark.SPInstruction.SPType;
 import org.tugraz.sysds.runtime.instructions.cp.CPInstruction.CPType;
+import org.tugraz.sysds.runtime.util.HDFSTool;
+import org.tugraz.sysds.utils.Explain;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -102,7 +110,11 @@ public class LineageItemUtils {
 		if (li.isLeaf()) {
 			sb.append(li.getData()).append(" ");
 		} else {
-			sb.append(li.getOpcode()).append(" ");
+			if (li.getType() == LineageItemType.Dedup)
+				sb.append(li.getOpcode()).append(li.getData()).append(" ");
+			else
+				sb.append(li.getOpcode()).append(" ");
+			
 			String ids = li.getInputs().stream()
 					.map(i -> String.format("(%d)", i.getId()))
 					.collect(Collectors.joining(" "));
@@ -232,6 +244,9 @@ public class LineageItemUtils {
 						.createLiteralOp(op.getValueType(), op.getName()));
 				break;
 			}
+			case Dedup: {
+				throw new NotImplementedException();
+			}
 		}
 		
 		item.setVisited();
@@ -276,6 +291,20 @@ public class LineageItemUtils {
 		}
 	}
 	
+	public static void writeTraceToDisk(String trace, String fname) {
+		try {
+			HDFSTool.writeStringToHDFS(trace, fname);
+			FileSystem fs = IOUtilFunctions.getFileSystem(fname);
+			if (fs instanceof LocalFileSystem) {
+				Path path = new Path(fname);
+				IOUtilFunctions.deleteCrcFilesFromLocalFileSystem(fs, path);
+			}
+			
+		} catch (IOException e) {
+			throw new DMLRuntimeException(e);
+		}
+	}
+	
 	private static void rSetDedupInputOntoOutput(String name, LineageItem item, LineageItem dedupInput) {
 		if (item.isVisited())
 			return;
@@ -284,7 +313,7 @@ public class LineageItemUtils {
 			for (int i = 0; i < item.getInputs().size(); i++) {
 				LineageItem li = item.getInputs().get(i);
 				
-				if (li.getName().equals(name)){
+				if (li.getName().equals(name)) {
 					item.getInputs().set(i, dedupInput);
 					dedupInput.getOutputs().add(item);
 				}

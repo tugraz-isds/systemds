@@ -1,19 +1,14 @@
 package org.tugraz.sysds.runtime.lineage;
 
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.LocalFileSystem;
-import org.apache.hadoop.fs.Path;
+import org.tugraz.sysds.api.DMLScript;
 import org.tugraz.sysds.common.Types;
 import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.controlprogram.context.ExecutionContext;
 import org.tugraz.sysds.runtime.instructions.Instruction;
 import org.tugraz.sysds.runtime.instructions.cp.CPOperand;
 import org.tugraz.sysds.runtime.instructions.cp.VariableCPInstruction;
-import org.tugraz.sysds.runtime.io.IOUtilFunctions;
-import org.tugraz.sysds.runtime.util.HDFSTool;
 import org.tugraz.sysds.utils.Explain;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -73,13 +68,13 @@ public class LineageMap {
 			addLineageItem(li);
 	}
 	
-	public void processDedupItem(LineageMap lm) {
+	public void processDedupItem(LineageMap lm, Long path) {
 		for (Map.Entry<String, LineageItem> entry : lm._traces.entrySet()) {
 			if (_traces.containsKey(entry.getKey())) {
 				ArrayList<LineageItem> list = new ArrayList<>();
 				list.add(_traces.get(entry.getKey()));
 				list.add(entry.getValue());
-				addLineageItem(new LineageItem(entry.getKey(),  LineageItem.dedupItemOpcode, list));
+				addLineageItem(new LineageItem(entry.getKey(), path.toString(), LineageItem.dedupItemOpcode, list));
 			}
 		}
 	}
@@ -134,21 +129,14 @@ public class LineageMap {
 	}
 	
 	private void processWriteLI(VariableCPInstruction inst, ExecutionContext ec) {
-		String desc = Explain.explain(get(inst.getInput1()));
-		String fname = ec.getScalarInput(inst.getInput2().getName(), Types.ValueType.STRING, inst.getInput2().isLiteral()).getStringValue();
-		fname += ".lineage";
+		LineageItem li = get(inst.getInput1());
+		String fName = ec.getScalarInput(inst.getInput2().getName(), Types.ValueType.STRING, inst.getInput2().isLiteral()).getStringValue();
 		
-		try {
-			HDFSTool.writeStringToHDFS(desc, fname);
-			FileSystem fs = IOUtilFunctions.getFileSystem(fname);
-			if (fs instanceof LocalFileSystem) {
-				Path path = new Path(fname);
-				IOUtilFunctions.deleteCrcFilesFromLocalFileSystem(fs, path);
-			}
-			
-		} catch (IOException e) {
-			throw new DMLRuntimeException(e);
+		if (DMLScript.LINEAGE_DEDUP) {
+			LineageItemUtils.writeTraceToDisk(Explain.explain(li), fName + ".lineage.dedup");
+			li = LineageItemUtils.rDecompress(li);
 		}
+		LineageItemUtils.writeTraceToDisk(Explain.explain(li), fName + ".lineage");
 	}
 	
 	private void processMoveLI(LineageItem li) {

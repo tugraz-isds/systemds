@@ -35,9 +35,9 @@ public class Lineage {
 			_globalLineages.trace(inst, ec);
 	}
 	
-	public static void traceBranch(Long path) {
+	public static void tracePath(Long path) {
 		LineageMap lm = _activeDedupBlock.getMap(path);
-		_globalLineages.processDedupItem(lm);
+		_globalLineages.processDedupItem(lm, path);
 	}
 	
 	public static LineageItem getOrCreate(CPOperand variable) {
