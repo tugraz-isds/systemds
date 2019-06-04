@@ -299,8 +299,9 @@ public class DataGenOp extends MultiThreadedHop
 		
 		//always force string initialization into CP (not supported in MR)
 		//similarly, sample is currently not supported in MR either
-		if( _op == DataGenMethod.SINIT )
+		if( _op == DataGenMethod.SINIT || _op == DataGenMethod.TIME ) {
 			_etype = ExecType.CP;
+		}
 		
 		if(_op == DataGenMethod.TIME )
 			_etype = ExecType.CP;
@@ -351,8 +352,7 @@ public class DataGenOp extends MultiThreadedHop
 				_incr = incr;
 			}
 		}
-		else if (_op == DataGenMethod.TIME )
-		{
+		else if (_op == DataGenMethod.TIME ) {
 			setDim1(0);
 			setDim2(0);
 			_dataType = DataType.SCALAR;
@@ -504,12 +504,12 @@ public class DataGenOp extends MultiThreadedHop
 		if (_op == DataGenMethod.TIME)
 			return false;
 		
-		DataGenOp that2 = (DataGenOp)that;	
+		DataGenOp that2 = (DataGenOp)that;
 		boolean ret = (  _op == that2._op
-				      && _sparsity == that2._sparsity
-				      && _baseDir.equals(that2._baseDir)
-					  && _paramIndexMap!=null && that2._paramIndexMap!=null
-					  && _maxNumThreads == that2._maxNumThreads );
+			&& _sparsity == that2._sparsity
+			&& _baseDir.equals(that2._baseDir)
+			&& _paramIndexMap!=null && that2._paramIndexMap!=null
+			&& _maxNumThreads == that2._maxNumThreads );
 		
 		if( ret )
 		{

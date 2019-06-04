@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.List;
 import java.util.Map.Entry;
 
 import org.tugraz.sysds.hops.Hop;
@@ -45,6 +46,7 @@ import org.tugraz.sysds.parser.ParForStatementBlock;
 import org.tugraz.sysds.parser.StatementBlock;
 import org.tugraz.sysds.parser.WhileStatement;
 import org.tugraz.sysds.parser.WhileStatementBlock;
+import org.tugraz.sysds.runtime.controlprogram.BasicProgramBlock;
 import org.tugraz.sysds.runtime.controlprogram.ForProgramBlock;
 import org.tugraz.sysds.runtime.controlprogram.FunctionProgramBlock;
 import org.tugraz.sysds.runtime.controlprogram.IfProgramBlock;
@@ -353,15 +355,39 @@ public class Explain
 	}
 
 	public static String explain( LineageItem li ) {
-		return explain(li, 0);
+		li.resetVisitStatus();
+		String s = explain(li, 0);
+		s += rExplainDedupItems(li, new ArrayList<>());
+		li.resetVisitStatus();
+		return s;
 	}
 
-	public static String explain( LineageItem li, int level ) {
+	private static String explain( LineageItem li, int level ) {
 		li.resetVisitStatus();
 		String ret = explainLineageItem(li, level);
 		li.resetVisitStatus();
 		return ret;
 	}
+	
+	private static String rExplainDedupItems(LineageItem li, List<String> paths) {
+		if (li.isVisited())
+			return "";
+		StringBuilder sb = new StringBuilder();
+		
+		if (li.getType() == LineageItem.LineageItemType.Dedup && !paths.contains(li.getData())) {
+			sb.append("\n").append("dedup").append(li.getData()).append(":\n");
+			sb.append(Explain.explain(li, 0));
+			paths.add(li.getData());
+		}
+		
+		if (li.getInputs() != null)
+			for (LineageItem in : li.getInputs())
+				sb.append(rExplainDedupItems(in, paths));
+		
+		li.setVisited();
+		return sb.toString();
+	}
+	
 
 	public static String explainCPlan( CNodeTpl cplan ) {
 		StringBuilder sb = new StringBuilder();
@@ -663,14 +689,12 @@ public class Explain
 		StringBuilder sb = new StringBuilder();
 		String offset = createOffset(level);
 
-		if (pb instanceof FunctionProgramBlock )
-		{
+		if (pb instanceof FunctionProgramBlock ) {
 			FunctionProgramBlock fpb = (FunctionProgramBlock)pb;
 			for( ProgramBlock pbc : fpb.getChildBlocks() )
 				sb.append( explainProgramBlock( pbc, level+1) );
 		}
-		else if (pb instanceof WhileProgramBlock)
-		{
+		else if (pb instanceof WhileProgramBlock) {
 			WhileProgramBlock wpb = (WhileProgramBlock) pb;
 			StatementBlock wsb = pb.getStatementBlock();
 			sb.append(offset);
@@ -682,24 +706,21 @@ public class Explain
 			for( ProgramBlock pbc : wpb.getChildBlocks() )
 				sb.append( explainProgramBlock( pbc, level+1) );
 		}
-		else if (pb instanceof IfProgramBlock)
-		{
+		else if (pb instanceof IfProgramBlock) {
 			IfProgramBlock ipb = (IfProgramBlock) pb;
 			sb.append(offset);
 			sb.append("IF (lines "+ipb.getBeginLine()+"-"+ipb.getEndLine()+")\n");
 			sb.append(explainInstructions(ipb.getPredicate(), level+1));
 			for( ProgramBlock pbc : ipb.getChildBlocksIfBody() )
 				sb.append( explainProgramBlock( pbc, level+1) );
-			if( !ipb.getChildBlocksElseBody().isEmpty() )
-			{
+			if( !ipb.getChildBlocksElseBody().isEmpty() ) {
 				sb.append(offset);
 				sb.append("ELSE\n");
 				for( ProgramBlock pbc : ipb.getChildBlocksElseBody() )
 					sb.append( explainProgramBlock( pbc, level+1) );
 			}
 		}
-		else if (pb instanceof ForProgramBlock) //incl parfor
-		{
+		else if (pb instanceof ForProgramBlock) { //incl parfor
 			ForProgramBlock fpb = (ForProgramBlock) pb;
 			StatementBlock fsb = pb.getStatementBlock();
 			sb.append(offset);
@@ -718,14 +739,14 @@ public class Explain
 				sb.append( explainProgramBlock( pbc, level+1) );
 
 		}
-		else
-		{
+		else if( pb instanceof BasicProgramBlock ) {
+			BasicProgramBlock bpb = (BasicProgramBlock) pb;
 			sb.append(offset);
 			if( pb.getStatementBlock()!=null )
 				sb.append("GENERIC (lines "+pb.getBeginLine()+"-"+pb.getEndLine()+") [recompile="+pb.getStatementBlock().requiresRecompilation()+"]\n");
 			else
 				sb.append("GENERIC (lines "+pb.getBeginLine()+"-"+pb.getEndLine()+") \n");
-			sb.append(explainInstructions(pb.getInstructions(), level+1));
+			sb.append(explainInstructions(bpb.getInstructions(), level+1));
 		}
 
 		return sb.toString();
@@ -803,15 +824,13 @@ public class Explain
 	 */
 	private static void countCompiledInstructions(ProgramBlock pb, ExplainCounts counts, boolean MR, boolean CP, boolean SP)
 	{
-		if (pb instanceof WhileProgramBlock)
-		{
+		if (pb instanceof WhileProgramBlock) {
 			WhileProgramBlock tmp = (WhileProgramBlock)pb;
 			countCompiledInstructions(tmp.getPredicate(), counts, MR, CP, SP);
 			for (ProgramBlock pb2 : tmp.getChildBlocks())
 				countCompiledInstructions(pb2, counts, MR, CP, SP);
 		}
-		else if (pb instanceof IfProgramBlock)
-		{
+		else if (pb instanceof IfProgramBlock) {
 			IfProgramBlock tmp = (IfProgramBlock)pb;
 			countCompiledInstructions(tmp.getPredicate(), counts, MR, CP, SP);
 			for( ProgramBlock pb2 : tmp.getChildBlocksIfBody() )
@@ -819,8 +838,7 @@ public class Explain
 			for( ProgramBlock pb2 : tmp.getChildBlocksElseBody() )
 				countCompiledInstructions(pb2, counts, MR, CP, SP);
 		}
-		else if (pb instanceof ForProgramBlock) //includes ParFORProgramBlock
-		{
+		else if (pb instanceof ForProgramBlock) { //includes ParFORProgramBlock
 			ForProgramBlock tmp = (ForProgramBlock)pb;
 			countCompiledInstructions(tmp.getFromInstructions(), counts, MR, CP, SP);
 			countCompiledInstructions(tmp.getToInstructions(), counts, MR, CP, SP);
@@ -829,15 +847,14 @@ public class Explain
 				countCompiledInstructions(pb2, counts, MR, CP, SP);
 			//additional parfor jobs counted during runtime
 		}
-		else if (  pb instanceof FunctionProgramBlock ) //includes ExternalFunctionProgramBlock and ExternalFunctionProgramBlockCP
-		{
+		else if ( pb instanceof FunctionProgramBlock ) {
 			FunctionProgramBlock fpb = (FunctionProgramBlock)pb;
 			for( ProgramBlock pb2 : fpb.getChildBlocks() )
 				countCompiledInstructions(pb2, counts, MR, CP, SP);
 		}
-		else
-		{
-			countCompiledInstructions(pb.getInstructions(), counts, MR, CP, SP);
+		else if( pb instanceof BasicProgramBlock ) {
+			BasicProgramBlock bpb = (BasicProgramBlock) pb;
+			countCompiledInstructions(bpb.getInstructions(), counts, MR, CP, SP);
 		}
 	}
 

@@ -16,21 +16,12 @@
 
 package org.tugraz.sysds.test.functions.data;
 
-import java.util.Arrays;
-import java.util.Collection;
-
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.tugraz.sysds.api.DMLException;
-import org.tugraz.sysds.api.DMLScript;
 import org.tugraz.sysds.common.Types.ExecMode;
 import org.tugraz.sysds.lops.LopProperties.ExecType;
 import org.tugraz.sysds.test.AutomatedTestBase;
 import org.tugraz.sysds.test.TestConfiguration;
-import org.tugraz.sysds.utils.Explain.ExplainType;
-import org.tugraz.sysds.utils.Explain;
+
 
 public class TimeTest extends AutomatedTestBase 
 {
@@ -56,9 +47,8 @@ public class TimeTest extends AutomatedTestBase
 			default: rtplatform = ExecMode.HYBRID; break;
 		}
 		
-		try
-		{
-            loadTestConfiguration(getTestConfiguration(TEST_NAME));
+		try {
+			loadTestConfiguration(getTestConfiguration(TEST_NAME));
 			
 			String HOME = SCRIPT_DIR + TEST_DIR;
 			fullDMLScriptName = HOME + TEST_NAME + ".dml";
@@ -66,8 +56,6 @@ public class TimeTest extends AutomatedTestBase
 			programArgs = new String[]{"-explain", "-args", output("B") };
 			
 			runTest(true, false, null, -1);
-			//double timevalue = readDMLScalar("B");
-			//System.out.println("Current time" + timevalue);
 		}
 		
 		finally {
@@ -75,5 +63,3 @@ public class TimeTest extends AutomatedTestBase
 		}
 	}
 }
-	
-

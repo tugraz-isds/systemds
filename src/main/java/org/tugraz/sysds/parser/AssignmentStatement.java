@@ -23,7 +23,6 @@ import java.util.ArrayList;
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.tugraz.sysds.common.Builtins;
-import org.tugraz.sysds.runtime.functionobjects.Builtin;
 
 public class AssignmentStatement extends Statement
 {

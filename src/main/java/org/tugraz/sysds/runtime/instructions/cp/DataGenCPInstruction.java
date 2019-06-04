@@ -229,7 +229,6 @@ public class DataGenCPInstruction extends UnaryCPInstruction {
 	{
 		MatrixBlock soresBlock = null;
 		ScalarObject soresScalar = null;
-		long currtime = 0;
 		
 		//process specific datagen operator
 		if ( method == DataGenMethod.RAND ) {
@@ -280,12 +279,10 @@ public class DataGenCPInstruction extends UnaryCPInstruction {
 			soresBlock = MatrixBlock.sampleOperations(range, (int)lrows, replace, seed);
 		}
 		else if ( method == DataGenMethod.TIME ) {
-			currtime = System.nanoTime();
-			soresScalar = new IntObject(currtime);
+			soresScalar = new IntObject(System.nanoTime());
 		}
 		
-		if (output.isMatrix())
-		{
+		if( output.isMatrix() ) {
 			//guarded sparse block representation change
 			if( soresBlock.getInMemorySize() < OptimizerUtils.SAFE_REP_CHANGE_THRES )
 				soresBlock.examSparsity();
@@ -293,8 +290,7 @@ public class DataGenCPInstruction extends UnaryCPInstruction {
 			//release created output
 			ec.setMatrixOutput(output.getName(), soresBlock, getExtendedOpcode());
 		}
-		
-		if (output.isScalar())
+		else if( output.isScalar() )
 			ec.setScalarOutput(output.getName(), soresScalar);
 	}
 	

@@ -509,21 +509,17 @@ public class BuiltinFunctionExpression extends DataIdentifier
 		DataIdentifier output = new DataIdentifier(outputName);
 		output.setParseInfo(this);
 		
-		if ((this.getFirstExpr() == null) &&
-			(this.getOpCode() != this.getOpCode().TIME)) {  // as time() doesn't have any arguments 
+		if (getFirstExpr() == null && getOpCode() != Builtins.TIME) { // time has no arguments 
 			raiseValidateError("Function " + this + " has no arguments.", false);
 		}
-		Identifier id;
-		if (_args.length != 0)
-			id = this.getFirstExpr().getOutput();
-		else
-			id = null;
+		Identifier id = (_args.length != 0) ?
+			getFirstExpr().getOutput() : null;
 		if (_args.length != 0)
 			output.setProperties(this.getFirstExpr().getOutput());
 		output.setNnz(-1); //conservatively, cannot use input nnz!
-		this.setOutput(output);
+		setOutput(output);
 		
-		switch (this.getOpCode()) {
+		switch (getOpCode()) {
 		case EVAL:
 			if (_args.length == 0)
 				raiseValidateError("Function eval should provide at least one argument, i.e., the function name.", false);
@@ -1687,14 +1683,10 @@ public class BuiltinFunctionExpression extends DataIdentifier
 	}
 
 	protected void checkNumParameters(int count) { //always unconditional
-		if ((getFirstExpr() == null) && (_args.length > 0)) {
+		if (getFirstExpr() == null && _args.length > 0) {
 			raiseValidateError("Missing argument for function " + this.getOpCode(), false,
-					LanguageErrorCodes.INVALID_PARAMETERS);
+				LanguageErrorCodes.INVALID_PARAMETERS);
 		}
-		int tmp = _args.length;
-		int tmp1;
-		if (_args != null)
-			tmp1 =5;
 		
 		// Not sure the rationale for the first two if loops, but will keep them for backward compatibility
 		if (((count == 1) && (getSecondExpr() != null || getThirdExpr() != null))
