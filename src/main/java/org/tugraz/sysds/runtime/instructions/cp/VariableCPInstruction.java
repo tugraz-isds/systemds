@@ -45,9 +45,11 @@ import org.tugraz.sysds.runtime.instructions.Instruction;
 import org.tugraz.sysds.runtime.instructions.InstructionUtils;
 import org.tugraz.sysds.runtime.io.FileFormatProperties;
 import org.tugraz.sysds.runtime.io.FileFormatPropertiesCSV;
+import org.tugraz.sysds.runtime.io.FileFormatPropertiesLIBSVM;
 import org.tugraz.sysds.runtime.io.IOUtilFunctions;
 import org.tugraz.sysds.runtime.io.WriterMatrixMarket;
 import org.tugraz.sysds.runtime.io.WriterTextCSV;
+import org.tugraz.sysds.runtime.io.WriterTextLIBSVM;
 import org.tugraz.sysds.runtime.lineage.Lineage;
 import org.tugraz.sysds.runtime.lineage.LineageItem;
 import org.tugraz.sysds.runtime.lineage.LineageTraceable;
@@ -115,7 +117,7 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 	// Frame related members
 	private final String _schema;
 	
-	// CSV related members (used only in createvar instructions)
+	// CSV and LIBSVM related members (used only in createvar instructions)
 	private final FileFormatProperties _formatProperties;
 
 	private VariableCPInstruction(VariableOperationCode op, CPOperand in1, CPOperand in2, CPOperand in3, CPOperand out,
@@ -305,9 +307,11 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 				throw new DMLRuntimeException("Invalid number of operands in mvvar instruction: " + str);
 		}
 		else if ( voc == VariableOperationCode.Write ) {
-			// All write instructions have 3 parameters, except in case of delimited/csv file.
+			// All write instructions have 3 parameters, except in case of delimited/csv/libsvm file.
 			// Write instructions for csv files also include three additional parameters (hasHeader, delimiter, sparse)
-			if ( parts.length != 5 && parts.length != 8 )
+			// Write instructions for libsvm files also include one additional parameters (sparse)
+			// TODO - replace hardcoded numbers with more sophisticated code
+			if ( parts.length != 5 && parts.length != 6 && parts.length != 8 )
 				throw new DMLRuntimeException("Invalid number of operands in write instruction: " + str);
 		}
 		else {
@@ -390,6 +394,21 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 				}
 				return new VariableCPInstruction(VariableOperationCode.CreateVariable, in1, in2, in3, iimd, updateType, fmtProperties, schema, opcode, str);
 			}
+			else if ( fmt.equalsIgnoreCase("libsvm") ) {
+				FileFormatProperties fmtProperties = null;
+				//TODO - replace hardcoded array indices with better code
+				if ( parts.length == 15+extSchema ) {
+					boolean sparse = Boolean.parseBoolean(parts[14]);
+					fmtProperties = new FileFormatPropertiesLIBSVM(sparse) ;
+				}
+				else {
+					String naStrings = null;
+					if ( parts.length == 17+extSchema )
+						naStrings = parts[16];
+					fmtProperties = new FileFormatPropertiesLIBSVM(naStrings) ;
+				}
+				return new VariableCPInstruction(VariableOperationCode.CreateVariable, in1, in2, in3, iimd, updateType, fmtProperties, schema, opcode, str);
+			}
 			else {
 				return new VariableCPInstruction(VariableOperationCode.CreateVariable, in1, in2, in3, iimd, updateType, schema, opcode, str);
 			}
@@ -448,7 +467,12 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 				boolean sparse = Boolean.parseBoolean(parts[6]);
 				fprops = new FileFormatPropertiesCSV(hasHeader, delim, sparse);
 				in4 = new CPOperand(parts[7]); // description
-			} else {
+			} 
+			else if ( in3.getName().equalsIgnoreCase("libsvm") ) {
+				boolean sparse = Boolean.parseBoolean(parts[4]);
+				fprops = new FileFormatPropertiesLIBSVM(sparse);
+			} 
+			else {
 				fprops = new FileFormatProperties();
 				in4 = new CPOperand(parts[4]); // description
 			}
@@ -817,8 +841,11 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 	private void processWriteInstruction(ExecutionContext ec) {
 		//get filename (literal or variable expression)
 		String fname = ec.getScalarInput(getInput2().getName(), ValueType.STRING, getInput2().isLiteral()).getStringValue();
-		String desc = ec.getScalarInput(getInput4().getName(), ValueType.STRING, getInput4().isLiteral()).getStringValue();
-		_formatProperties.setDescription(desc);
+		if (!getInput3().getName().equalsIgnoreCase("libsvm"))
+		{
+			String desc = ec.getScalarInput(getInput4().getName(), ValueType.STRING, getInput4().isLiteral()).getStringValue();
+			_formatProperties.setDescription(desc);
+		}
 		
 		if( getInput1().getDataType() == DataType.SCALAR ) {
 			writeScalarToHDFS(ec, fname);
@@ -829,6 +856,8 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 				writeMMFile(ec, fname);
 			else if (outFmt.equalsIgnoreCase("csv") )
 				writeCSVFile(ec, fname);
+			else if (outFmt.equalsIgnoreCase("libsvm") )
+				writeLIBSVMFile(ec, fname);
 			else {
 				// Default behavior
 				MatrixObject mo = ec.getMatrixObject(getInput1().getName());
@@ -885,6 +914,44 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 				}
 				else {
 					throw new DMLRuntimeException("Unexpected data format (" + OutputInfo.outputInfoToString(oi) + "): can not export into CSV format.");
+				}
+				
+				// Write Metadata file
+				HDFSTool.writeMetaDataFile (fname + ".mtd", mo.getValueType(), mc, OutputInfo.CSVOutputInfo, _formatProperties);
+			} catch (IOException e) {
+				throw new DMLRuntimeException(e);
+			}
+		}
+	}
+
+	/**
+	 * Helper function to write LIBSVM files to HDFS.
+	 * 
+	 * @param ec execution context
+	 * @param fname file name
+	 */
+	private void writeLIBSVMFile(ExecutionContext ec, String fname) {
+		MatrixObject mo = ec.getMatrixObject(getInput1().getName());
+		String outFmt = "libsvm";
+		
+		if(mo.isDirty()) {
+			// there exist data computed in CP that is not backed up on HDFS
+			// i.e., it is either in-memory or in evicted space
+			mo.exportData(fname, outFmt, _formatProperties);
+		}
+		else {
+			try {
+				OutputInfo oi = ((MetaDataFormat)mo.getMetaData()).getOutputInfo();
+				MatrixCharacteristics mc = ((MetaDataFormat)mo.getMetaData()).getMatrixCharacteristics();
+				if(oi == OutputInfo.LIBSVMOutputInfo) {
+					WriterTextLIBSVM writer = new WriterTextLIBSVM((FileFormatPropertiesLIBSVM)_formatProperties);
+					writer.addHeaderToLIBSVM(mo.getFileName(), fname, mc.getRows(), mc.getCols());
+				}
+				else if ( oi == OutputInfo.BinaryBlockOutputInfo || oi == OutputInfo.TextCellOutputInfo ) {
+					mo.exportData(fname, outFmt, _formatProperties);
+				}
+				else {
+					throw new DMLRuntimeException("Unexpected data format (" + OutputInfo.outputInfoToString(oi) + "): can not export into LIBSVM format.");
 				}
 				
 				// Write Metadata file

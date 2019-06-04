@@ -58,6 +58,14 @@ public class MatrixWriterFactory
 			else
 				writer = new WriterTextCSV((FileFormatPropertiesCSV)props);
 		}
+		else if( oinfo == OutputInfo.LIBSVMOutputInfo) {
+			if( props!=null && !(props instanceof FileFormatPropertiesLIBSVM) )
+				throw new DMLRuntimeException("Wrong type of file format properties for LIBSVM writer.");
+			if( ConfigurationManager.getCompilerConfigFlag(ConfigType.PARALLEL_CP_WRITE_TEXTFORMATS) )
+				writer = new WriterTextLIBSVMParallel((FileFormatPropertiesLIBSVM)props);
+			else
+				writer = new WriterTextLIBSVM((FileFormatPropertiesLIBSVM)props);
+		}
 		else if( oinfo == OutputInfo.BinaryCellOutputInfo ) {
 			writer = new WriterBinaryCell();
 		}

@@ -73,6 +73,8 @@ public class IOUtilFunctions
 	//to allow matrices with zero rows and columns (consistent with R)
 	public static final String EMPTY_TEXT_LINE = "0 0 0\n";
 	private static final char CSV_QUOTE_CHAR = '"';
+	public static final String LIBSVM_DELIM = " ";
+	public static final String LIBSVM_INDEX_DELIM = ":";
 	
 	public static FileSystem getFileSystem(String fname) throws IOException {
 		return getFileSystem(new Path(fname),
@@ -633,6 +635,47 @@ public class IOUtilFunctions
 		byte[] ret = new byte[len];
 		buff.get(ret, buff.position(), len);
 		return ret;
+	}
+	
+	// Return the index of an entry in a libsvm formated row
+	public static int getIndexLIBSVM( String rowstr, int entryno )
+	{
+		String[] parts = IOUtilFunctions.split(rowstr, LIBSVM_DELIM);
+		String[] indexval = IOUtilFunctions.split(parts[entryno].trim(), LIBSVM_INDEX_DELIM); //split <index#>:<value#>
+		int index = UtilFunctions.parseToInt(indexval[0].trim());
+		return index;
+	}
+
+	// Return the index of an entry in a libsvm formated row
+	public static double getIndexValLIBSVM( String rowstr, int entryno )
+	{
+		String[] parts = IOUtilFunctions.split(rowstr, LIBSVM_DELIM);
+		String[] indexval = IOUtilFunctions.split(parts[entryno].trim(), LIBSVM_INDEX_DELIM); //split <index#>:<value#>
+		double value = UtilFunctions.parseToDouble(indexval[1].trim());
+		return value;
+	}
+	
+	// Return string in libsvm format (<index#>:<value#>) 
+	public static String setIndexValLIBSVM( double value, int index)
+	{
+		StringBuilder sb = new StringBuilder();
+		sb.append(index+1);  // convert 0 based matrix index to 1 base libsvm index
+		sb.append(LIBSVM_INDEX_DELIM);
+		sb.append(value);
+		return sb.toString();
+	}
+	
+	// Return the class label from libsvm row
+	public static double getClassLabelLIBSVM( String rowstr )
+	{
+		String[] parts = IOUtilFunctions.split(rowstr, LIBSVM_DELIM);
+		return UtilFunctions.parseToDouble(parts[0].trim());
+	}
+	
+	// Return number of index-value pairs in a libsvm row
+	public static int getNumIndicesLIBSVM( String rowstr)
+	{
+		return IOUtilFunctions.countTokensCSV(rowstr, LIBSVM_DELIM) - 1;
 	}
 	
 	public static <T> T get(Future<T> in) {
