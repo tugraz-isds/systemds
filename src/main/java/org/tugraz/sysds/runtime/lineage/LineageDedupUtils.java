@@ -5,23 +5,23 @@ import org.tugraz.sysds.runtime.controlprogram.*;
 import org.tugraz.sysds.runtime.controlprogram.context.ExecutionContext;
 
 public class LineageDedupUtils {
-
+	
 	public static LineageDedupBlock computeDistinctPaths(ForProgramBlock fpb, ExecutionContext ec) {
 		LineageDedupBlock ldb = new LineageDedupBlock();
-		Lineage.setInitDedupBlock(ldb);
+		Lineage.pushInitDedupBlock(ldb);
 		
 		for (ProgramBlock pb : fpb.getChildBlocks()) {
-			//TODO: This kind of type checking is very bad!!!
-			if (pb instanceof WhileProgramBlock || pb instanceof FunctionProgramBlock || pb instanceof ForProgramBlock)
-				throw new DMLRuntimeException("Deduplication is not supported for nested while, for, or function calls!");
-
-			if (pb instanceof IfProgramBlock)
+			if (pb instanceof IfProgramBlock) {
 				ldb.traceIfProgramBlock((IfProgramBlock) pb, ec);
-			else
-				ldb.traceProgramBlock(pb, ec);
+			} else if (pb instanceof BasicProgramBlock) {
+				ldb.traceBasicProgramBlock((BasicProgramBlock) pb, ec);
+			} else if (pb instanceof ForProgramBlock) {
+				ldb.splitBlocks();
+			} else
+				throw new DMLRuntimeException("Only BasicProgramBlocks or IfProgramBlocks are allowed inside a LineageDedupBlock.");
 		}
 		
-		Lineage.setInitDedupBlock(null);
+		Lineage.popInitDedupBlock();
 		return ldb;
 	}
 }
