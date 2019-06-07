@@ -119,7 +119,7 @@ public class ForProgramBlock extends ProgramBlock
 			UpdateType[] flags = prepareUpdateInPlaceVariables(ec, _tid);
 			
 			// observe all distinct paths, compute a LineageDedupBlock and stores them globally
-			if (DMLScript.LINEAGE_DEDUP){
+			if (DMLScript.LINEAGE_DEDUP) {
 				Lineage.computeDedupBlock(this, ec);
 				currentLineagePath = ec.getLineagePath();
 				ec.getLineagePath().initLastBranch();
@@ -127,9 +127,8 @@ public class ForProgramBlock extends ProgramBlock
 			
 			// run for loop body for each instance of predicate sequence 
 			SequenceIterator seqIter = new SequenceIterator(from, to, incr);
-			for( IntObject iterVar : seqIter )
-			{
-				if (DMLScript.LINEAGE_DEDUP){
+			for (IntObject iterVar : seqIter) {
+				if (DMLScript.LINEAGE_DEDUP) {
 					ec.getLineagePath().clearLastBranch();
 					currentDedupBlock = 0;
 				}
@@ -138,16 +137,20 @@ public class ForProgramBlock extends ProgramBlock
 				ec.setVariable(_iterPredVar, iterVar);
 				
 				//execute all child blocks
-				for(int i=0 ; i < this._childBlocks.size() ; i++) {
+				for (int i = 0; i < this._childBlocks.size(); i++) {
 					_childBlocks.get(i).execute(ec);
-					if (DMLScript.LINEAGE_DEDUP && (i + 1 == this._childBlocks.size() || _childBlocks.get(i + 1) instanceof ForProgramBlock))
+					
+					if (DMLScript.LINEAGE_DEDUP && (
+							// Current ProgramBlock is last or next ProgramBlock is ForProgramBlock
+							i + 1 == this._childBlocks.size() || _childBlocks.get(i + 1) instanceof ForProgramBlock)) {
 						Lineage.tracePath(currentDedupBlock++, ec.getLineagePath().getLastBranch());
+						ec.getLineagePath().clearLastBranch();
+					}
 				}
-				
 			}
 			
 			// clear current LineageDedupBlock
-			if (DMLScript.LINEAGE_DEDUP){
+			if (DMLScript.LINEAGE_DEDUP) {
 				Lineage.clearDedupBlock();
 				ec.setLineagePath(currentLineagePath);
 			}

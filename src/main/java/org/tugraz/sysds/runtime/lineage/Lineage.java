@@ -42,7 +42,8 @@ public class Lineage {
 	
 	public static void tracePath(int block, Long path) {
 		LineageMap lm = _activeDedupBlock.peek().getMap(block, path);
-		_globalLineages.processDedupItem(lm, path);
+		if (lm != null)
+			_globalLineages.processDedupItem(lm, path);
 	}
 	
 	public static LineageItem getOrCreate(CPOperand variable) {
@@ -73,7 +74,7 @@ public class Lineage {
 	
 	public static void computeDedupBlock(ForProgramBlock fpb, ExecutionContext ec) {
 		if (!_dedupBlocks.containsKey(fpb))
-			_dedupBlocks.put(fpb, LineageDedupUtils.computeDistinctPaths(fpb, ec));
+			_dedupBlocks.put(fpb, LineageDedupUtils.computeDedupBlock(fpb, ec));
 		_activeDedupBlock.push(_dedupBlocks.get(fpb));
 	}
 	

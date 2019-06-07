@@ -10,7 +10,7 @@ import org.tugraz.sysds.runtime.instructions.Instruction;
 import java.util.HashMap;
 import java.util.Map;
 
-public class DistinctPathBlock {
+public class DistinctPaths {
 	private Map<Long, LineageMap> _distinctPaths = new HashMap<>();
 	private Long _activePath = null;
 	private int _branches = 0;
@@ -25,6 +25,14 @@ public class DistinctPathBlock {
 		if (!_distinctPaths.containsKey(path))
 			throw new DMLRuntimeException("Given path in LineageDedupBlock could not be found.");
 		return _distinctPaths.get(path);
+	}
+	
+	public boolean empty(){
+		return _distinctPaths.size() == 0;
+	}
+	
+	public boolean pathExists(Long path) {
+		return _distinctPaths.containsKey(path);
 	}
 	
 	public void traceIfProgramBlock(IfProgramBlock ipb, ExecutionContext ec) {

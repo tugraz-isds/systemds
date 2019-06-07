@@ -24,19 +24,14 @@
 X = read($1);
 
 R = X;
-for(i in 1:3){
-
-  if(i %% 2 == 1)
-    R = R + 1 / 2;
-  else
-    R = t(R) %*% R;
-
-  R = R * 3;
-
-  for(j in 1:2)
-    R = R + 99
-
-  R = R - 23
+for(i in 1:2){
+  for(j in 1:3){
+    for(k in 1:4){
+      R = R + 99
+      if (k %% 4 == 0)
+        R = R * 2
+    }
+  }
 }
 
 R = R * 3;

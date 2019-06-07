@@ -6,29 +6,37 @@ import org.tugraz.sysds.runtime.controlprogram.context.ExecutionContext;
 import java.util.ArrayList;
 
 public class LineageDedupBlock {
-	private ArrayList<Object> _blocks = new ArrayList<>();
-	
-	public LineageDedupBlock() {
-		_blocks.add(new DistinctPathBlock());
-	}
+	private ArrayList<DistinctPaths> _blocks = new ArrayList<>();
 	
 	public LineageMap getMap(int block, Long path) {
-		return ((DistinctPathBlock) _blocks.get(block)).getMap(path);
+		return block < _blocks.size() && _blocks.get(block).pathExists(path) ?
+				_blocks.get(block).getMap(path) :
+				null;
 	}
 	
 	public LineageMap getActiveMap() {
-		return ((DistinctPathBlock) _blocks.get(_blocks.size() - 1)).getActiveMap();
+		return _blocks.get(_blocks.size() - 1).getActiveMap();
 	}
 	
 	public void traceIfProgramBlock(IfProgramBlock ipb, ExecutionContext ec) {
-		((DistinctPathBlock) _blocks.get(_blocks.size() - 1)).traceIfProgramBlock(ipb, ec);
+		_blocks.get(_blocks.size() - 1).traceIfProgramBlock(ipb, ec);
 	}
 	
 	public void traceBasicProgramBlock(BasicProgramBlock bpb, ExecutionContext ec) {
-		((DistinctPathBlock) _blocks.get(_blocks.size() - 1)).traceBasicProgramBlock(bpb, ec);
+		_blocks.get(_blocks.size() - 1).traceBasicProgramBlock(bpb, ec);
 	}
 	
 	public void splitBlocks() {
-		_blocks.add(new DistinctPathBlock());
+		if (!_blocks.get(_blocks.size() - 1).empty())
+			_blocks.add(new DistinctPaths());
+	}
+	
+	public void addBlock() {
+		_blocks.add(new DistinctPaths());
+	}
+	
+	public void removeLastBlockIfEmpty() {
+		if (_blocks.size() > 0 && _blocks.get(_blocks.size() - 1).empty())
+			_blocks.remove(_blocks.size() - 1);
 	}
 }
