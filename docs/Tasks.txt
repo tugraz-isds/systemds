@@ -70,4 +70,4 @@ SYSTEMDS-100 Various Fixes
  
 SYSTEMDS-110 New Builtin Functions
  * 111 Time builtin function for script-level measurements            OK
- 
+ * 112 Builtin functions for linear regression algorithms             OK
