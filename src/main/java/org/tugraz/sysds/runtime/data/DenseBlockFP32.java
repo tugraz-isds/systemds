@@ -149,7 +149,7 @@ public class DenseBlockFP32 extends DenseBlockDRB
 	
 	@Override
 	public DenseBlock set(DenseBlock db) {
-		System.arraycopy(db.valuesAt(0), 0, _data, 0, _rlen*_odims[0]);
+		System.arraycopy(DataConverter.toFloat(db.valuesAt(0)), 0, _data, 0, _rlen*_odims[0]);
 		return this;
 	}
 	
@@ -168,13 +168,19 @@ public class DenseBlockFP32 extends DenseBlockDRB
 
 	@Override
 	public DenseBlock set(int r, double[] v) {
-		System.arraycopy(v, 0, _data, pos(r), _odims[0]);
+		System.arraycopy(DataConverter.toFloat(v), 0, _data, pos(r), _odims[0]);
 		return this;
 	}
 	
 	@Override
 	public DenseBlock set(int[] ix, double v) {
 		_data[pos(ix)] = (float)v;
+		return this;
+	}
+
+	@Override
+	public DenseBlock set(int[] ix, String v) {
+		_data[pos(ix)] = Float.parseFloat(v);
 		return this;
 	}
 
@@ -186,5 +192,10 @@ public class DenseBlockFP32 extends DenseBlockDRB
 	@Override
 	public double get(int[] ix) {
 		return _data[pos(ix)];
+	}
+
+	@Override
+	public String getString(int[] ix) {
+		return String.valueOf(_data[pos(ix)]);
 	}
 }

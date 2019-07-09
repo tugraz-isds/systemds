@@ -59,7 +59,23 @@ public abstract class DenseBlock implements Serializable
 		//materialize dim offsets (reverse cumprod)
 		_odims = createDimOffsets(dims);
 	}
-	
+
+	/**
+	 * Get the ith dimensions size of the dense block.
+	 *
+	 * @param i the number of dimension to get
+	 * @return the size of the dimension
+	 */
+	public final int getDim(int i) {
+	    if (i == 0) {
+	    	return _rlen;
+		}
+	    if (i == _odims.length) {
+	    	return _odims[i - 1];
+		}
+	    return _odims[i - 1] / _odims[i];
+	}
+
 	/**
 	 * Resets the dense block by deleting non-zero values. After this
 	 * call all countNonZeros() calls are guaranteed to return 0.
@@ -406,8 +422,16 @@ public abstract class DenseBlock implements Serializable
 	 * @return self
 	 */
 	public abstract DenseBlock set(int[] ix, double v);
-	
-	
+
+	/**
+	 * Set the specified cell to the given value.
+	 *
+	 * @param ix cell indexes
+	 * @param v value as String
+	 * @return self
+	 */
+	public abstract DenseBlock set(int[] ix, String v);
+
 	/**
 	 * Copy the given kahan object sum and correction
 	 * into the given row.
@@ -438,8 +462,15 @@ public abstract class DenseBlock implements Serializable
 	 * @return value
 	 */
 	public abstract double get(int[] ix);
-	
-	
+
+	/**
+	 * Get the value of a given cell as a String
+	 *
+	 * @param ix cell indexes
+	 * @return value as String
+	 */
+	public abstract String getString(int[] ix);
+
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();

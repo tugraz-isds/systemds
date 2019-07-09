@@ -1,6 +1,6 @@
 /*
  * Modifications Copyright 2018 Graz University of Technology
- * 
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -8,9 +8,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -29,25 +29,25 @@ import org.tugraz.sysds.runtime.util.UtilFunctions;
 
 public class DenseBlockInt32 extends DenseBlockDRB
 {
-	private static final long serialVersionUID = 1950471811056914020L;
-	
+	private static final long serialVersionUID = 3856034067703046872L;
+
 	private int[] _data;
 
 	public DenseBlockInt32(int[] dims) {
 		super(dims);
 		reset(_rlen, _odims, 0);
 	}
-	
+
 	public DenseBlockInt32(int[] dims, int[] data) {
 		super(dims);
 		_data = data;
 	}
-	
+
 	@Override
 	public boolean isNumeric() {
 		return true;
 	}
-	
+
 	@Override
 	public void reset(int rlen, int[] odims, double v) {
 		int iv = UtilFunctions.toInt(v);
@@ -73,7 +73,7 @@ public class DenseBlockInt32 extends DenseBlockDRB
 	public long countNonZeros() {
 		return UtilFunctions.computeNnz(_data, 0, _rlen*_odims[0]);
 	}
-	
+
 	@Override
 	public int countNonZeros(int r) {
 		return UtilFunctions.computeNnz(_data, r*_odims[0], _odims[0]);
@@ -101,7 +101,7 @@ public class DenseBlockInt32 extends DenseBlockDRB
 			ret[j] = _data[ix+j];
 		return ret;
 	}
-	
+
 	@Override
 	public double[] valuesAt(int bix) {
 		Warnings.warnFullFP64Conversion(_data.length);
@@ -117,19 +117,19 @@ public class DenseBlockInt32 extends DenseBlockDRB
 	public void incr(int r, int c) {
 		_data[pos(r, c)] ++;
 	}
-	
+
 	@Override
 	public void incr(int r, int c, double delta) {
 		_data[pos(r, c)] += delta;
 	}
-	
+
 	@Override
 	public DenseBlock set(double v) {
 		int iv = UtilFunctions.toInt(v);
 		Arrays.fill(_data, 0, _rlen*_odims[0], iv);
 		return this;
 	}
-	
+
 	@Override
 	public DenseBlock set(int rl, int ru, int ol, int ou, double v) {
 		int iv = UtilFunctions.toInt(v);
@@ -146,13 +146,13 @@ public class DenseBlockInt32 extends DenseBlockDRB
 		_data[pos(r, c)] = UtilFunctions.toInt(v);
 		return this;
 	}
-	
+
 	@Override
 	public DenseBlock set(DenseBlock db) {
-		System.arraycopy(db.valuesAt(0), 0, _data, 0, _rlen*_odims[0]);
+		System.arraycopy(DataConverter.toInt(db.valuesAt(0)), 0, _data, 0, _rlen*_odims[0]);
 		return this;
 	}
-	
+
 	@Override
 	public DenseBlock set(int rl, int ru, int ol, int ou, DenseBlock db) {
 		double[] a = db.valuesAt(0);
@@ -168,13 +168,19 @@ public class DenseBlockInt32 extends DenseBlockDRB
 
 	@Override
 	public DenseBlock set(int r, double[] v) {
-		System.arraycopy(v, 0, _data, pos(r), _odims[0]);
+		System.arraycopy(DataConverter.toInt(v), 0, _data, pos(r), _odims[0]);
 		return this;
 	}
-	
+
 	@Override
 	public DenseBlock set(int[] ix, double v) {
 		_data[pos(ix)] = UtilFunctions.toInt(v);
+		return this;
+	}
+
+	@Override
+	public DenseBlock set(int[] ix, String v) {
+		_data[pos(ix)] = Integer.parseInt(v);
 		return this;
 	}
 
@@ -186,5 +192,10 @@ public class DenseBlockInt32 extends DenseBlockDRB
 	@Override
 	public double get(int[] ix) {
 		return _data[pos(ix)];
+	}
+
+	@Override
+	public String getString(int[] ix) {
+		return String.valueOf(_data[pos(ix)]);
 	}
 }

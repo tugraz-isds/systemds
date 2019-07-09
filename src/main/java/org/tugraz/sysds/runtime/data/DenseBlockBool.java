@@ -120,13 +120,13 @@ public class DenseBlockBool extends DenseBlockDRB
 
 	@Override
 	public void incr(int r, int c) {
-		Warnings.warnInvaldBooleanIncrement(1);
+		Warnings.warnInvalidBooleanIncrement(1);
 		_data.set(pos(r, c));
 	}
 	
 	@Override
 	public void incr(int r, int c, double delta) {
-		Warnings.warnInvaldBooleanIncrement(delta);
+		Warnings.warnInvalidBooleanIncrement(delta);
 		_data.set(pos(r, c));
 	}
 	
@@ -137,13 +137,13 @@ public class DenseBlockBool extends DenseBlockDRB
 	}
 	
 	@Override
-	public DenseBlock set(int rl, int ru, int ol, int ou, double v) {
+	public DenseBlock set(int rl, int ru, int cl, int cu, double v) {
 		boolean bv = v != 0;
-		if( ol==0 && ou == _odims[0] )
+		if( cl==0 && cu == _odims[0] )
 			_data.set(rl*_odims[0], ru*_odims[0], bv);
 		else
 			for(int i=rl, ix=rl*_odims[0]; i<ru; i++, ix+=_odims[0])
-				_data.set(ix+ol, ix+ou, bv);
+				_data.set(ix+cl, ix+cu, bv);
 		return this;
 	}
 
@@ -155,32 +155,43 @@ public class DenseBlockBool extends DenseBlockDRB
 	
 	@Override
 	public DenseBlock set(DenseBlock db) {
-		System.arraycopy(db.valuesAt(0), 0, _data, 0, _rlen*_odims[0]);
+		double[] data = db.valuesAt(0);
+	    for (int i = 0; i < _rlen*_odims[0]; i++) {
+	    	_data.set(i, data[i] != 0);
+		}
 		return this;
 	}
 	
 	@Override
-	public DenseBlock set(int rl, int ru, int ol, int ou, DenseBlock db) {
+	public DenseBlock set(int rl, int ru, int cl, int cu, DenseBlock db) {
 		double[] a = db.valuesAt(0);
-		if( ol == 0 && ou == _odims[0])
-			System.arraycopy(a, 0, _data, rl*_odims[0]+ol, (int)db.size());
-		else {
-			int len = ou - ol;
-			for(int i=rl, ix1=0, ix2=rl*_odims[0]+ol; i<ru; i++, ix1+=len, ix2+=_odims[0])
-				System.arraycopy(a, ix1, _data, ix2, len);
-		}
+        for (int r = rl; r < ru; r++) {
+            for (int c = cl; c < cu; c++) {
+            	int i = r * _odims[0];
+				_data.set(i, a[i] != 0);
+			}
+        }
 		return this;
 	}
 
 	@Override
 	public DenseBlock set(int r, double[] v) {
-		System.arraycopy(v, 0, _data, pos(r), _odims[0]);
+		int ri = r * _odims[0];
+		for (int i = ri; i < ri + v.length; i++) {
+			_data.set(i, v[i - ri] != 0);
+		}
 		return this;
 	}
 	
 	@Override
 	public DenseBlock set(int[] ix, double v) {
 		_data.set(pos(ix), v != 0);
+		return this;
+	}
+
+	@Override
+	public DenseBlock set(int[] ix, String v) {
+		_data.set(pos(ix), Boolean.parseBoolean(v));
 		return this;
 	}
 
@@ -192,5 +203,10 @@ public class DenseBlockBool extends DenseBlockDRB
 	@Override
 	public double get(int[] ix) {
 		return _data.get(pos(ix)) ? 1 : 0;
+	}
+
+	@Override
+	public String getString(int[] ix) {
+		return String.valueOf(_data.get(pos(ix)));
 	}
 }

@@ -179,6 +179,12 @@ public class DenseBlockFP64 extends DenseBlockDRB
 	}
 
 	@Override
+	public DenseBlock set(int[] ix, String v) {
+		_data[pos(ix)] = Double.parseDouble(v);
+		return this;
+	}
+
+	@Override
 	public double get(int r, int c) {
 		return _data[pos(r, c)];
 	}
@@ -186,5 +192,10 @@ public class DenseBlockFP64 extends DenseBlockDRB
 	@Override
 	public double get(int[] ix) {
 		return _data[pos(ix)];
+	}
+
+	@Override
+	public String getString(int[] ix) {
+		return String.valueOf(_data[pos(ix)]);
 	}
 }
