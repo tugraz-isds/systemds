@@ -1825,4 +1825,26 @@ public abstract class AutomatedTestBase
 			return "N/A";
 		}
 	}
+
+	public void downloadInputDataset(String fileName, String url) {
+		if (new File(fileName).isFile() == false) {
+
+			new File(baseDirectory + INPUT_DIR).mkdirs();
+
+			try {
+				String cmd = "curl -o  " + fileName + " " + url;
+				System.out.println("downloading input dataset");
+				System.out.println("cmd: " + cmd);
+				Process child = Runtime.getRuntime().exec(cmd);
+
+				String outputR = IOUtils.toString(child.getInputStream());
+				System.out.println("Standard Output from download:" + outputR);
+				String errorString = IOUtils.toString(child.getErrorStream());
+				System.err.println("Standard Error from download:" + errorString);
+			}
+			catch (IOException e){
+				fail(e.getMessage());
+			}
+		}
+	}
 }
