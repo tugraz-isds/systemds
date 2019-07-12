@@ -47,7 +47,7 @@ depending on the input size of the matrices (See [`lmDS`-function](#lmds-functio
 
 ### Usage
 ```r
-lm(X, y, icpt = 0, reg = 1e-6, tol = 1e-6, maxi = 0, verbose = TRUE)
+lm(X, y, icpt = 0, reg = 1e-7, tol = 1e-7, maxi = 0, verbose = TRUE)
 ```
 
 ### Arguments
@@ -56,8 +56,8 @@ lm(X, y, icpt = 0, reg = 1e-6, tol = 1e-6, maxi = 0, verbose = TRUE)
 | X       | Matrix[Double] | required | Matrix of feature vectors. |
 | y       | Matrix[Double] | required | 1-column matrix of response values. |
 | icpt    | Integer        | `0`      | Intercept presence, shifting and rescaling the columns of X ([Details](#icpt-argument))|
-| reg     | Double         | `1e-6`   | Regularization constant (lambda) for L2-regularization. set to nonzero for highly dependant/sparse/numerous features|
-| tol     | Double         | `1e-6`   | Tolerance (epsilon); conjugate gradient procedure terminates early if L2 norm of the beta-residual is less than tolerance * its initial norm|
+| reg     | Double         | `1e-7`   | Regularization constant (lambda) for L2-regularization. set to nonzero for highly dependant/sparse/numerous features|
+| tol     | Double         | `1e-7`   | Tolerance (epsilon); conjugate gradient procedure terminates early if L2 norm of the beta-residual is less than tolerance * its initial norm|
 | maxi    | Integer        | `0`      | Maximum number of conjugate gradient iterations. 0 = no maximum |
 | verbose | Boolean        | `TRUE`   | If `TRUE` print messages are activated |
 
@@ -90,7 +90,7 @@ The `lmDS`-function solves linear regression by directly solving the *linear sys
 
 ### Usage
 ```r
-lmDS(X, y, icpt = 0, reg = 1e-6, verbose = TRUE)
+lmDS(X, y, icpt = 0, reg = 1e-7, verbose = TRUE)
 ```
 
 ### Arguments
@@ -99,7 +99,7 @@ lmDS(X, y, icpt = 0, reg = 1e-6, verbose = TRUE)
 | X       | Matrix[Double] | required | Matrix of feature vectors. |
 | y       | Matrix[Double] | required | 1-column matrix of response values. |
 | icpt    | Integer        | `0`      | Intercept presence, shifting and rescaling the columns of X ([Details](#icpt-argument))|
-| reg     | Double         | `1e-6`   | Regularization constant (lambda) for L2-regularization. set to nonzero for highly dependant/sparse/numerous features|
+| reg     | Double         | `1e-7`   | Regularization constant (lambda) for L2-regularization. set to nonzero for highly dependant/sparse/numerous features|
 | verbose | Boolean        | `TRUE`   | If `TRUE` print messages are activated |
 
 ### Returns
@@ -120,7 +120,7 @@ The `lmCG`-function solves linear regression using the *conjugate gradient algor
 
 ### Usage
 ```r
-lmCG(X, y, icpt = 0, reg = 1e-6, tol = 1e-6, maxi = 0, verbose = TRUE)
+lmCG(X, y, icpt = 0, reg = 1e-7, tol = 1e-7, maxi = 0, verbose = TRUE)
 ```
 
 ### Arguments
@@ -129,8 +129,8 @@ lmCG(X, y, icpt = 0, reg = 1e-6, tol = 1e-6, maxi = 0, verbose = TRUE)
 | X       | Matrix[Double] | required | Matrix of feature vectors. |
 | y       | Matrix[Double] | required | 1-column matrix of response values. |
 | icpt    | Integer        | `0`      | Intercept presence, shifting and rescaling the columns of X ([Details](#icpt-argument))|
-| reg     | Double         | `1e-6`   | Regularization constant (lambda) for L2-regularization. set to nonzero for highly dependant/sparse/numerous features|
-| tol     | Double         | `1e-6`   | Tolerance (epsilon); conjugate gradient procedure terminates early if L2 norm of the beta-residual is less than tolerance * its initial norm|
+| reg     | Double         | `1e-7`   | Regularization constant (lambda) for L2-regularization. set to nonzero for highly dependant/sparse/numerous features|
+| tol     | Double         | `1e-7`   | Tolerance (epsilon); conjugate gradient procedure terminates early if L2 norm of the beta-residual is less than tolerance * its initial norm|
 | maxi    | Integer        | `0`      | Maximum number of conjugate gradient iterations. 0 = no maximum |
 | verbose | Boolean        | `TRUE`   | If `TRUE` print messages are activated |
 
