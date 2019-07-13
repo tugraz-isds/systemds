@@ -16,6 +16,17 @@
 #
 #-------------------------------------------------------------
 
-m_lmpredict = function(Matrix[Double] X, Matrix[Double] w) return (Matrix[Double] y) {
-  y = X %*% w
+m_lmpredict = function(Matrix[Double] X, Matrix[Double] w, Integer icpt = 0) return (Matrix[Double] y) {
+  intercept_status = icpt;
+
+  if (intercept_status == 0) {
+    y = X %*% w
+  }
+  else if (intercept_status == 1) {
+    ones_n = matrix (1, rows = nrow (X), cols = 1);
+    X = cbind (X, ones_n);
+    y = X %*% w;
+  } else {
+    #ToDo: icpt == 2
+  }
 }

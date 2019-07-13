@@ -1,6 +1,6 @@
 #-------------------------------------------------------------
 #
-# Copyright 2018 Graz University of Technology
+# Copyright 2019 Graz University of Technology
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,7 +20,9 @@ args<-commandArgs(TRUE)
 options(digits=22)
 library("Matrix")
 
-X = as.matrix(readMM(paste(args[1], "A.mtx", sep="")))
-w = as.matrix(readMM(paste(args[1], "B.mtx", sep="")));
-C = X %*% w # ToDo: actually use predict.lm
-writeMM(as(C, "CsparseMatrix"), paste(args[2], "C", sep=""));
+X = as.matrix(readMM(paste(args[1], "A.mtx", sep="")));
+y = as.matrix(readMM(paste(args[1], "B.mtx", sep="")));
+p = as.matrix(readMM(paste(args[1], "C.mtx", sep="")));
+l = lm(y ~ X);
+prediction = predict.lm(l, data.frame(p))
+writeMM(as(prediction, "CsparseMatrix"), paste(args[2], "D", sep=""));

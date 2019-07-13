@@ -1,6 +1,6 @@
 <!--
 {% comment %}
-Modifications Copyright 2018 Graz University of Technology
+Modifications Copyright 2019 Graz University of Technology
 
 Licensed to the Apache Software Foundation (ASF) under one or more
 contributor license agreements.  See the NOTICE file distributed with
@@ -30,7 +30,7 @@ limitations under the License.
     
 # Introduction
 
-Declarative Machine Learning has builtin functions which enable access to both low- and high-level functions
+The DML (Declarative Machine Learning) language has builtin functions which enable access to both low- and high-level functions
 to support all kinds of use cases.
 
 Builtins are either implemented on a compiler level or as DML scripts that are loaded at compile time.
@@ -80,7 +80,7 @@ The *icpt-argument* can be set to 3 modes:
 ### Example
 ```r
 X = rand (rows = 50, cols = 10)
-y = rand (rows = 50, cols = 1)
+y = X %*% rand(rows=ncol(X), 1)
 lm(X = X, y = y)
 ```
 
@@ -110,7 +110,7 @@ lmDS(X, y, icpt = 0, reg = 1e-7, verbose = TRUE)
 ### Example
 ```r
 X = rand (rows = 50, cols = 10)
-y = rand (rows = 50, cols = 1)
+y = X %*% rand(rows=ncol(X), 1)
 lmDS(X = X, y = y)
 ```
 
@@ -142,7 +142,7 @@ lmCG(X, y, icpt = 0, reg = 1e-7, tol = 1e-7, maxi = 0, verbose = TRUE)
 ### Example
 ```r
 X = rand (rows = 50, cols = 10)
-y = rand (rows = 50, cols = 1)
+y = X %*% rand(rows=ncol(X), 1)
 lmCG(X = X, y = y, maxi = 10)
 ```
 
@@ -160,6 +160,7 @@ lmpredict(X, w)
 | :------ | :------------- | -------- | :---------- |
 | X       | Matrix[Double] | required | Matrix of feature vector(s). |
 | w       | Matrix[Double] | required | 1-column matrix of weights. |
+| icpt    | Matrix[Double] | `0`      | Intercept presence, shifting and rescaling of X ([Details](#icpt-argument))|
 
 ### Returns
 | Type           | Description |
@@ -169,7 +170,7 @@ lmpredict(X, w)
 ### Example
 ```r
 X = rand (rows = 50, cols = 10)
-y = rand (rows = 50, cols = 1)
+y = X %*% rand(rows=ncol(X), 1)
 w = lm(X = X, y = y)
 yp = lmpredict(X, w)
 ```

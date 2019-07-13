@@ -16,7 +16,9 @@
 #
 #-------------------------------------------------------------
 
-X = read($1)
-w = read($2)
-C = lmpredict(X = X, w = w)
-write(C, $3)
+X = read($1) # Training data
+y = read($2) # response values
+p = read($3) # random data to predict
+w = lmDS(X = X, y = y, icpt = 1, reg = 1e-12)
+p = lmpredict(X = X, w = w, icpt = 1)
+write(p, $4)

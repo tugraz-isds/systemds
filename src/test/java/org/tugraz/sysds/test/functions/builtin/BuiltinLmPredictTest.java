@@ -28,13 +28,13 @@ import java.util.HashMap;
 
 public class BuiltinLmPredictTest extends AutomatedTestBase
 {
-	private final static String TEST_NAME = "Lmpredict";
+	private final static String TEST_NAME = "lmpredict";
 	private final static String TEST_DIR = "functions/builtin/";
 	private static final String TEST_CLASS_DIR = TEST_DIR + BuiltinLmPredictTest.class.getSimpleName() + "/";
 
 	private final static double eps = 1e-10;
-	private final static int rows = 1;
-	private final static int cols = 3;
+	private final static int rows = 100;
+	private final static int cols = 5;
 	private final static double spSparse = 0.1;
 	private final static double spDense = 0.7;
 
@@ -80,23 +80,24 @@ public class BuiltinLmPredictTest extends AutomatedTestBase
 
 
 			fullDMLScriptName = HOME + TEST_NAME + ".dml";
-			programArgs = new String[]{"-explain", "-args", input("A"), input("B"), output("C") };
+			programArgs = new String[]{"-explain", "-args", input("A"), input("B"), input("C"), output("D") };
 			fullRScriptName = HOME + TEST_NAME + ".R";
 			rCmd = "Rscript" + " " + fullRScriptName + " " + inputDir() + " "  + expectedDir();
 
 			//generate actual dataset 
 			double[][] A = getRandomMatrix(rows, cols, 0, 1, sparsity, 7);
 			writeInputMatrixWithMTD("A", A, true);
-			// ToDo: maybe use non random vector for weight. Calculate with lm?
-			double[][] B = getRandomMatrix(cols, 1, 0, 10, 1.0, 3);
+			double[][] B = getRandomMatrix(rows, 1, 0, 10, 1.0, 3);
 			writeInputMatrixWithMTD("B", B, true);
+			double[][] C = getRandomMatrix(rows, 1, 0, 10, 1.0, 3);
+			writeInputMatrixWithMTD("C", C, true);
 
 			runTest(true, false, null, -1);
 			runRScript(true); 
 
 			//compare matrices 
-			HashMap<CellIndex, Double> dmlfile = readDMLMatrixFromHDFS("C");
-			HashMap<CellIndex, Double> rfile  = readRMatrixFromFS("C");
+			HashMap<CellIndex, Double> dmlfile = readDMLMatrixFromHDFS("D");
+			HashMap<CellIndex, Double> rfile  = readRMatrixFromFS("D");
 			TestUtils.compareMatrices(dmlfile, rfile, eps, "Stat-DML", "Stat-R");
 		}
 		finally {
