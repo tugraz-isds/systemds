@@ -50,35 +50,6 @@ public class DenseBlockLString extends DenseBlockLDRB
 		return _blocks.length == 1;
 	}
 
-	private boolean isReusable(int rlen, int[] odims) {
-		if (_blocks == null) return false;
-		// The number of rows possible to store in the blocks except the last one
-		int possibleRowsPerBlock = _blocks[0].length / odims[0];
-		// The number of blocks which will be completely in use after reset
-		int neededCompleteBlocks = rlen / possibleRowsPerBlock;
-		// The number of rows which will be in use in the last block
-		int neededLastBlockSize = rlen % possibleRowsPerBlock;
-		if (neededCompleteBlocks > _blocks.length) {
-			return false;
-		}
-		if (neededCompleteBlocks < _blocks.length - 1) {
-			// We have enough complete sized blocks to store everything
-			return true;
-		}
-		// The number of rows which fit in the last block
-		int lastBlockSize = _blocks[_blocks.length - 1].length / odims[0];
-		if (neededCompleteBlocks == _blocks.length - 1) {
-			// Check if the last block has the necessary space for our rows
-			return neededLastBlockSize <= lastBlockSize;
-		}
-		if (neededCompleteBlocks == _blocks.length) {
-			// Check if we can store enough rows in the last (most likely smaller) block
-			// and we don't need another row.
-			return neededLastBlockSize == 0 && possibleRowsPerBlock == lastBlockSize;
-		}
-		return false;
-	}
-
 	@Override
 	public void reset(int rlen, int[] odims, double v) {
 		if(!isReusable(rlen, odims)) {
@@ -116,7 +87,7 @@ public class DenseBlockLString extends DenseBlockLDRB
 
 	@Override
 	public int blockSize() {
-	    return _blocks[0].length / _odims[0];
+		return _blocks[0].length / _odims[0];
 	}
 
 	@Override
@@ -127,6 +98,11 @@ public class DenseBlockLString extends DenseBlockLDRB
 	@Override
 	public long capacity() {
 		return (_blocks!=null) ? (long)(_blocks.length - 1) * _blocks[0].length + _blocks[_blocks.length - 1].length : -1;
+	}
+
+	@Override
+	public int capacity(int bix) {
+		return _blocks.length;
 	}
 
 	@Override
@@ -168,7 +144,7 @@ public class DenseBlockLString extends DenseBlockLDRB
 
 	@Override
 	public DenseBlock set(int[] ix, double v) {
-	    _blocks[index(ix[0])][pos(ix)] = String.valueOf(v);
+		_blocks[index(ix[0])][pos(ix)] = String.valueOf(v);
 		return this;
 	}
 

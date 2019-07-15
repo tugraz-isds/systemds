@@ -237,6 +237,7 @@ public abstract class DenseBlock implements Serializable
 	 */
 	public abstract long capacity();
 
+
 	/**
 	 * Computes the number of non zero elements of a certain range of elements in a block.
 	 *

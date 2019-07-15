@@ -51,43 +51,14 @@ public class DenseBlockLBool extends DenseBlockLDRB
 		return _blocks.length == 1;
 	}
 
-	private boolean isReusable(int rlen, int[] odims) {
-		if (_blocks == null) return false;
-		// The number of rows possible to store in the blocks except the last one
-		int possibleRowsPerBlock = _blocks[0].size() / odims[0];
-		// The number of blocks which will be completely in use after reset
-		int neededCompleteBlocks = rlen / possibleRowsPerBlock;
-		// The number of rows which will be in use in the last block
-		int neededLastBlockSize = rlen % possibleRowsPerBlock;
-		if (neededCompleteBlocks > _blocks.length) {
-			return false;
-		}
-		if (neededCompleteBlocks < _blocks.length - 1) {
-			// We have enough complete sized blocks to store everything
-			return true;
-		}
-		// The number of rows which fit in the last block
-		int lastBlockSize = _blocks[_blocks.length - 1].size() / odims[0];
-		if (neededCompleteBlocks == _blocks.length - 1) {
-			// Check if the last block has the necessary space for our rows
-			return neededLastBlockSize <= lastBlockSize;
-		}
-		if (neededCompleteBlocks == _blocks.length) {
-			// Check if we can store enough rows in the last (most likely smaller) block
-			// and we don't need another row.
-			return neededLastBlockSize == 0 && possibleRowsPerBlock == lastBlockSize;
-		}
-		return false;
-	}
-
 	@Override
 	public void reset(int rlen, int[] odims, double v) {
 		boolean bv = v != 0;
 		if(!isReusable(rlen, odims)) {
-		    int newBlockSize = Integer.MAX_VALUE / odims[0];
-		    int restBlockSize = rlen % newBlockSize;
-		    int newNumBlocks = (rlen / newBlockSize) + (restBlockSize == 0 ? 0 : 1);
-		    _fullBlockSize = newBlockSize;
+			int newBlockSize = Integer.MAX_VALUE / odims[0];
+			int restBlockSize = rlen % newBlockSize;
+			int newNumBlocks = (rlen / newBlockSize) + (restBlockSize == 0 ? 0 : 1);
+			_fullBlockSize = newBlockSize;
 			if (restBlockSize == 0) {
 				_lastBlockSize = newBlockSize;
 				_blocks = new BitSet[newNumBlocks];
@@ -107,7 +78,7 @@ public class DenseBlockLBool extends DenseBlockLDRB
 			}
 			if( bv ) {
 				for (int i = 0; i < newNumBlocks; i++) {
-				    _blocks[i].set(0, _blocks[i].length() - 1);
+					_blocks[i].set(0, _blocks[i].length() - 1);
 				}
 			}
 		}
@@ -144,7 +115,7 @@ public class DenseBlockLBool extends DenseBlockLDRB
 
 	@Override
 	public int blockSize() {
-	    return (_blocks.length == 1) ? _lastBlockSize : _fullBlockSize;
+		return (_blocks.length == 1) ? _lastBlockSize : _fullBlockSize;
 	}
 
 	@Override
@@ -155,6 +126,11 @@ public class DenseBlockLBool extends DenseBlockLDRB
 	@Override
 	public long capacity() {
 		return (_blocks!=null) ? (long)(_blocks.length - 1) * _blocks[0].size() + _blocks[_blocks.length - 1].size() : -1;
+	}
+
+	@Override
+	public int capacity(int bix) {
+		return _blocks[bix].size();
 	}
 
 	@Override
@@ -176,7 +152,7 @@ public class DenseBlockLBool extends DenseBlockLDRB
 
 	@Override
 	public void incr(int r, int c) {
-	    _blocks[index(r)].set(pos(r, c));
+		_blocks[index(r)].set(pos(r, c));
 	}
 
 	@Override
@@ -277,7 +253,7 @@ public class DenseBlockLBool extends DenseBlockLDRB
 			double[] a = db.valuesAt(bi);
 			for (int r = rb; r < re; r += _odims[0]) {
 				for (int c = cl; c < cu; c++) {
-				    int i = r + c;
+					int i = r + c;
 					_blocks[bi].set(i, a[i] != 0);
 				}
 			}

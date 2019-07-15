@@ -50,43 +50,14 @@ public class DenseBlockLInt64 extends DenseBlockLDRB
 		return _blocks.length == 1;
 	}
 
-	private boolean isReusable(int rlen, int[] odims) {
-		if (_blocks == null) return false;
-		// The number of rows possible to store in the blocks except the last one
-		int possibleRowsPerBlock = _blocks[0].length / odims[0];
-		// The number of blocks which will be completely in use after reset
-		int neededCompleteBlocks = rlen / possibleRowsPerBlock;
-		// The number of rows which will be in use in the last block
-		int neededLastBlockSize = rlen % possibleRowsPerBlock;
-		if (neededCompleteBlocks > _blocks.length) {
-			return false;
-		}
-		if (neededCompleteBlocks < _blocks.length - 1) {
-			// We have enough complete sized blocks to store everything
-			return true;
-		}
-		// The number of rows which fit in the last block
-		int lastBlockSize = _blocks[_blocks.length - 1].length / odims[0];
-		if (neededCompleteBlocks == _blocks.length - 1) {
-			// Check if the last block has the necessary space for our rows
-			return neededLastBlockSize <= lastBlockSize;
-		}
-		if (neededCompleteBlocks == _blocks.length) {
-			// Check if we can store enough rows in the last (most likely smaller) block
-			// and we don't need another row.
-			return neededLastBlockSize == 0 && possibleRowsPerBlock == lastBlockSize;
-		}
-		return false;
-	}
-
 	@Override
 	public void reset(int rlen, int[] odims, double v) {
 		long lv = (long) v;
 		if(!isReusable(rlen, odims)) {
 			// More memory is needed
-		    int newBlockSize = Integer.MAX_VALUE / odims[0];
-		    int restBlockSize = rlen % newBlockSize;
-		    int newNumBlocks = (rlen / newBlockSize) + (restBlockSize == 0 ? 0 : 1);
+			int newBlockSize = Integer.MAX_VALUE / odims[0];
+			int restBlockSize = rlen % newBlockSize;
+			int newNumBlocks = (rlen / newBlockSize) + (restBlockSize == 0 ? 0 : 1);
 			if (restBlockSize == 0) {
 				_blocks = new long[newNumBlocks][newBlockSize * odims[0]];
 			} else {
@@ -104,7 +75,7 @@ public class DenseBlockLInt64 extends DenseBlockLDRB
 		}
 		else {
 			// Memory is enough, overwrite
-            set(v);
+			set(v);
 		}
 		_rlen = rlen;
 		_odims = odims;
@@ -117,7 +88,7 @@ public class DenseBlockLInt64 extends DenseBlockLDRB
 
 	@Override
 	public int blockSize() {
-	    return _blocks[0].length / _odims[0];
+		return _blocks[0].length / _odims[0];
 	}
 
 	@Override
@@ -128,6 +99,11 @@ public class DenseBlockLInt64 extends DenseBlockLDRB
 	@Override
 	public long capacity() {
 		return (_blocks!=null) ? (long)(_blocks.length - 1) * _blocks[0].length + _blocks[_blocks.length - 1].length : -1;
+	}
+
+	@Override
+	public int capacity(int bix) {
+		return _blocks.length;
 	}
 
 	@Override
@@ -148,7 +124,7 @@ public class DenseBlockLInt64 extends DenseBlockLDRB
 
 	@Override
 	public void incr(int r, int c) {
-	    incr(r, c, 1);
+		incr(r, c, 1);
 	}
 
 	@Override
@@ -241,11 +217,11 @@ public class DenseBlockLInt64 extends DenseBlockLDRB
 				re = pos(ru - 1) + _odims[0];
 			}
 			if (allColumns) {
-			    System.arraycopy(DataConverter.toLong(db.valuesAt(bi)), rb, _blocks[bi], rb, re - rb);
+				System.arraycopy(DataConverter.toLong(db.valuesAt(bi)), rb, _blocks[bi], rb, re - rb);
 			}
 			else {
 				for (int ri = rb; ri < re; ri += _odims[0]) {
-				    System.arraycopy(DataConverter.toLong(db.valuesAt(bi)), ri + cl, _blocks[bi], ri + cl, cu - cl);
+					System.arraycopy(DataConverter.toLong(db.valuesAt(bi)), ri + cl, _blocks[bi], ri + cl, cu - cl);
 				}
 			}
 			rb = 0;

@@ -37,10 +37,53 @@ public abstract class DenseBlockLDRB extends DenseBlock
 		super(dims);
 	}
 
+	/**
+	 * Get the length of a allocated block.
+	 *
+	 * @param bix   block id
+	 * @return	  capacity
+	 */
+	public abstract int capacity(int bix);
+
+	/**
+	 * Determine if the old blocks can be reused.
+	 *
+	 * @param rlen  the new rlen
+	 * @param odims the new other dimensions
+	 * @return      if the old blocks can be reused
+	 */
+	protected boolean isReusable(int rlen, int[] odims) {
+		if (capacity() == -1) return false;
+		// The number of rows possible to store in the blocks except the last one
+		int possibleRowsPerBlock = capacity(0) / odims[0];
+		// The number of blocks which will be completely in use after reset
+		int neededCompleteBlocks = rlen / possibleRowsPerBlock;
+		// The number of rows which will be in use in the last block
+		int neededLastBlockSize = rlen % possibleRowsPerBlock;
+		// The number of rows which fit in the last block
+		int lastBlockSize = capacity(numBlocks() - 1) / odims[0];
+		boolean reusable = false;
+		if (neededCompleteBlocks > numBlocks()) { }
+		else if (neededCompleteBlocks < numBlocks() - 1) {
+			// We have enough complete sized blocks to store everything
+			reusable = true;
+		}
+		else if (neededCompleteBlocks == numBlocks() - 1) {
+			// Check if the last block has the necessary space for our rows
+			reusable = neededLastBlockSize <= lastBlockSize;
+		}
+		else if (neededCompleteBlocks == numBlocks()) {
+			// Check if we can store enough rows in the last (most likely smaller) block
+			// and we don't need another row.
+			reusable = neededLastBlockSize == 0 && possibleRowsPerBlock == lastBlockSize;
+		}
+		return reusable;
+	}
+
 	@Override
 	public int pos(int[] ix) {
-	    int pos = pos(ix[0]);
-	    pos += ix[ix.length - 1];
+		int pos = pos(ix[0]);
+		pos += ix[ix.length - 1];
 		for(int i = 1; i < ix.length - 1; i++)
 			pos += ix[i] * _odims[i];
 		return pos;
@@ -48,7 +91,7 @@ public abstract class DenseBlockLDRB extends DenseBlock
 
 	@Override
 	public boolean isContiguous(int rl, int ru) {
-	    return index(rl) == index(ru);
+		return index(rl) == index(ru);
 	}
 
 	@Override
