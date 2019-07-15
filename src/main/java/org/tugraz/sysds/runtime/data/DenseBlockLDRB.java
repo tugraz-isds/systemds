@@ -1,5 +1,5 @@
 /*
- * Modifications Copyright 2018 Graz University of Technology
+ * Modifications Copyright 2019 Graz University of Technology
  * 
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -41,7 +41,7 @@ public abstract class DenseBlockLDRB extends DenseBlock
 	 * Get the length of a allocated block.
 	 *
 	 * @param bix   block id
-	 * @return	  capacity
+	 * @return      capacity
 	 */
 	public abstract int capacity(int bix);
 
@@ -53,6 +53,7 @@ public abstract class DenseBlockLDRB extends DenseBlock
 	 * @return      if the old blocks can be reused
 	 */
 	protected boolean isReusable(int rlen, int[] odims) {
+		// Todo: maybe use more conservative approach
 		if (capacity() == -1) return false;
 		// The number of rows possible to store in the blocks except the last one
 		int possibleRowsPerBlock = capacity(0) / odims[0];

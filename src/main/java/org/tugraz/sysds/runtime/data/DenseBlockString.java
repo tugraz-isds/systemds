@@ -1,5 +1,5 @@
 /*
- * Modifications Copyright 2018 Graz University of Technology
+ * Modifications Copyright 2019 Graz University of Technology
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -22,7 +22,6 @@
 
 package org.tugraz.sysds.runtime.data;
 
-import org.dmg.pmml.Array;
 import org.tugraz.sysds.common.Warnings;
 import org.tugraz.sysds.runtime.util.DataConverter;
 import org.tugraz.sysds.runtime.util.UtilFunctions;
