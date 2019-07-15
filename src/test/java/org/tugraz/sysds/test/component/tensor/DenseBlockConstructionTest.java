@@ -19,7 +19,14 @@ package org.tugraz.sysds.test.component.tensor;
 import org.junit.Assert;
 import org.junit.Test;
 import org.tugraz.sysds.common.Types.ValueType;
-import org.tugraz.sysds.runtime.data.*;
+import org.tugraz.sysds.runtime.data.DenseBlock;
+import org.tugraz.sysds.runtime.data.DenseBlockFactory;
+import org.tugraz.sysds.runtime.data.DenseBlockLBool;
+import org.tugraz.sysds.runtime.data.DenseBlockLFP32;
+import org.tugraz.sysds.runtime.data.DenseBlockLFP64;
+import org.tugraz.sysds.runtime.data.DenseBlockLString;
+import org.tugraz.sysds.runtime.data.DenseBlockLInt32;
+import org.tugraz.sysds.runtime.data.DenseBlockLInt64;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 

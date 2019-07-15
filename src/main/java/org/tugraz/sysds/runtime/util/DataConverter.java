@@ -51,8 +51,6 @@ import org.tugraz.sysds.runtime.matrix.data.MatrixIndexes;
 import org.tugraz.sysds.runtime.matrix.data.OutputInfo;
 import org.tugraz.sysds.runtime.meta.MatrixCharacteristics;
 
-import javax.rmi.CORBA.Util;
-
 
 /**
  * This class provides methods to read and write matrix blocks from to HDFS using different data formats.

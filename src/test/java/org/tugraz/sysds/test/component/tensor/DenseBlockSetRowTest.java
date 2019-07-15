@@ -19,153 +19,158 @@ package org.tugraz.sysds.test.component.tensor;
 import org.junit.Assert;
 import org.junit.Test;
 import org.tugraz.sysds.common.Types.ValueType;
-import org.tugraz.sysds.runtime.data.*;
+import org.tugraz.sysds.runtime.data.DenseBlock;
+import org.tugraz.sysds.runtime.data.DenseBlockBool;
+import org.tugraz.sysds.runtime.data.DenseBlockFactory;
+import org.tugraz.sysds.runtime.data.DenseBlockLBool;
+import org.tugraz.sysds.runtime.data.DenseBlockLFP32;
+import org.tugraz.sysds.runtime.data.DenseBlockLFP64;
+import org.tugraz.sysds.runtime.data.DenseBlockLString;
+import org.tugraz.sysds.runtime.data.DenseBlockLInt32;
+import org.tugraz.sysds.runtime.data.DenseBlockLInt64;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
-
-import java.util.Arrays;
-
 
 public class DenseBlockSetRowTest {
 	@Test
-	public void testDenseBlock2FP32Row() throws Exception {
+	public void testDenseBlock2FP32Row() {
 		DenseBlock db = getDenseBlock2(ValueType.FP32);
 		checkRow(setRow(db));
 	}
 
 	@Test
-	public void testDenseBlock2FP64Row() throws Exception {
+	public void testDenseBlock2FP64Row() {
 		DenseBlock db = getDenseBlock2(ValueType.FP64);
 		checkRow(setRow(db));
 	}
 
 	@Test
-	public void testDenseBlock2BoolRow() throws Exception {
+	public void testDenseBlock2BoolRow() {
 		DenseBlock db = getDenseBlock2(ValueType.BOOLEAN);
 		checkRow(setRow(db));
 	}
 
 	@Test
-	public void testDenseBlock2Int32Row() throws Exception {
+	public void testDenseBlock2Int32Row() {
 		DenseBlock db = getDenseBlock2(ValueType.INT32);
 		checkRow(setRow(db));
 	}
 
 	@Test
-	public void testDenseBlock2Int64Row() throws Exception {
+	public void testDenseBlock2Int64Row() {
 		DenseBlock db = getDenseBlock2(ValueType.INT64);
 		checkRow(setRow(db));
 	}
 
 	@Test
-	public void testDenseBlock2StringRow() throws Exception {
+	public void testDenseBlock2StringRow() {
 		DenseBlock db = getDenseBlock2(ValueType.STRING);
 		checkRow(setRow(db));
 	}
 
 	@Test
-	public void testDenseBlockLarge2FP32Row() throws Exception {
+	public void testDenseBlockLarge2FP32Row() {
 		DenseBlock db = getDenseBlockLarge2(ValueType.FP32);
 		checkRow(setRow(db));
 	}
 
 	@Test
-	public void testDenseBlockLarge2FP64Row() throws Exception {
+	public void testDenseBlockLarge2FP64Row() {
 		DenseBlock db = getDenseBlockLarge2(ValueType.FP64);
 		checkRow(setRow(db));
 	}
 
 	@Test
-	public void testDenseBlockLarge2BoolRow() throws Exception {
+	public void testDenseBlockLarge2BoolRow() {
 		DenseBlock db = getDenseBlockLarge2(ValueType.BOOLEAN);
 		checkRow(setRow(db));
 	}
 
 	@Test
-	public void testDenseBlockLarge2Int32Row() throws Exception {
+	public void testDenseBlockLarge2Int32Row() {
 		DenseBlock db = getDenseBlockLarge2(ValueType.INT32);
 		checkRow(setRow(db));
 	}
 
 	@Test
-	public void testDenseBlockLarge2Int64Row() throws Exception {
+	public void testDenseBlockLarge2Int64Row() {
 		DenseBlock db = getDenseBlockLarge2(ValueType.INT64);
 		checkRow(setRow(db));
 	}
 
 	@Test
-	public void testDenseBlockLarge2StringRow() throws Exception {
+	public void testDenseBlockLarge2StringRow() {
 		DenseBlock db = getDenseBlockLarge2(ValueType.STRING);
 		checkRow(setRow(db));
 	}
 
 	@Test
-	public void testDenseBlock3FP32Row() throws Exception {
+	public void testDenseBlock3FP32Row() {
 		DenseBlock db = getDenseBlock3(ValueType.FP32);
 		checkRow(setRow(db));
 	}
 
 	@Test
-	public void testDenseBlock3FP64Row() throws Exception {
+	public void testDenseBlock3FP64Row() {
 		DenseBlock db = getDenseBlock3(ValueType.FP64);
 		checkRow(setRow(db));
 	}
 
 	@Test
-	public void testDenseBlock3BoolRow() throws Exception {
+	public void testDenseBlock3BoolRow() {
 		DenseBlock db = getDenseBlock3(ValueType.BOOLEAN);
 		checkRow(setRow(db));
 	}
 
 	@Test
-	public void testDenseBlock3Int32Row() throws Exception {
+	public void testDenseBlock3Int32Row() {
 		DenseBlock db = getDenseBlock3(ValueType.INT32);
 		checkRow(setRow(db));
 	}
 
 	@Test
-	public void testDenseBlock3Int64Row() throws Exception {
+	public void testDenseBlock3Int64Row() {
 		DenseBlock db = getDenseBlock3(ValueType.INT64);
 		checkRow(setRow(db));
 	}
 
 	@Test
-	public void testDenseBlock3StringRow() throws Exception {
+	public void testDenseBlock3StringRow() {
 		DenseBlock db = getDenseBlock3(ValueType.STRING);
 		checkRow(setRow(db));
 	}
 
 	@Test
-	public void testDenseBlockLarge3FP32Row() throws Exception {
+	public void testDenseBlockLarge3FP32Row() {
 		DenseBlock db = getDenseBlockLarge3(ValueType.FP32);
 		checkRow(setRow(db));
 	}
 
 	@Test
-	public void testDenseBlockLarge3FP64Row() throws Exception {
+	public void testDenseBlockLarge3FP64Row() {
 		DenseBlock db = getDenseBlockLarge3(ValueType.FP64);
 		checkRow(setRow(db));
 	}
 
 	@Test
-	public void testDenseBlockLarge3BoolRow() throws Exception {
+	public void testDenseBlockLarge3BoolRow() {
 		DenseBlock db = getDenseBlockLarge3(ValueType.BOOLEAN);
 		checkRow(setRow(db));
 	}
 
 	@Test
-	public void testDenseBlockLarge3Int32Row() throws Exception {
+	public void testDenseBlockLarge3Int32Row() {
 		DenseBlock db = getDenseBlockLarge3(ValueType.INT32);
 		checkRow(setRow(db));
 	}
 
 	@Test
-	public void testDenseBlockLarge3Int64Row() throws Exception {
+	public void testDenseBlockLarge3Int64Row() {
 		DenseBlock db = getDenseBlockLarge3(ValueType.INT64);
 		checkRow(setRow(db));
 	}
 
 	@Test
-	public void testDenseBlockLarge3StringRow() throws Exception {
+	public void testDenseBlockLarge3StringRow() {
 		DenseBlock db = getDenseBlockLarge3(ValueType.STRING);
 		checkRow(setRow(db));
 	}
@@ -222,19 +227,15 @@ public class DenseBlockSetRowTest {
 		if (db.numDims() == 3) {
 			int dim12 = 5 * 7;
 			double[] row = new double[dim12];
-			String[] strRow = new String[dim12];
 			for (int i = 0; i < dim12; i++) {
 				row[i] = (double) i;
-				strRow[i] = Double.toString(row[i]);
 			}
 			db.set(1, row);
 		} else { //num dims = 2
 			int dim1 = 5;
 			double[] row = new double[dim1];
-			String[] strRow = new String[dim1];
 			for (int i = 0; i < dim1; i++) {
 				row[i] = (double) i;
-				strRow[i] = Double.toString(row[i]);
 			}
 			db.set(1, row);
 		}

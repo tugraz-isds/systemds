@@ -307,7 +307,7 @@ public class DenseBlockLInt32 extends DenseBlockLDRB
 			}
 			else {
 				for (int ri = rb; ri < re; ri += _odims[0]) {
-					System.arraycopy(DataConverter.toInt(db.valuesAt(bi)), ri + cl, _blocks, ri + cl, cu - cl);
+					System.arraycopy(DataConverter.toInt(db.valuesAt(bi)), ri + cl, _blocks[bi], ri + cl, cu - cl);
 				}
 			}
 			rb = 0;

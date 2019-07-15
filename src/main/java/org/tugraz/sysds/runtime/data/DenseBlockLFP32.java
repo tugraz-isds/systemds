@@ -306,7 +306,7 @@ public class DenseBlockLFP32 extends DenseBlockLDRB
 			}
 			else {
 				for (int ri = rb; ri < re; ri += _odims[0]) {
-					System.arraycopy(DataConverter.toFloat(db.valuesAt(bi)), ri + cl, _blocks, ri + cl, cu - cl);
+					System.arraycopy(DataConverter.toFloat(db.valuesAt(bi)), ri + cl, _blocks[bi], ri + cl, cu - cl);
 				}
 			}
 			rb = 0;

@@ -19,85 +19,93 @@ package org.tugraz.sysds.test.component.tensor;
 import org.junit.Assert;
 import org.junit.Test;
 import org.tugraz.sysds.common.Types.ValueType;
-import org.tugraz.sysds.runtime.data.*;
+import org.tugraz.sysds.runtime.data.DenseBlock;
+import org.tugraz.sysds.runtime.data.DenseBlockBool;
+import org.tugraz.sysds.runtime.data.DenseBlockFactory;
+import org.tugraz.sysds.runtime.data.DenseBlockLBool;
+import org.tugraz.sysds.runtime.data.DenseBlockLFP32;
+import org.tugraz.sysds.runtime.data.DenseBlockLFP64;
+import org.tugraz.sysds.runtime.data.DenseBlockLString;
+import org.tugraz.sysds.runtime.data.DenseBlockLInt32;
+import org.tugraz.sysds.runtime.data.DenseBlockLInt64;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 public class DenseBlockIncrementTest {
 	@Test
-	public void testIndexDenseBlock2FP32CountNonZero() throws Exception {
+	public void testIndexDenseBlock2FP32CountNonZero() {
 		DenseBlock db = getDenseBlock2(ValueType.FP32);
 		checkIncrement2(db);
 	}
 
 	@Test
-	public void testIndexDenseBlock2FP64CountNonZero() throws Exception {
+	public void testIndexDenseBlock2FP64CountNonZero() {
 		DenseBlock db = getDenseBlock2(ValueType.FP64);
 		checkIncrement2(db);
 	}
 
 	@Test
-	public void testIndexDenseBlock2BoolCountNonZero() throws Exception {
+	public void testIndexDenseBlock2BoolCountNonZero() {
 		DenseBlock db = getDenseBlock2(ValueType.BOOLEAN);
 		checkIncrement2(db);
 	}
 
 	@Test
-	public void testIndexDenseBlock2Int32CountNonZero() throws Exception {
+	public void testIndexDenseBlock2Int32CountNonZero() {
 		DenseBlock db = getDenseBlock2(ValueType.INT32);
 		checkIncrement2(db);
 	}
 
 	@Test
-	public void testIndexDenseBlock2Int64CountNonZero() throws Exception {
+	public void testIndexDenseBlock2Int64CountNonZero() {
 		DenseBlock db = getDenseBlock2(ValueType.INT64);
 		checkIncrement2(db);
 	}
 
 	@Test
-	public void testIndexDenseBlock2StringCountNonZero() throws Exception {
+	public void testIndexDenseBlock2StringCountNonZero() {
 		DenseBlock db = getDenseBlock2(ValueType.STRING);
 		try {
 			checkIncrement2(db);
-		} catch (UnsupportedOperationException e) {
+		} catch (UnsupportedOperationException ignored) {
 		}
 	}
 
 	@Test
-	public void testIndexDenseBlockLarge2FP32CountNonZero() throws Exception {
+	public void testIndexDenseBlockLarge2FP32CountNonZero() {
 		DenseBlock db = getDenseBlockLarge2(ValueType.FP32);
 		checkIncrement2(db);
 	}
 
 	@Test
-	public void testIndexDenseBlockLarge2FP64CountNonZero() throws Exception {
+	public void testIndexDenseBlockLarge2FP64CountNonZero() {
 		DenseBlock db = getDenseBlockLarge2(ValueType.FP64);
 		checkIncrement2(db);
 	}
 
 	@Test
-	public void testIndexDenseBlockLarge2BoolCountNonZero() throws Exception {
+	public void testIndexDenseBlockLarge2BoolCountNonZero() {
 		DenseBlock db = getDenseBlockLarge2(ValueType.BOOLEAN);
 		checkIncrement2(db);
 	}
 
 	@Test
-	public void testIndexDenseBlockLarge2Int32CountNonZero() throws Exception {
+	public void testIndexDenseBlockLarge2Int32CountNonZero() {
 		DenseBlock db = getDenseBlockLarge2(ValueType.INT32);
 		checkIncrement2(db);
 	}
 
 	@Test
-	public void testIndexDenseBlockLarge2Int64CountNonZero() throws Exception {
+	public void testIndexDenseBlockLarge2Int64CountNonZero() {
 		DenseBlock db = getDenseBlockLarge2(ValueType.INT64);
 		checkIncrement2(db);
 	}
 
 	@Test
-	public void testIndexDenseBlockLarge2StringCountNonZero() throws Exception {
+	public void testIndexDenseBlockLarge2StringCountNonZero() {
 		DenseBlock db = getDenseBlockLarge2(ValueType.STRING);
 		try {
 			checkIncrement2(db);
-		} catch (UnsupportedOperationException e) {
+		} catch (UnsupportedOperationException ignored) {
 		}
 	}
 

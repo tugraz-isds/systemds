@@ -19,152 +19,160 @@ package org.tugraz.sysds.test.component.tensor;
 import org.junit.Assert;
 import org.junit.Test;
 import org.tugraz.sysds.common.Types.ValueType;
-import org.tugraz.sysds.runtime.data.*;
+import org.tugraz.sysds.runtime.data.DenseBlock;
+import org.tugraz.sysds.runtime.data.DenseBlockBool;
+import org.tugraz.sysds.runtime.data.DenseBlockFactory;
+import org.tugraz.sysds.runtime.data.DenseBlockLBool;
+import org.tugraz.sysds.runtime.data.DenseBlockLFP32;
+import org.tugraz.sysds.runtime.data.DenseBlockLFP64;
+import org.tugraz.sysds.runtime.data.DenseBlockLString;
+import org.tugraz.sysds.runtime.data.DenseBlockLInt32;
+import org.tugraz.sysds.runtime.data.DenseBlockLInt64;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 
 public class DenseBlockGetSetIndexingTest
 {
 	@Test
-	public void testIndexDenseBlock2FP32SetGetCell() throws Exception {
+	public void testIndexDenseBlock2FP32SetGetCell() {
 		DenseBlock db = getDenseBlock2(ValueType.FP32);
 		checkSequence(setSequence(db));
 	}
 
 	@Test
-	public void testIndexDenseBlock2FP64SetGetCell() throws Exception {
+	public void testIndexDenseBlock2FP64SetGetCell() {
 		DenseBlock db = getDenseBlock2(ValueType.FP64);
 		checkSequence(setSequence(db));
 	}
 	
 	@Test
-	public void testIndexDenseBlock2BoolSetGetCell() throws Exception {
+	public void testIndexDenseBlock2BoolSetGetCell() {
 		DenseBlock db = getDenseBlock2(ValueType.BOOLEAN);
 		checkSequence(setSequence(db));
 	}
 	
 	@Test
-	public void testIndexDenseBlock2Int32SetGetCell() throws Exception {
+	public void testIndexDenseBlock2Int32SetGetCell() {
 		DenseBlock db = getDenseBlock2(ValueType.INT32);
 		checkSequence(setSequence(db));
 	}
 	
 	@Test
-	public void testIndexDenseBlock2Int64SetGetCell() throws Exception {
+	public void testIndexDenseBlock2Int64SetGetCell() {
 		DenseBlock db = getDenseBlock2(ValueType.INT64);
 		checkSequence(setSequence(db));
 	}
 
 	@Test
-	public void testIndexDenseBlock2StringSetGetCell() throws Exception {
+	public void testIndexDenseBlock2StringSetGetCell() {
 		DenseBlock db = getDenseBlock2(ValueType.STRING);
 		checkSequence(setSequence(db));
 	}
 
 	@Test
-	public void testIndexDenseBlockLarge2FP32SetGetCell() throws Exception {
+	public void testIndexDenseBlockLarge2FP32SetGetCell() {
 		DenseBlock db = getDenseBlockLarge2(ValueType.FP32);
 		checkSequence(setSequence(db));
 	}
 
 	@Test
-	public void testIndexDenseBlockLarge2FP64SetGetCell() throws Exception {
+	public void testIndexDenseBlockLarge2FP64SetGetCell() {
 		DenseBlock db = getDenseBlockLarge2(ValueType.FP64);
 		checkSequence(setSequence(db));
 	}
 
 	@Test
-	public void testIndexDenseBlockLarge2BoolSetGetCell() throws Exception {
+	public void testIndexDenseBlockLarge2BoolSetGetCell() {
 		DenseBlock db = getDenseBlockLarge2(ValueType.BOOLEAN);
 		checkSequence(setSequence(db));
 	}
 
 	@Test
-	public void testIndexDenseBlockLarge2Int32SetGetCell() throws Exception {
+	public void testIndexDenseBlockLarge2Int32SetGetCell() {
 		DenseBlock db = getDenseBlockLarge2(ValueType.INT32);
 		checkSequence(setSequence(db));
 	}
 
 	@Test
-	public void testIndexDenseBlockLarge2Int64SetGetCell() throws Exception {
+	public void testIndexDenseBlockLarge2Int64SetGetCell() {
 		DenseBlock db = getDenseBlockLarge2(ValueType.INT64);
 		checkSequence(setSequence(db));
 	}
 
 	@Test
-	public void testIndexDenseBlockLarge2StringSetGetCell() throws Exception {
+	public void testIndexDenseBlockLarge2StringSetGetCell() {
 		DenseBlock db = getDenseBlockLarge2(ValueType.STRING);
 		checkSequence(setSequence(db));
 	}
 
 	@Test
-	public void testIndexDenseBlock3FP32SetGetCell() throws Exception {
+	public void testIndexDenseBlock3FP32SetGetCell() {
 		DenseBlock db = getDenseBlock3(ValueType.FP32);
 		checkSequence(setSequence(db));
 	}
 	
 	@Test
-	public void testIndexDenseBlock3FP64SetGetCell() throws Exception {
+	public void testIndexDenseBlock3FP64SetGetCell() {
 		DenseBlock db = getDenseBlock3(ValueType.FP64);
 		checkSequence(setSequence(db));
 	}
 	
 	@Test
-	public void testIndexDenseBlock3BoolSetGetCell() throws Exception {
+	public void testIndexDenseBlock3BoolSetGetCell() {
 		DenseBlock db = getDenseBlock3(ValueType.BOOLEAN);
 		checkSequence(setSequence(db));
 	}
 	
 	@Test
-	public void testIndexDenseBlock3Int32SetGetCell() throws Exception {
+	public void testIndexDenseBlock3Int32SetGetCell() {
 		DenseBlock db = getDenseBlock3(ValueType.INT32);
 		checkSequence(setSequence(db));
 	}
 	
 	@Test
-	public void testIndexDenseBlock3Int64SetGetCell() throws Exception {
+	public void testIndexDenseBlock3Int64SetGetCell() {
 		DenseBlock db = getDenseBlock3(ValueType.INT64);
 		checkSequence(setSequence(db));
 	}
 
 	@Test
-	public void testIndexDenseBlock3StringSetGetCell() throws Exception {
+	public void testIndexDenseBlock3StringSetGetCell() {
 		DenseBlock db = getDenseBlock3(ValueType.STRING);
 		checkSequence(setSequence(db));
 	}
 
 	@Test
-	public void testIndexDenseBlockLarge3FP32SetGetCell() throws Exception {
+	public void testIndexDenseBlockLarge3FP32SetGetCell() {
 		DenseBlock db = getDenseBlockLarge3(ValueType.FP32);
 		checkSequence(setSequence(db));
 	}
 
 	@Test
-	public void testIndexDenseBlockLarge3FP64SetGetCell() throws Exception {
+	public void testIndexDenseBlockLarge3FP64SetGetCell() {
 		DenseBlock db = getDenseBlockLarge3(ValueType.FP64);
 		checkSequence(setSequence(db));
 	}
 
 	@Test
-	public void testIndexDenseBlockLarge3BoolSetGetCell() throws Exception {
+	public void testIndexDenseBlockLarge3BoolSetGetCell() {
 		DenseBlock db = getDenseBlockLarge3(ValueType.BOOLEAN);
 		checkSequence(setSequence(db));
 	}
 
 	@Test
-	public void testIndexDenseBlockLarge3Int32SetGetCell() throws Exception {
+	public void testIndexDenseBlockLarge3Int32SetGetCell() {
 		DenseBlock db = getDenseBlockLarge3(ValueType.INT32);
 		checkSequence(setSequence(db));
 	}
 
 	@Test
-	public void testIndexDenseBlockLarge3Int64SetGetCell() throws Exception {
+	public void testIndexDenseBlockLarge3Int64SetGetCell() {
 		DenseBlock db = getDenseBlockLarge3(ValueType.INT64);
 		checkSequence(setSequence(db));
 	}
 
 	@Test
-	public void testIndexDenseBlockLarge3StringSetGetCell() throws Exception {
+	public void testIndexDenseBlockLarge3StringSetGetCell() {
 		DenseBlock db = getDenseBlockLarge3(ValueType.STRING);
 		checkSequence(setSequence(db));
 	}

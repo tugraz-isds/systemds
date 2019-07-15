@@ -19,121 +19,120 @@ package org.tugraz.sysds.test.component.tensor;
 import org.junit.Assert;
 import org.junit.Test;
 import org.tugraz.sysds.common.Types.ValueType;
-import org.tugraz.sysds.runtime.data.*;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+import org.tugraz.sysds.runtime.data.TensorBlock;
 
 
 public class TensorGetSetIndexingTest
 {
 	@Test
-	public void testIndexTensorBlock2FP32SetGetCell() throws Exception {
+	public void testIndexTensorBlock2FP32SetGetCell() {
 		TensorBlock tb = getTensorBlock2(ValueType.FP32);
 		checkSequence(setSequence(tb));
 	}
 
 	@Test
-	public void testIndexTensorBlock2FP64SetGetCell() throws Exception {
+	public void testIndexTensorBlock2FP64SetGetCell() {
 		TensorBlock tb = getTensorBlock2(ValueType.FP64);
 		checkSequence(setSequence(tb));
 	}
 	
 	@Test
-	public void testIndexTensorBlock2BoolSetGetCell() throws Exception {
+	public void testIndexTensorBlock2BoolSetGetCell() {
 		TensorBlock tb = getTensorBlock2(ValueType.BOOLEAN);
 		checkSequence(setSequence(tb));
 	}
 	
 	@Test
-	public void testIndexTensorBlock2Int32SetGetCell() throws Exception {
+	public void testIndexTensorBlock2Int32SetGetCell() {
 		TensorBlock tb = getTensorBlock2(ValueType.INT32);
 		checkSequence(setSequence(tb));
 	}
 	
 	@Test
-	public void testIndexTensorBlock2Int64SetGetCell() throws Exception {
+	public void testIndexTensorBlock2Int64SetGetCell() {
 		TensorBlock tb = getTensorBlock2(ValueType.INT64);
 		checkSequence(setSequence(tb));
 	}
 
 	/* ToDo: Add constructor for Large Tensors?
 	@Test
-	public void testIndexTensorBlockLarge2FP32SetGetCell() throws Exception {
+	public void testIndexTensorBlockLarge2FP32SetGetCell() {
 		throw new NotImplementedException();
 	}
 
 	@Test
-	public void testIndexTensorBlockLarge2FP64SetGetCell() throws Exception {
+	public void testIndexTensorBlockLarge2FP64SetGetCell() {
 		throw new NotImplementedException();
 	}
 
 	@Test
-	public void testIndexTensorBlockLarge2BoolSetGetCell() throws Exception {
+	public void testIndexTensorBlockLarge2BoolSetGetCell() {
 		throw new NotImplementedException();
 	}
 
 	@Test
-	public void testIndexTensorBlockLarge2Int32SetGetCell() throws Exception {
+	public void testIndexTensorBlockLarge2Int32SetGetCell() {
 		throw new NotImplementedException();
 	}
 
 	@Test
-	public void testIndexTensorBlockLarge2Int64SetGetCell() throws Exception {
+	public void testIndexTensorBlockLarge2Int64SetGetCell() {
 	    throw new NotImplementedException();
 	}*/
 
 	@Test
-	public void testIndexTensorBlock3FP32SetGetCell() throws Exception {
+	public void testIndexTensorBlock3FP32SetGetCell() {
 		TensorBlock tb = getTensorBlock3(ValueType.FP32);
 		checkSequence(setSequence(tb));
 	}
 	
 	@Test
-	public void testIndexTensorBlock3FP64SetGetCell() throws Exception {
+	public void testIndexTensorBlock3FP64SetGetCell() {
 		TensorBlock tb = getTensorBlock3(ValueType.FP64);
 		checkSequence(setSequence(tb));
 	}
 	
 	@Test
-	public void testIndexTensorBlock3BoolSetGetCell() throws Exception {
+	public void testIndexTensorBlock3BoolSetGetCell() {
 		TensorBlock tb = getTensorBlock3(ValueType.BOOLEAN);
 		checkSequence(setSequence(tb));
 	}
 	
 	@Test
-	public void testIndexTensorBlock3Int32SetGetCell() throws Exception {
+	public void testIndexTensorBlock3Int32SetGetCell() {
 		TensorBlock tb = getTensorBlock3(ValueType.INT32);
 		checkSequence(setSequence(tb));
 	}
 	
 	@Test
-	public void testIndexTensorBlock3Int64SetGetCell() throws Exception {
+	public void testIndexTensorBlock3Int64SetGetCell() {
 		TensorBlock tb = getTensorBlock3(ValueType.INT64);
 		checkSequence(setSequence(tb));
 	}
 
 	/* ToDo: Add constructor for Large Tensors?
 	@Test
-	public void testIndexTensorBlockLarge3FP32SetGetCell() throws Exception {
+	public void testIndexTensorBlockLarge3FP32SetGetCell() {
 		throw new NotImplementedException();
 	}
 
 	@Test
-	public void testIndexTensorBlockLarge3FP64SetGetCell() throws Exception {
+	public void testIndexTensorBlockLarge3FP64SetGetCell() {
 		throw new NotImplementedException();
 	}
 
 	@Test
-	public void testIndexTensorBlockLarge3BoolSetGetCell() throws Exception {
+	public void testIndexTensorBlockLarge3BoolSetGetCell() {
 		throw new NotImplementedException();
 	}
 
 	@Test
-	public void testIndexTensorBlockLarge3Int32SetGetCell() throws Exception {
+	public void testIndexTensorBlockLarge3Int32SetGetCell() {
 		throw new NotImplementedException();
 	}
 
 	@Test
-	public void testIndexTensorBlockLarge3Int64SetGetCell() throws Exception {
+	public void testIndexTensorBlockLarge3Int64SetGetCell() {
 	    throw new NotImplementedException();
 	}*/
 

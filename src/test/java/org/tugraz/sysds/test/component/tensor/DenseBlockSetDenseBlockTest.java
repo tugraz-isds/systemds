@@ -19,16 +19,22 @@ package org.tugraz.sysds.test.component.tensor;
 import org.junit.Assert;
 import org.junit.Test;
 import org.tugraz.sysds.common.Types.ValueType;
-import org.tugraz.sysds.runtime.data.*;
+import org.tugraz.sysds.runtime.data.DenseBlock;
+import org.tugraz.sysds.runtime.data.DenseBlockFactory;
+import org.tugraz.sysds.runtime.data.DenseBlockLBool;
+import org.tugraz.sysds.runtime.data.DenseBlockLFP32;
+import org.tugraz.sysds.runtime.data.DenseBlockLFP64;
+import org.tugraz.sysds.runtime.data.DenseBlockLString;
+import org.tugraz.sysds.runtime.data.DenseBlockLInt32;
+import org.tugraz.sysds.runtime.data.DenseBlockLInt64;
+import org.tugraz.sysds.runtime.data.DenseBlockString;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
-
-import java.util.Arrays;
 
 
 public class DenseBlockSetDenseBlockTest
 {
 	@Test
-	public void testDenseBlock2FP32SetDenseBlock() throws Exception {
+	public void testDenseBlock2FP32SetDenseBlock() {
 		DenseBlock db = getDenseBlock2(ValueType.FP32);
 		DenseBlock dbSet = getDenseBlock2(ValueType.FP32);
 		dbSet.set(1);
@@ -37,7 +43,7 @@ public class DenseBlockSetDenseBlockTest
 	}
 
 	@Test
-	public void testDenseBlock2FP64SetDenseBlock() throws Exception {
+	public void testDenseBlock2FP64SetDenseBlock() {
 		DenseBlock db = getDenseBlock2(ValueType.FP64);
 		DenseBlock dbSet = getDenseBlock2(ValueType.FP64);
 		dbSet.set(1);
@@ -46,7 +52,7 @@ public class DenseBlockSetDenseBlockTest
 	}
 
 	@Test
-	public void testDenseBlock2BoolSetDenseBlock() throws Exception {
+	public void testDenseBlock2BoolSetDenseBlock() {
 		DenseBlock db = getDenseBlock2(ValueType.BOOLEAN);
 		DenseBlock dbSet = getDenseBlock2(ValueType.BOOLEAN);
 		dbSet.set(1);
@@ -55,7 +61,7 @@ public class DenseBlockSetDenseBlockTest
 	}
 
 	@Test
-	public void testDenseBlock2Int32SetDenseBlock() throws Exception {
+	public void testDenseBlock2Int32SetDenseBlock() {
 		DenseBlock db = getDenseBlock2(ValueType.INT32);
 		DenseBlock dbSet = getDenseBlock2(ValueType.INT32);
 		dbSet.set(1);
@@ -64,7 +70,7 @@ public class DenseBlockSetDenseBlockTest
 	}
 
 	@Test
-	public void testDenseBlock2Int64SetDenseBlock() throws Exception {
+	public void testDenseBlock2Int64SetDenseBlock() {
 		DenseBlock db = getDenseBlock2(ValueType.INT64);
 		DenseBlock dbSet = getDenseBlock2(ValueType.INT64);
 		dbSet.set(1);
@@ -73,7 +79,7 @@ public class DenseBlockSetDenseBlockTest
 	}
 
 	@Test
-	public void testDenseBlock2StringSetDenseBlock() throws Exception {
+	public void testDenseBlock2StringSetDenseBlock() {
 		DenseBlock db = getDenseBlock2(ValueType.STRING);
 		DenseBlock dbSet = getDenseBlock2(ValueType.STRING);
 		for (int i = 0; i < 3; i++) {
@@ -86,7 +92,7 @@ public class DenseBlockSetDenseBlockTest
 	}
 
 	@Test
-	public void testDenseBlockLarge2FP32SetDenseBlock() throws Exception {
+	public void testDenseBlockLarge2FP32SetDenseBlock() {
 		DenseBlock db = getDenseBlockLarge2(ValueType.FP32);
 		DenseBlock dbSet = getDenseBlockLarge2(ValueType.FP32);
 		dbSet.set(1);
@@ -95,7 +101,7 @@ public class DenseBlockSetDenseBlockTest
 	}
 
 	@Test
-	public void testDenseBlockLarge2FP64SetDenseBlock() throws Exception {
+	public void testDenseBlockLarge2FP64SetDenseBlock() {
 		DenseBlock db = getDenseBlockLarge2(ValueType.FP64);
 		DenseBlock dbSet = getDenseBlockLarge2(ValueType.FP64);
 		dbSet.set(1);
@@ -104,7 +110,7 @@ public class DenseBlockSetDenseBlockTest
 	}
 
 	@Test
-	public void testDenseBlockLarge2BoolSetDenseBlock() throws Exception {
+	public void testDenseBlockLarge2BoolSetDenseBlock() {
 		DenseBlock db = getDenseBlockLarge2(ValueType.BOOLEAN);
 		DenseBlock dbSet = getDenseBlockLarge2(ValueType.BOOLEAN);
 		dbSet.set(1);
@@ -113,7 +119,7 @@ public class DenseBlockSetDenseBlockTest
 	}
 
 	@Test
-	public void testDenseBlockLarge2Int32SetDenseBlock() throws Exception {
+	public void testDenseBlockLarge2Int32SetDenseBlock() {
 		DenseBlock db = getDenseBlockLarge2(ValueType.INT32);
 		DenseBlock dbSet = getDenseBlockLarge2(ValueType.INT32);
 		dbSet.set(1);
@@ -122,7 +128,7 @@ public class DenseBlockSetDenseBlockTest
 	}
 
 	@Test
-	public void testDenseBlockLarge2Int64SetDenseBlock() throws Exception {
+	public void testDenseBlockLarge2Int64SetDenseBlock() {
 		DenseBlock db = getDenseBlockLarge2(ValueType.INT64);
 		DenseBlock dbSet = getDenseBlockLarge2(ValueType.INT64);
 		dbSet.set(1);
@@ -131,7 +137,7 @@ public class DenseBlockSetDenseBlockTest
 	}
 
 	@Test
-	public void testDenseBlockLarge2StringSetDenseBlock() throws Exception {
+	public void testDenseBlockLarge2StringSetDenseBlock() {
 		DenseBlock db = getDenseBlockLarge2(ValueType.STRING);
 		DenseBlock dbSet = getDenseBlockLarge2(ValueType.STRING);
 		dbSet.set(1);
@@ -140,7 +146,7 @@ public class DenseBlockSetDenseBlockTest
 	}
 
 	@Test
-	public void testDenseBlock3FP32SetDenseBlock() throws Exception {
+	public void testDenseBlock3FP32SetDenseBlock() {
 		DenseBlock db = getDenseBlock3(ValueType.FP32);
 		DenseBlock dbSet = getDenseBlock3(ValueType.FP32);
 		dbSet.set(1);
@@ -149,7 +155,7 @@ public class DenseBlockSetDenseBlockTest
 	}
 
 	@Test
-	public void testDenseBlock3FP64SetDenseBlock() throws Exception {
+	public void testDenseBlock3FP64SetDenseBlock() {
 		DenseBlock db = getDenseBlock3(ValueType.FP64);
 		DenseBlock dbSet = getDenseBlock3(ValueType.FP64);
 		dbSet.set(1);
@@ -158,7 +164,7 @@ public class DenseBlockSetDenseBlockTest
 	}
 
 	@Test
-	public void testDenseBlock3BoolSetDenseBlock() throws Exception {
+	public void testDenseBlock3BoolSetDenseBlock() {
 		DenseBlock db = getDenseBlock3(ValueType.BOOLEAN);
 		DenseBlock dbSet = getDenseBlock3(ValueType.BOOLEAN);
 		dbSet.set(1);
@@ -167,7 +173,7 @@ public class DenseBlockSetDenseBlockTest
 	}
 
 	@Test
-	public void testDenseBlock3Int32SetDenseBlock() throws Exception {
+	public void testDenseBlock3Int32SetDenseBlock() {
 		DenseBlock db = getDenseBlock3(ValueType.INT32);
 		DenseBlock dbSet = getDenseBlock3(ValueType.INT32);
 		dbSet.set(1);
@@ -176,7 +182,7 @@ public class DenseBlockSetDenseBlockTest
 	}
 
 	@Test
-	public void testDenseBlock3Int64SetDenseBlock() throws Exception {
+	public void testDenseBlock3Int64SetDenseBlock() {
 		DenseBlock db = getDenseBlock3(ValueType.INT64);
 		DenseBlock dbSet = getDenseBlock3(ValueType.INT64);
 		dbSet.set(1);
@@ -185,7 +191,7 @@ public class DenseBlockSetDenseBlockTest
 	}
 
 	@Test
-	public void testDenseBlock3StringSetDenseBlock() throws Exception {
+	public void testDenseBlock3StringSetDenseBlock() {
 		DenseBlock db = getDenseBlock3(ValueType.STRING);
 		DenseBlock dbSet = getDenseBlock3(ValueType.STRING);
 		dbSet.set(1);
@@ -194,7 +200,7 @@ public class DenseBlockSetDenseBlockTest
 	}
 
 	@Test
-	public void testDenseBlockLarge3FP32SetDenseBlock() throws Exception {
+	public void testDenseBlockLarge3FP32SetDenseBlock() {
 		DenseBlock db = getDenseBlockLarge3(ValueType.FP32);
 		DenseBlock dbSet = getDenseBlockLarge3(ValueType.FP32);
 		dbSet.set(1);
@@ -203,7 +209,7 @@ public class DenseBlockSetDenseBlockTest
 	}
 
 	@Test
-	public void testDenseBlockLarge3FP64SetDenseBlock() throws Exception {
+	public void testDenseBlockLarge3FP64SetDenseBlock() {
 		DenseBlock db = getDenseBlockLarge3(ValueType.FP64);
 		DenseBlock dbSet = getDenseBlockLarge3(ValueType.FP64);
 		dbSet.set(1);
@@ -212,7 +218,7 @@ public class DenseBlockSetDenseBlockTest
 	}
 
 	@Test
-	public void testDenseBlockLarge3BoolSetDenseBlock() throws Exception {
+	public void testDenseBlockLarge3BoolSetDenseBlock() {
 		DenseBlock db = getDenseBlockLarge3(ValueType.BOOLEAN);
 		DenseBlock dbSet = getDenseBlockLarge3(ValueType.BOOLEAN);
 		dbSet.set(1);
@@ -221,7 +227,7 @@ public class DenseBlockSetDenseBlockTest
 	}
 
 	@Test
-	public void testDenseBlockLarge3Int32SetDenseBlock() throws Exception {
+	public void testDenseBlockLarge3Int32SetDenseBlock() {
 		DenseBlock db = getDenseBlockLarge3(ValueType.INT32);
 		DenseBlock dbSet = getDenseBlockLarge3(ValueType.INT32);
 		dbSet.set(1);
@@ -230,7 +236,7 @@ public class DenseBlockSetDenseBlockTest
 	}
 
 	@Test
-	public void testDenseBlockLarge3Int64SetDenseBlock() throws Exception {
+	public void testDenseBlockLarge3Int64SetDenseBlock() {
 		DenseBlock db = getDenseBlockLarge3(ValueType.INT64);
 		DenseBlock dbSet = getDenseBlockLarge3(ValueType.INT64);
 		dbSet.set(1);
@@ -239,7 +245,7 @@ public class DenseBlockSetDenseBlockTest
 	}
 
 	@Test
-	public void testDenseBlockLarge3StringSetDenseBlock() throws Exception {
+	public void testDenseBlockLarge3StringSetDenseBlock() {
 		DenseBlock db = getDenseBlockLarge3(ValueType.STRING);
 		DenseBlock dbSet = getDenseBlockLarge3(ValueType.STRING);
 		dbSet.set(1);

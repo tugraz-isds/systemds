@@ -330,7 +330,6 @@ public class DenseBlockLBool extends DenseBlockLDRB
 
 	@Override
 	public DenseBlock set(int rl, int ru, int cl, int cu, DenseBlock db) {
-		boolean allColumns = cl == 0 && cu == _odims[0];
 		int rb = pos(rl);
 		int re = blockSize() * _odims[0];
 		for (int bi = index(rl); bi <= index(ru - 1); bi++) {

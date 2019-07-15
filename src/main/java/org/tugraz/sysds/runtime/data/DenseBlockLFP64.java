@@ -22,7 +22,6 @@
 
 package org.tugraz.sysds.runtime.data;
 
-import com.sun.tools.classfile.ConstantPool;
 import org.tugraz.sysds.runtime.util.UtilFunctions;
 
 import java.util.Arrays;
@@ -290,7 +289,6 @@ public class DenseBlockLFP64 extends DenseBlockLDRB
 
 	@Override
 	public DenseBlock set(int rl, int ru, int cl, int cu, DenseBlock db) {
-		boolean allColumns = cl == 0 && cu == _odims[0];
 		int rb = pos(rl);
 		int re = blockSize() * _odims[0];
 		for (int bi = index(rl); bi <= index(ru - 1); bi++) {
@@ -298,7 +296,7 @@ public class DenseBlockLFP64 extends DenseBlockLDRB
 				re = pos(ru - 1) + _odims[0];
 			}
 			for (int ri = rb; ri < re; ri += _odims[0]) {
-				System.arraycopy(db.valuesAt(bi), ri + cl, _blocks, ri + cl, cu - cl);
+				System.arraycopy(db.valuesAt(bi), ri + cl, _blocks[bi], ri + cl, cu - cl);
 			}
 			rb = 0;
 		}

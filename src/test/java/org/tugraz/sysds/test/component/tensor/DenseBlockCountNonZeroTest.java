@@ -19,151 +19,158 @@ package org.tugraz.sysds.test.component.tensor;
 import org.junit.Assert;
 import org.junit.Test;
 import org.tugraz.sysds.common.Types.ValueType;
-import org.tugraz.sysds.runtime.data.*;
+import org.tugraz.sysds.runtime.data.DenseBlock;
+import org.tugraz.sysds.runtime.data.DenseBlockFactory;
+import org.tugraz.sysds.runtime.data.DenseBlockLBool;
+import org.tugraz.sysds.runtime.data.DenseBlockLFP32;
+import org.tugraz.sysds.runtime.data.DenseBlockLFP64;
+import org.tugraz.sysds.runtime.data.DenseBlockLString;
+import org.tugraz.sysds.runtime.data.DenseBlockLInt32;
+import org.tugraz.sysds.runtime.data.DenseBlockLInt64;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 
 public class DenseBlockCountNonZeroTest {
 	@Test
-	public void testIndexDenseBlock2FP32CountNonZero() throws Exception {
+	public void testIndexDenseBlock2FP32CountNonZero() {
 		DenseBlock db = getDenseBlock2(ValueType.FP32);
 		checkFullNnz2(db);
 	}
 
 	@Test
-	public void testIndexDenseBlock2FP64CountNonZero() throws Exception {
+	public void testIndexDenseBlock2FP64CountNonZero() {
 		DenseBlock db = getDenseBlock2(ValueType.FP64);
 		checkFullNnz2(db);
 	}
 
 	@Test
-	public void testIndexDenseBlock2BoolCountNonZero() throws Exception {
+	public void testIndexDenseBlock2BoolCountNonZero() {
 		DenseBlock db = getDenseBlock2(ValueType.BOOLEAN);
 		checkFullNnz2(db);
 	}
 
 	@Test
-	public void testIndexDenseBlock2Int32CountNonZero() throws Exception {
+	public void testIndexDenseBlock2Int32CountNonZero() {
 		DenseBlock db = getDenseBlock2(ValueType.INT32);
 		checkFullNnz2(db);
 	}
 
 	@Test
-	public void testIndexDenseBlock2Int64CountNonZero() throws Exception {
+	public void testIndexDenseBlock2Int64CountNonZero() {
 		DenseBlock db = getDenseBlock2(ValueType.INT64);
 		checkFullNnz2(db);
 	}
 
 	@Test
-	public void testIndexDenseBlock2StringCountNonZero() throws Exception {
+	public void testIndexDenseBlock2StringCountNonZero() {
 		DenseBlock db = getDenseBlock2(ValueType.STRING);
 		checkFullNnz2(db);
 	}
 
 	@Test
-	public void testIndexDenseBlockLarge2FP32CountNonZero() throws Exception {
+	public void testIndexDenseBlockLarge2FP32CountNonZero() {
 		DenseBlock db = getDenseBlockLarge2(ValueType.FP32);
 		checkFullNnz2(db);
 	}
 
 	@Test
-	public void testIndexDenseBlockLarge2FP64CountNonZero() throws Exception {
+	public void testIndexDenseBlockLarge2FP64CountNonZero() {
 		DenseBlock db = getDenseBlockLarge2(ValueType.FP64);
 		checkFullNnz2(db);
 	}
 
 	@Test
-	public void testIndexDenseBlockLarge2BoolCountNonZero() throws Exception {
+	public void testIndexDenseBlockLarge2BoolCountNonZero() {
 		DenseBlock db = getDenseBlockLarge2(ValueType.BOOLEAN);
 		checkFullNnz2(db);
 	}
 
 	@Test
-	public void testIndexDenseBlockLarge2Int32CountNonZero() throws Exception {
+	public void testIndexDenseBlockLarge2Int32CountNonZero() {
 		DenseBlock db = getDenseBlockLarge2(ValueType.INT32);
 		checkFullNnz2(db);
 	}
 
 	@Test
-	public void testIndexDenseBlockLarge2Int64CountNonZero() throws Exception {
+	public void testIndexDenseBlockLarge2Int64CountNonZero() {
 		DenseBlock db = getDenseBlockLarge2(ValueType.INT64);
 		checkFullNnz2(db);
 	}
 
 	@Test
-	public void testIndexDenseBlockLarge2StringCountNonZero() throws Exception {
+	public void testIndexDenseBlockLarge2StringCountNonZero() {
 		DenseBlock db = getDenseBlockLarge2(ValueType.STRING);
 		checkFullNnz2(db);
 	}
 
 	@Test
-	public void testIndexDenseBlock3FP32CountNonZero() throws Exception {
+	public void testIndexDenseBlock3FP32CountNonZero() {
 		DenseBlock db = getDenseBlock3(ValueType.FP32);
 		checkFullNnz3(db);
 	}
 
 	@Test
-	public void testIndexDenseBlock3FP64CountNonZero() throws Exception {
+	public void testIndexDenseBlock3FP64CountNonZero() {
 		DenseBlock db = getDenseBlock3(ValueType.FP64);
 		checkFullNnz3(db);
 	}
 
 	@Test
-	public void testIndexDenseBlock3BoolCountNonZero() throws Exception {
+	public void testIndexDenseBlock3BoolCountNonZero() {
 		DenseBlock db = getDenseBlock3(ValueType.BOOLEAN);
 		checkFullNnz3(db);
 	}
 
 	@Test
-	public void testIndexDenseBlock3Int32CountNonZero() throws Exception {
+	public void testIndexDenseBlock3Int32CountNonZero() {
 		DenseBlock db = getDenseBlock3(ValueType.INT32);
 		checkFullNnz3(db);
 	}
 
 	@Test
-	public void testIndexDenseBlock3Int64CountNonZero() throws Exception {
+	public void testIndexDenseBlock3Int64CountNonZero() {
 		DenseBlock db = getDenseBlock3(ValueType.INT64);
 		checkFullNnz3(db);
 	}
 
 	@Test
-	public void testIndexDenseBlock3StringCountNonZero() throws Exception {
+	public void testIndexDenseBlock3StringCountNonZero() {
 		DenseBlock db = getDenseBlock3(ValueType.STRING);
 		checkFullNnz3(db);
 	}
 
 	@Test
-	public void testIndexDenseBlockLarge3FP32CountNonZero() throws Exception {
+	public void testIndexDenseBlockLarge3FP32CountNonZero() {
 		DenseBlock db = getDenseBlockLarge3(ValueType.FP32);
 		checkFullNnz3(db);
 	}
 
 	@Test
-	public void testIndexDenseBlockLarge3FP64CountNonZero() throws Exception {
+	public void testIndexDenseBlockLarge3FP64CountNonZero() {
 		DenseBlock db = getDenseBlockLarge3(ValueType.FP64);
 		checkFullNnz3(db);
 	}
 
 	@Test
-	public void testIndexDenseBlockLarge3BoolCountNonZero() throws Exception {
+	public void testIndexDenseBlockLarge3BoolCountNonZero() {
 		DenseBlock db = getDenseBlockLarge3(ValueType.BOOLEAN);
 		checkFullNnz3(db);
 	}
 
 	@Test
-	public void testIndexDenseBlockLarge3Int32CountNonZero() throws Exception {
+	public void testIndexDenseBlockLarge3Int32CountNonZero() {
 		DenseBlock db = getDenseBlockLarge3(ValueType.INT32);
 		checkFullNnz3(db);
 	}
 
 	@Test
-	public void testIndexDenseBlockLarge3Int64CountNonZero() throws Exception {
+	public void testIndexDenseBlockLarge3Int64CountNonZero() {
 		DenseBlock db = getDenseBlockLarge3(ValueType.INT64);
 		checkFullNnz3(db);
 	}
 
 	@Test
-	public void testIndexDenseBlockLarge3StringCountNonZero() throws Exception {
+	public void testIndexDenseBlockLarge3StringCountNonZero() {
 		DenseBlock db = getDenseBlockLarge3(ValueType.STRING);
 		checkFullNnz3(db);
 	}
@@ -223,10 +230,10 @@ public class DenseBlockCountNonZeroTest {
 		}
 		Assert.assertEquals(0, db.countNonZeros(0, 2, 3, 5));
 		db.set(1, 3, 0, 3, 3);
-		Assert.assertEquals((3 - 1) * (3 - 0), db.countNonZeros());
+		Assert.assertEquals((3 - 1) * 3, db.countNonZeros());
 		Assert.assertEquals(0, db.countNonZeros(0));
-		Assert.assertEquals(3 - 0, db.countNonZeros(1));
-		Assert.assertEquals(3 - 0, db.countNonZeros(1));
+		Assert.assertEquals(3, db.countNonZeros(1));
+		Assert.assertEquals(3, db.countNonZeros(1));
 		Assert.assertEquals(1, db.countNonZeros(0, 2, 2, 5));
 		db.set(1);
 		Assert.assertEquals(3 * 5, db.countNonZeros());
