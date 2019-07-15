@@ -53,17 +53,14 @@ public class DenseBlockString extends DenseBlockDRB {
 		int len = rlen * odims[0];
 		if (len > capacity()) {
 			_data = new String[len];
-			// v == 0 will be interpreted as "make empty string"
 			if (v != 0) {
 				Arrays.fill(_data, String.valueOf(v));
-			} else {
-				Arrays.fill(_data, "");
 			}
 		} else {
 			if (v != 0) {
 				Arrays.fill(_data, String.valueOf(v));
 			} else {
-				Arrays.fill(_data, "");
+				Arrays.fill(_data, null);
 			}
 		}
 		_rlen = rlen;

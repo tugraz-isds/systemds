@@ -27,18 +27,32 @@ import org.tugraz.sysds.runtime.util.DataConverter;
 import org.tugraz.sysds.runtime.util.UtilFunctions;
 
 import java.util.BitSet;
+import java.util.stream.IntStream;
 
 public class DenseBlockLBool extends DenseBlockLDRB
 {
 	private static final long serialVersionUID = 2604223782138590322L;
 
 	private BitSet[] _blocks;
-	private int _fullBlockSize;
-	private int _lastBlockSize;
 
 	public DenseBlockLBool(int[] dims) {
 		super(dims);
 		reset(_rlen, _odims, 0);
+	}
+
+	@Override
+	protected void createBlocks(int numBlocks) {
+		_blocks = new BitSet[numBlocks];
+	}
+
+	@Override
+	protected void createBlock(int bix, int length) {
+		_blocks[bix] = new BitSet(length);
+	}
+
+	@Override
+	protected void setInternal(int bix, int ix, double v) {
+		_blocks[bix].set(ix, v != 0);
 	}
 
 	@Override
@@ -53,57 +67,29 @@ public class DenseBlockLBool extends DenseBlockLDRB
 
 	@Override
 	public void reset(int rlen, int[] odims, double v) {
+		// Special implementation to make computeNnz fast if complete block is read
 		boolean bv = v != 0;
-		if(!isReusable(rlen, odims)) {
-			int newBlockSize = Integer.MAX_VALUE / odims[0];
-			int restBlockSize = rlen % newBlockSize;
-			int newNumBlocks = (rlen / newBlockSize) + (restBlockSize == 0 ? 0 : 1);
-			_fullBlockSize = newBlockSize;
-			if (restBlockSize == 0) {
-				_lastBlockSize = newBlockSize;
-				_blocks = new BitSet[newNumBlocks];
-				for (int i = 0; i < newNumBlocks; i++) {
-					_blocks[i] = new BitSet(newBlockSize * odims[0] + 1);
-					_blocks[i].set(newBlockSize * odims[0] + 1);
-				}
-			} else {
-				_lastBlockSize = restBlockSize;
-				_blocks = new BitSet[newNumBlocks];
-				for (int i = 0; i < newNumBlocks - 1; i++) {
-					_blocks[i] = new BitSet(newBlockSize * odims[0] + 1);
-					_blocks[i].set(newBlockSize * odims[0] + 1);
-				}
-				_blocks[newNumBlocks - 1] = new BitSet(restBlockSize * odims[0] + 1);
-				_blocks[newNumBlocks - 1].set(restBlockSize * odims[0] + 1);
+		long dataLength = (long) rlen * odims[0];
+		int newBlockSize = Math.min(rlen, Integer.MAX_VALUE / odims[0]);
+		int numBlocks = UtilFunctions.toInt(Math.ceil((double) rlen / newBlockSize));
+		if (_blen == newBlockSize && dataLength <= capacity()) {
+			for (int i = 0; i < numBlocks; i++) {
+				int toIndex = (int)Math.min((long)newBlockSize, dataLength - i * newBlockSize) * _odims[0];
+				_blocks[i].set(0, toIndex, bv);
+				// Clear old data so we can use cardinality for computeNnz
+				_blocks[i].set(toIndex, _blocks[i].size(), false);
 			}
-			if( bv ) {
-				for (int i = 0; i < newNumBlocks; i++) {
-					_blocks[i].set(0, _blocks[i].length() - 1);
-				}
-			}
+		} else {
+			int lastBlockSize = (newBlockSize == rlen ? newBlockSize : rlen % newBlockSize)  * odims[0];
+			createBlocks(numBlocks);
+			IntStream.range(0, numBlocks).parallel()
+					.forEach((i) -> {
+						int length = i == numBlocks - 1 ? lastBlockSize : newBlockSize;
+						createBlock(i, length);
+						_blocks[i].set(0, length, bv);
+					});
 		}
-		else {
-			// Memory is enough, overwrite
-			int newBlockSize = Integer.MAX_VALUE - 1 / odims[0];
-			int restBlockSize = rlen % newBlockSize;
-			int newNumBlocks = (rlen / newBlockSize) + (restBlockSize == 0 ? 0 : 1);
-			_fullBlockSize = newBlockSize;
-			if (restBlockSize == 0) {
-				_lastBlockSize = newBlockSize;
-				for (int i = 0; i < newNumBlocks; i++) {
-					_blocks[i].set(0, newBlockSize * odims[0], bv);
-					_blocks[i].set(newBlockSize * odims[0] + 1);
-				}
-			} else {
-				_lastBlockSize = restBlockSize;
-				for (int i = 0; i < newNumBlocks - 1; i++) {
-					_blocks[i].set(0, newBlockSize * odims[0], bv);
-					_blocks[i].set(newBlockSize * odims[0] + 1);
-				}
-				_blocks[newNumBlocks - 1].set(0, restBlockSize * odims[0], bv);
-				_blocks[newNumBlocks - 1].set(restBlockSize * odims[0] + 1);
-			}
-		}
+		_blen = newBlockSize;
 		_rlen = rlen;
 		_odims = odims;
 	}
@@ -114,29 +100,20 @@ public class DenseBlockLBool extends DenseBlockLDRB
 	}
 
 	@Override
-	public int blockSize() {
-		return (_blocks.length == 1) ? _lastBlockSize : _fullBlockSize;
-	}
-
-	@Override
-	public int blockSize(int bix) {
-		return (bix == _blocks.length - 1) ? _lastBlockSize : _fullBlockSize;
-	}
-
-	@Override
 	public long capacity() {
 		return (_blocks!=null) ? (long)(_blocks.length - 1) * _blocks[0].size() + _blocks[_blocks.length - 1].size() : -1;
 	}
 
 	@Override
-	public int capacity(int bix) {
-		return _blocks[bix].size();
-	}
-
-	@Override
 	protected long computeNnz(int bix, int start, int length) {
-		// ToDo: Switch to cardinality?
-		return UtilFunctions.computeNnz(_blocks[bix], start, length);
+		if (start == 0 && length == blockSize(bix) * _odims[0]) {
+			return _blocks[bix].cardinality();
+		} else {
+			BitSet mask = new BitSet(_blocks[bix].size());
+			mask.set(start, length + start);
+			mask.and(_blocks[bix]);
+			return mask.cardinality();
+		}
 	}
 
 	@Override
@@ -146,8 +123,9 @@ public class DenseBlockLBool extends DenseBlockLDRB
 	
 	@Override
 	public double[] valuesAt(int bix) {
-		Warnings.warnFullFP64Conversion(_blocks[bix].length() - 1);
-		return DataConverter.toDouble(_blocks[bix], _blocks[bix].length() - 1);
+		int length = blockSize(bix) * _odims[0];
+		Warnings.warnFullFP64Conversion(length);
+		return DataConverter.toDouble(_blocks[bix], length);
 	}
 
 	@Override
@@ -182,83 +160,6 @@ public class DenseBlockLBool extends DenseBlockLDRB
 	@Override
 	public DenseBlock set(int[] ix, String v) {
 		_blocks[index(ix[0])].set(pos(ix), Boolean.parseBoolean(v));
-		return this;
-	}
-
-	@Override
-	public DenseBlock set(int r, double[] v) {
-		int ri = r * _odims[0];
-		for (int i = ri; i < ri + v.length; i++) {
-			_blocks[index(r)].set(i, v[i - ri] != 0);
-		}
-		return this;
-	}
-
-	@Override
-	public DenseBlock set(DenseBlock db) {
-		double[] reuse = db.valuesAt(0);
-		int srcPos = 0;
-		int srcBi = 0;
-		int destPos = 0;
-		int destBi = 0;
-		int finishedRows = 0;
-		// Loop through both blocks (source and destination) and always take the maximum number of rows that were not
-		// yet read from source or not yet written to destination. This procedure is necessary because although the dimensions
-		// should match there is the option that one DenseBlock was reset() and reused old blocks, therefore it is possible
-		// that one DenseBlock uses a block to represent x rows the other one can actually fit x+y rows in a block.
-		while (true) {
-			int length;
-			if (srcPos != 0) {
-				int srcLength = db.blockSize(srcBi) * _odims[0];
-				int srcDataLeft = srcLength - srcPos;
-				length = Math.min(srcDataLeft, blockSize(destBi) * _odims[0]);
-			} else if (destPos != 0) {
-				int destLength = blockSize(destBi) * _odims[0];
-				int destDataLeft = destLength - destPos;
-				length = Math.min(destDataLeft, blockSize(srcBi) * _odims[0]);
-			} else {
-				length = Math.min(blockSize(srcBi), blockSize(destBi)) * _odims[0];
-			}
-			int rowsToAdd = Math.min(_rlen - finishedRows, length / _odims[0]);
-			for (int i = 0; i < rowsToAdd * _odims[0]; i++) {
-				_blocks[destBi].set(destPos + i, reuse[srcPos + i] != 0);
-			}
-			srcPos += length;
-			destPos += length;
-			finishedRows += rowsToAdd;
-			if (finishedRows >= _rlen) {
-				break;
-			}
-			if (srcPos == db.blockSize(srcBi) * _odims[0]) {
-				srcPos = 0;
-				srcBi++;
-				reuse = db.valuesAt(srcBi);
-			}
-			if (destPos == blockSize(destBi) * _odims[0]) {
-				destPos = 0;
-				destBi++;
-			}
-		}
-		return this;
-	}
-
-	@Override
-	public DenseBlock set(int rl, int ru, int cl, int cu, DenseBlock db) {
-		int rb = pos(rl);
-		int re = blockSize() * _odims[0];
-		for (int bi = index(rl); bi <= index(ru - 1); bi++) {
-			if (bi == index(ru - 1)) {
-				re = pos(ru - 1) + _odims[0];
-			}
-			double[] a = db.valuesAt(bi);
-			for (int r = rb; r < re; r += _odims[0]) {
-				for (int c = cl; c < cu; c++) {
-					int i = r + c;
-					_blocks[bi].set(i, a[i] != 0);
-				}
-			}
-			rb = 0;
-		}
 		return this;
 	}
 

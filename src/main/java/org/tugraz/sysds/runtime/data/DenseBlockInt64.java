@@ -118,7 +118,8 @@ public class DenseBlockInt64 extends DenseBlockDRB
 	
 	@Override
 	public DenseBlock set(DenseBlock db) {
-		System.arraycopy(DataConverter.toLong(db.valuesAt(0)), 0, _data, 0, _rlen*_odims[0]);
+		double[] data = db.valuesAt(0);
+		Arrays.parallelSetAll(_data, (i) -> UtilFunctions.toLong(data[i]));
 		return this;
 	}
 	

@@ -38,7 +38,22 @@ public class DenseBlockLString extends DenseBlockLDRB
 		super(dims);
 		reset(_rlen, _odims, 0);
 	}
-	
+
+	@Override
+	protected void createBlocks(int numBlocks) {
+		_blocks = new String[numBlocks][];
+	}
+
+	@Override
+	protected void createBlock(int bix, int length) {
+		_blocks[bix] = new String[length];
+	}
+
+	@Override
+	protected void setInternal(int bix, int ix, double v) {
+		_blocks[bix][ix] = String.valueOf(v);
+	}
+
 	@Override
 	public boolean isNumeric() {
 		return false;
@@ -50,58 +65,13 @@ public class DenseBlockLString extends DenseBlockLDRB
 	}
 
 	@Override
-	public void reset(int rlen, int[] odims, double v) {
-		if(!isReusable(rlen, odims)) {
-			// More memory is needed
-			int newBlockSize = Integer.MAX_VALUE / odims[0];
-			int restBlockSize = rlen % newBlockSize;
-			int newNumBlocks = (rlen / newBlockSize) + (restBlockSize == 0 ? 0 : 1);
-			if (restBlockSize == 0) {
-				_blocks = new String[newNumBlocks][newBlockSize * odims[0]];
-			} else {
-				_blocks = new String[newNumBlocks][];
-				for (int i = 0; i < newNumBlocks - 1; i++) {
-					_blocks[i] = new String[newBlockSize * odims[0]];
-				}
-				_blocks[newNumBlocks - 1] = new String[restBlockSize * odims[0]];
-			}
-		}
-		if (v != 0) {
-			for (int bix = 0; bix < numBlocks(); bix++) {
-				Arrays.fill(_blocks[bix], String.valueOf(v));
-			}
-		} else {
-			for (int bix = 0; bix < numBlocks(); bix++) {
-				Arrays.fill(_blocks[bix], "");
-			}
-		}
-		_rlen = rlen;
-		_odims = odims;
-	}
-
-	@Override
 	public int numBlocks() {
 		return _blocks.length;
 	}
 
 	@Override
-	public int blockSize() {
-		return _blocks[0].length / _odims[0];
-	}
-
-	@Override
-	public int blockSize(int bix) {
-		return _blocks[bix].length / _odims[0];
-	}
-
-	@Override
 	public long capacity() {
 		return (_blocks!=null) ? (long)(_blocks.length - 1) * _blocks[0].length + _blocks[_blocks.length - 1].length : -1;
-	}
-
-	@Override
-	public int capacity(int bix) {
-		return _blocks.length;
 	}
 
 	@Override
@@ -150,42 +120,6 @@ public class DenseBlockLString extends DenseBlockLDRB
 	@Override
 	public DenseBlock set(int[] ix, String v) {
 		_blocks[index(ix[0])][pos(ix)] = v;
-		return this;
-	}
-
-	@Override
-	public DenseBlock set(int r, double[] v) {
-		System.arraycopy(DataConverter.toString(v), 0, _blocks[index(r)], pos(r), _odims[0]);
-		return this;
-	}
-
-	@Override
-	public DenseBlock set(DenseBlock db) {
-		for (int r = 0; r < _rlen; r++) {
-			for (int c = 0; c < _odims[0]; c++) {
-				_blocks[index(r)][pos(r, c)] = db.getString(new int[]{r, c});
-			}
-		}
-		return this;
-	}
-
-	@Override
-	public DenseBlock set(int rl, int ru, int cl, int cu, DenseBlock db) {
-		int rb = pos(rl);
-		int re = blockSize() * _odims[0];
-		for (int bi = index(rl); bi <= index(ru - 1); bi++) {
-			if (bi == index(ru - 1)) {
-				re = pos(ru - 1) + _odims[0];
-			}
-			else {
-				for (int ri = rb; ri < re; ri += _odims[0]) {
-					for (int ci = cl; ci < cu; ci++) {
-						_blocks[bi][pos(ri, ci)] = db.getString(new int[]{ri, ci});
-					}
-				}
-			}
-			rb = 0;
-		}
 		return this;
 	}
 

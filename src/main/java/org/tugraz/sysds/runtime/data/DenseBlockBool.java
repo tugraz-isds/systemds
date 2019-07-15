@@ -62,7 +62,7 @@ public class DenseBlockBool extends DenseBlockDRB
 				_data.set(0, len);
 		}
 		else {
-			_data.set(0, len, bv);
+			_data.set(0, _data.size(), bv);
 		}
 		_rlen = rlen;
 		_odims = odims;
@@ -75,7 +75,11 @@ public class DenseBlockBool extends DenseBlockDRB
 
 	@Override
 	protected long computeNnz(int bix, int start, int length) {
-		return UtilFunctions.computeNnz(_data, start, length);
+		if (start == 0 && length == _rlen * _odims[0]) {
+			return _data.cardinality();
+		} else {
+			return UtilFunctions.computeNnz(_data, start, length);
+		}
 	}
 
 	@Override

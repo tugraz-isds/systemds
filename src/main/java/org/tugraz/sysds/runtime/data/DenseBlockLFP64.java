@@ -36,7 +36,22 @@ public class DenseBlockLFP64 extends DenseBlockLDRB
 		super(dims);
 		reset(_rlen, _odims, 0);
 	}
-	
+
+	@Override
+	protected void createBlocks(int numBlocks) {
+		_blocks = new double[numBlocks][];
+	}
+
+	@Override
+	protected void createBlock(int bix, int length) {
+		_blocks[bix] = new double[length];
+	}
+
+	@Override
+	protected void setInternal(int bix, int ix, double v) {
+		_blocks[bix][ix] = v;
+	}
+
 	@Override
 	public boolean isNumeric() {
 		return true;
@@ -48,58 +63,13 @@ public class DenseBlockLFP64 extends DenseBlockLDRB
 	}
 
 	@Override
-	public void reset(int rlen, int[] odims, double v) {
-		if(!isReusable(rlen, odims)) {
-			// More memory is needed
-			int newBlockSize = Integer.MAX_VALUE / odims[0];
-			int restBlockSize = rlen % newBlockSize;
-			int newNumBlocks = (rlen / newBlockSize) + (restBlockSize == 0 ? 0 : 1);
-			if (restBlockSize == 0) {
-				_blocks = new double[newNumBlocks][newBlockSize * odims[0]];
-			} else {
-				_blocks = new double[newNumBlocks][];
-				for (int i = 0; i < newNumBlocks - 1; i++) {
-					_blocks[i] = new double[newBlockSize * odims[0]];
-				}
-				_blocks[newNumBlocks - 1] = new double[restBlockSize * odims[0]];
-			}
-			if( v != 0 ) {
-				for (int i = 0; i < newNumBlocks; i++) {
-					Arrays.fill(_blocks[i], v);
-				}
-			}
-		}
-		else {
-			// Memory is enough, overwrite
-			set(v);
-		}
-		_rlen = rlen;
-		_odims = odims;
-	}
-
-	@Override
 	public int numBlocks() {
 		return _blocks.length;
 	}
 
 	@Override
-	public int blockSize() {
-		return _blocks[0].length / _odims[0];
-	}
-
-	@Override
-	public int blockSize(int bix) {
-		return _blocks[bix].length / _odims[0];
-	}
-
-	@Override
 	public long capacity() {
 		return (_blocks!=null) ? (long)(_blocks.length - 1) * _blocks[0].length + _blocks[_blocks.length - 1].length : -1;
-	}
-
-	@Override
-	public int capacity(int bix) {
-		return _blocks[bix].length;
 	}
 
 	@Override
@@ -147,74 +117,6 @@ public class DenseBlockLFP64 extends DenseBlockLDRB
 	@Override
 	public DenseBlock set(int[] ix, String v) {
 		_blocks[index(ix[0])][pos(ix)] = Double.parseDouble(v);
-		return this;
-	}
-
-	@Override
-	public DenseBlock set(int r, double[] v) {
-		System.arraycopy(v, 0, _blocks[index(r)], pos(r), _odims[0]);
-		return this;
-	}
-
-	@Override
-	public DenseBlock set(DenseBlock db) {
-		double[] reuse = db.valuesAt(0);
-		int srcPos = 0;
-		int srcBi = 0;
-		int destPos = 0;
-		int destBi = 0;
-		int finishedRows = 0;
-		// Loop through both blocks (source and destination) and always take the maximum number of rows that were not
-		// yet read from source or not yet written to destination. This procedure is necessary because although the dimensions
-		// should match there is the option that one DenseBlock was reset() and reused old blocks, therefore it is possible
-		// that one DenseBlock uses a block to represent x rows the other one can actually fit x+y rows in a block.
-		while (true) {
-			int length;
-			if (srcPos != 0) {
-				int srcLength = db.blockSize(srcBi) * _odims[0];
-				int srcDataLeft = srcLength - srcPos;
-				length = Math.min(srcDataLeft, blockSize(destBi) * _odims[0]);
-			} else if (destPos != 0) {
-				int destLength = blockSize(destBi) * _odims[0];
-				int destDataLeft = destLength - destPos;
-				length = Math.min(destDataLeft, blockSize(srcBi) * _odims[0]);
-			} else {
-				length = Math.min(blockSize(srcBi), blockSize(destBi)) * _odims[0];
-			}
-			int rowsToAdd = Math.min(_rlen - finishedRows, length / _odims[0]);
-			System.arraycopy(reuse, srcPos, _blocks[destBi], destPos, rowsToAdd * _odims[0]);
-			srcPos += length;
-			destPos += length;
-			finishedRows += rowsToAdd;
-			if (finishedRows >= _rlen) {
-				break;
-			}
-			if (srcPos == db.blockSize(srcBi) * _odims[0]) {
-				srcPos = 0;
-				srcBi++;
-				reuse = db.valuesAt(srcBi);
-			}
-			if (destPos == blockSize(destBi) * _odims[0]) {
-				destPos = 0;
-				destBi++;
-			}
-		}
-		return this;
-	}
-
-	@Override
-	public DenseBlock set(int rl, int ru, int cl, int cu, DenseBlock db) {
-		int rb = pos(rl);
-		int re = blockSize() * _odims[0];
-		for (int bi = index(rl); bi <= index(ru - 1); bi++) {
-			if (bi == index(ru - 1)) {
-				re = pos(ru - 1) + _odims[0];
-			}
-			for (int ri = rb; ri < re; ri += _odims[0]) {
-				System.arraycopy(db.valuesAt(bi), ri + cl, _blocks[bi], ri + cl, cu - cl);
-			}
-			rb = 0;
-		}
 		return this;
 	}
 

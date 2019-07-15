@@ -25,6 +25,8 @@ package org.tugraz.sysds.runtime.data;
 
 import org.tugraz.sysds.runtime.util.UtilFunctions;
 
+import java.util.stream.IntStream;
+
 /**
  * Dense Large Row Blocks have multiple 1D arrays (blocks), which contain complete rows.
  * Except the last block all blocks have the same size (size refers to the number of rows contained and space allocated).
@@ -33,52 +35,53 @@ public abstract class DenseBlockLDRB extends DenseBlock
 {
 	private static final long serialVersionUID = -7519435549328146356L;
 
+	protected int _blen;
+
 	protected DenseBlockLDRB(int[] dims) {
 		super(dims);
 	}
 
-	/**
-	 * Get the length of a allocated block.
-	 *
-	 * @param bix   block id
-	 * @return      capacity
-	 */
-	public abstract int capacity(int bix);
+	protected abstract void createBlocks(int numBlocks);
 
-	/**
-	 * Determine if the old blocks can be reused.
-	 *
-	 * @param rlen  the new rlen
-	 * @param odims the new other dimensions
-	 * @return      if the old blocks can be reused
-	 */
-	protected boolean isReusable(int rlen, int[] odims) {
-		// Todo: maybe use more conservative approach
-		if (capacity() == -1) return false;
-		// The number of rows possible to store in the blocks except the last one
-		int possibleRowsPerBlock = capacity(0) / odims[0];
-		// The number of blocks which will be completely in use after reset
-		int neededCompleteBlocks = rlen / possibleRowsPerBlock;
-		// The number of rows which will be in use in the last block
-		int neededLastBlockSize = rlen % possibleRowsPerBlock;
-		// The number of rows which fit in the last block
-		int lastBlockSize = capacity(numBlocks() - 1) / odims[0];
-		boolean reusable = false;
-		if (neededCompleteBlocks > numBlocks()) { }
-		else if (neededCompleteBlocks < numBlocks() - 1) {
-			// We have enough complete sized blocks to store everything
-			reusable = true;
+	protected abstract void createBlock(int bix, int length);
+
+	protected abstract void setInternal(int bix, int ix, double v);
+
+	@Override
+	public int blockSize() {
+	    return _blen;
+	}
+
+	@Override
+	public int blockSize(int bix) {
+		return Math.min(_blen, _blen - bix * _rlen);
+	}
+
+	@Override
+	public void reset(int rlen, int[] odims, double v) {
+		long dataLength = (long) rlen * odims[0];
+		int newBlockSize = Math.min(rlen, Integer.MAX_VALUE / odims[0]);
+		int numBlocks = UtilFunctions.toInt(Math.ceil((double) rlen / newBlockSize));
+		if (_blen == newBlockSize && dataLength <= capacity()) {
+			IntStream.range(0, numBlocks)
+					.forEach((bi) -> {
+						int toIndex = (int)Math.min((long)newBlockSize, dataLength - bi * newBlockSize) * _odims[0];
+						fillBlock(bi, 0, toIndex, v);
+					});
+		} else {
+			int lastBlockSize = (newBlockSize == rlen ? newBlockSize : rlen % newBlockSize) * odims[0];
+			createBlocks(numBlocks);
+			IntStream.range(0, numBlocks)
+					.forEach((i) -> {
+						int length = i == numBlocks - 1 ? lastBlockSize : newBlockSize;
+						createBlock(i, length);
+						if (v != 0)
+							fillBlock(i, 0, length, v);
+					});
 		}
-		else if (neededCompleteBlocks == numBlocks() - 1) {
-			// Check if the last block has the necessary space for our rows
-			reusable = neededLastBlockSize <= lastBlockSize;
-		}
-		else if (neededCompleteBlocks == numBlocks()) {
-			// Check if we can store enough rows in the last (most likely smaller) block
-			// and we don't need another row.
-			reusable = neededLastBlockSize == 0 && possibleRowsPerBlock == lastBlockSize;
-		}
-		return reusable;
+		_blen = newBlockSize;
+		_rlen = rlen;
+		_odims = odims;
 	}
 
 	@Override
@@ -182,4 +185,55 @@ public abstract class DenseBlockLDRB extends DenseBlock
 		}
 		return this;
 	}
+
+	@Override
+	public DenseBlock set(int r, double[] v) {
+		int bix = index(r);
+		int offset = pos(r);
+		IntStream.range(0, _odims[0])
+				.forEach((i) -> setInternal(bix, offset + i, v[i]));
+		return this;
+	}
+
+	@Override
+	public DenseBlock set(DenseBlock db) {
+		// ToDo: Optimize if dense block types match
+		for (int ri = 0; ri < _rlen; ri += blockSize()) {
+			int bix = ri / blockSize();
+			double[] other = db.valuesAt(bix);
+
+			IntStream.range(0, blockSize(bix) * _odims[0])
+					.forEach((i) -> setInternal(bix, i, other[i]));
+		}
+		return this;
+	}
+
+	@Override
+	public DenseBlock set(int rl, int ru, int cl, int cu, DenseBlock db) {
+		// ToDo: Optimize if dense block types match
+		boolean allColumns = cl == 0 && cu == _odims[0];
+		int rb = pos(rl);
+		int re = blockSize() * _odims[0];
+		for (int bi = index(rl); bi <= index(ru - 1); bi++) {
+			if (bi == index(ru - 1)) {
+				re = pos(ru - 1) + _odims[0];
+			}
+			double[] other = db.valuesAt(bi);
+			if (allColumns) {
+				int finalBi = bi;
+				IntStream.range(rb, re)
+						.forEach((i) -> setInternal(finalBi, i, other[i]));
+			}
+			else {
+				for (int ri = rb; ri < re; ri += _odims[0]) {
+					int finalBi = bi;
+					IntStream.range(ri + cl, ri + cu)
+							.forEach((i) -> setInternal(finalBi, i, other[i]));
+				}
+			}
+			rb = 0;
+		}
+		return this;
+	}
+
 }

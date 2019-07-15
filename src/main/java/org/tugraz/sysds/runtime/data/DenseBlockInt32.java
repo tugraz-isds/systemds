@@ -118,12 +118,14 @@ public class DenseBlockInt32 extends DenseBlockDRB
 
 	@Override
 	public DenseBlock set(DenseBlock db) {
-		System.arraycopy(DataConverter.toInt(db.valuesAt(0)), 0, _data, 0, _rlen*_odims[0]);
+		double[] data = db.valuesAt(0);
+		Arrays.parallelSetAll(_data, (i) -> UtilFunctions.toInt(data[i]));
 		return this;
 	}
 
 	@Override
 	public DenseBlock set(int rl, int ru, int ol, int ou, DenseBlock db) {
+		// ToDo: use simple loop instead of arraycopy
 		int[] a = DataConverter.toInt(db.valuesAt(0));
 		if( ol == 0 && ou == _odims[0])
 			System.arraycopy(a, 0, _data, rl*_odims[0]+ol, (int)db.size());
