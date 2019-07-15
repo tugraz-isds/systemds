@@ -180,6 +180,7 @@ public class DenseBlockFP64 extends DenseBlockDRB
 
 	@Override
 	public DenseBlock set(int[] ix, String v) {
+		// ToDo: Generalize?
 		_data[pos(ix)] = Double.parseDouble(v);
 		return this;
 	}
@@ -196,6 +197,7 @@ public class DenseBlockFP64 extends DenseBlockDRB
 
 	@Override
 	public String getString(int[] ix) {
+		// ToDo: Generalize?
 		return String.valueOf(_data[pos(ix)]);
 	}
 }

@@ -67,13 +67,13 @@ public abstract class DenseBlock implements Serializable
 	 * @return the size of the dimension
 	 */
 	public final int getDim(int i) {
-	    if (i == 0) {
-	    	return _rlen;
+		if (i == 0) {
+			return _rlen;
 		}
-	    if (i == _odims.length) {
-	    	return _odims[i - 1];
+		if (i == _odims.length) {
+			return _odims[i - 1];
 		}
-	    return _odims[i - 1] / _odims[i];
+		return _odims[i - 1] / _odims[i];
 	}
 
 	/**

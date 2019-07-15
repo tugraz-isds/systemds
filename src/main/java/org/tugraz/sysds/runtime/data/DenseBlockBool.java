@@ -155,9 +155,10 @@ public class DenseBlockBool extends DenseBlockDRB
 	
 	@Override
 	public DenseBlock set(DenseBlock db) {
+		// ToDo: Performance tests and improvements
 		double[] data = db.valuesAt(0);
-	    for (int i = 0; i < _rlen*_odims[0]; i++) {
-	    	_data.set(i, data[i] != 0);
+		for (int i = 0; i < _rlen*_odims[0]; i++) {
+			_data.set(i, data[i] != 0);
 		}
 		return this;
 	}
@@ -165,12 +166,12 @@ public class DenseBlockBool extends DenseBlockDRB
 	@Override
 	public DenseBlock set(int rl, int ru, int cl, int cu, DenseBlock db) {
 		double[] a = db.valuesAt(0);
-        for (int r = rl; r < ru; r++) {
-            for (int c = cl; c < cu; c++) {
-            	int i = r * _odims[0];
+		for (int r = rl; r < ru; r++) {
+			for (int c = cl; c < cu; c++) {
+				int i = r * _odims[0];
 				_data.set(i, a[i] != 0);
 			}
-        }
+		}
 		return this;
 	}
 

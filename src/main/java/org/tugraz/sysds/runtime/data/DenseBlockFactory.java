@@ -79,7 +79,7 @@ public abstract class DenseBlockFactory
 					case BOOLEAN: return new DenseBlockLBool(dims);
 					case INT32: return new DenseBlockLInt32(dims);
 					case INT64: return new DenseBlockLInt64(dims);
-					case STRING: return new DenseBlockString(dims);
+					case STRING: return new DenseBlockLString(dims);
 					default:
 						throw new NotImplementedException();
 				}
