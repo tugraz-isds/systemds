@@ -130,43 +130,8 @@ public class DenseBlockLFP32 extends DenseBlockLDRB
 	}
 
 	@Override
-	public long countNonZeros() {
-		long nnz = 0;
-		for (int i = 0; i < _blocks.length - 1; i++) {
-			nnz += UtilFunctions.computeNnz(_blocks[i], 0, blockSize() * _odims[0]);
-		}
-		return nnz + UtilFunctions.computeNnz(_blocks[_blocks.length - 1], 0,
-				blockSize(_blocks.length - 1) * _odims[0]);
-	}
-	
-	@Override
-	public int countNonZeros(int r) {
-		return UtilFunctions.computeNnz(_blocks[index(r)], pos(r), _odims[0]);
-	}
-
-	@Override
-	public long countNonZeros(int rl, int ru, int cl, int cu) {
-		long nnz = 0;
-		boolean allColumns = cl == 0 && cu == _odims[0];
-		int rb = pos(rl);
-		int re = blockSize() * _odims[0];
-		// loop over rows of blocks, and call computeNnz for the specified columns
-		for (int bi = index(rl); bi <= index(ru - 1); bi++) {
-		    // loop complete block if not last one
-			if (bi == index(ru - 1)) {
-				re = pos(ru - 1) + _odims[0];
-			}
-			if (allColumns) {
-				nnz += UtilFunctions.computeNnz(_blocks[bi], rb, re - rb) ;
-			}
-			else {
-				for (int ri = rb; ri < re; ri += _odims[0]) {
-				    nnz += UtilFunctions.computeNnz(_blocks[bi], ri + cl, cu - cl);
-				}
-			}
-			rb = 0;
-		}
-		return nnz;
+	protected long computeNnz(int bix, int start, int length) {
+		return UtilFunctions.computeNnz(_blocks[bix], start, length);
 	}
 
 	@Override
@@ -190,36 +155,8 @@ public class DenseBlockLFP32 extends DenseBlockLDRB
 	}
 
 	@Override
-	public DenseBlock set(double v) {
-		float fv = (float) v;
-		for (int i = 0; i < _blocks.length - 1; i++) {
-			Arrays.fill(_blocks[i], 0, blockSize() * _odims[0], fv);
-		}
-		Arrays.fill(_blocks[_blocks.length - 1], 0, blockSize(_blocks.length - 1) * _odims[0], fv);
-		return this;
-	}
-
-	@Override
-	public DenseBlock set(int rl, int ru, int cl, int cu, double v) {
-	    float fv = (float) v;
-		boolean allColumns = cl == 0 && cu == _odims[0];
-		int rb = pos(rl);
-		int re = blockSize() * _odims[0];
-		for (int bi = index(rl); bi <= index(ru - 1); bi++) {
-			if (bi == index(ru - 1)) {
-				re = pos(ru - 1) + _odims[0];
-			}
-			if (allColumns) {
-				Arrays.fill(_blocks[bi], rb, re, fv) ;
-			}
-			else {
-				for (int ri = rb; ri < re; ri += _odims[0]) {
-					Arrays.fill(_blocks[bi], ri + cl, ri + cu, fv) ;
-				}
-			}
-			rb = 0;
-		}
-		return this;
+	protected void fillBlock(int bix, int fromIndex, int toIndex, double v) {
+		Arrays.fill(_blocks[bix], fromIndex, toIndex, (float)v);
 	}
 
 	@Override

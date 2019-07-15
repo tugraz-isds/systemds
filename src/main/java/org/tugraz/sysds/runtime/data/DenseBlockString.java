@@ -22,6 +22,7 @@
 
 package org.tugraz.sysds.runtime.data;
 
+import org.dmg.pmml.Array;
 import org.tugraz.sysds.common.Warnings;
 import org.tugraz.sysds.runtime.util.DataConverter;
 import org.tugraz.sysds.runtime.util.UtilFunctions;
@@ -76,25 +77,8 @@ public class DenseBlockString extends DenseBlockDRB {
 	}
 
 	@Override
-	public long countNonZeros() {
-		return UtilFunctions.computeNnz(_data, 0, _rlen * _odims[0]);
-	}
-
-	@Override
-	public int countNonZeros(int r) {
-		return UtilFunctions.computeNnz(_data, r * _odims[0], _odims[0]);
-	}
-
-	@Override
-	public long countNonZeros(int rl, int ru, int cl, int cu) {
-		long nnz = 0;
-		if (cl == 0 && cu == _odims[0]) { //specific case: all cols
-			nnz += UtilFunctions.computeNnz(_data, rl * _odims[0], (ru - rl) * _odims[0]);
-		} else {
-			for (int i = rl, ix = rl * _odims[0]; i < ru; i++, ix += _odims[0])
-				nnz += UtilFunctions.computeNnz(_data, ix + cl, cu - cl);
-		}
-		return nnz;
+	protected long computeNnz(int bix, int start, int length) {
+		return UtilFunctions.computeNnz(_data, start, length);
 	}
 
 	@Override
@@ -134,19 +118,8 @@ public class DenseBlockString extends DenseBlockDRB {
 	}
 
 	@Override
-	public DenseBlock set(double v) {
-		Arrays.fill(_data, 0, _rlen*_odims[0], String.valueOf(v));
-		return this;
-	}
-
-	@Override
-	public DenseBlock set(int rl, int ru, int ol, int ou, double v) {
-		if( ol==0 && ou == _odims[0] )
-			Arrays.fill(_data, rl*_odims[0], ru*_odims[0], String.valueOf(v));
-		else
-			for(int i=rl, ix=rl*_odims[0]; i<ru; i++, ix+=_odims[0])
-				Arrays.fill(_data, ix+ol, ix+ou, String.valueOf(v));
-		return this;
+	protected void fillBlock(int bix, int fromIndex, int toIndex, double v) {
+		Arrays.fill(_data, fromIndex, toIndex, String.valueOf(v));
 	}
 
 	@Override

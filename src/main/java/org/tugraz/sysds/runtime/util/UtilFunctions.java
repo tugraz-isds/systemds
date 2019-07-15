@@ -618,7 +618,7 @@ public class UtilFunctions
 	public static int computeNnz(String[] a, int ai, int len) {
 		int lnnz = 0;
 		for( int k=ai; k<ai+len; k++ )
-			lnnz += (a[k] != null && !a[k].isEmpty()) ? 1 : 0;
+			lnnz += (a[k] != null && !a[k].isEmpty() && Double.parseDouble(a[k]) != 0) ? 1 : 0;
 		return lnnz;
 	}
 

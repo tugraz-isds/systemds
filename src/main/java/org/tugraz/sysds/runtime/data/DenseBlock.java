@@ -236,7 +236,17 @@ public abstract class DenseBlock implements Serializable
 	 * @return capacity
 	 */
 	public abstract long capacity();
-	
+
+	/**
+	 * Computes the number of non zero elements of a certain range of elements in a block.
+	 *
+	 * @param bix       index of block
+	 * @param start     start index in block
+	 * @param length    number of elements to check
+	 * @return          number of elements that are not zero
+	 */
+	protected abstract long computeNnz(int bix, int start, int length);
+
 	/**
 	 * Compute the number of non-zero values, which potentially 
 	 * makes a full pass over the underlying blocks.
@@ -338,7 +348,17 @@ public abstract class DenseBlock implements Serializable
 	 * @param delta increment value
 	 */
 	public abstract void incr(int r, int c, double delta);
-	
+
+	/**
+	 * Fill a certain range of elements of a block.
+	 *
+	 * @param bix       index of block
+	 * @param fromIndex starting index in block
+	 * @param toIndex   ending index in block (exclusive)
+	 * @param v         value
+	 */
+	protected abstract void fillBlock(int bix, int fromIndex, int toIndex, double v);
+
 	/**
 	 * Set the given value for the entire dense block (fill).
 	 * 

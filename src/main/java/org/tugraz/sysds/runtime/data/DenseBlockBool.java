@@ -74,26 +74,8 @@ public class DenseBlockBool extends DenseBlockDRB
 	}
 
 	@Override
-	public long countNonZeros() {
-		return _data.cardinality();
-	}
-	
-	@Override
-	public int countNonZeros(int r) {
-		return UtilFunctions.computeNnz(_data, r*_odims[0], _odims[0]);
-	}
-
-	@Override
-	public long countNonZeros(int rl, int ru, int ol, int ou) {
-		long nnz = 0;
-		if( ol == 0 && ou == _odims[0] ) { //specific case: all cols
-			nnz += UtilFunctions.computeNnz(_data, rl*_odims[0], (ru-rl)*_odims[0]);
-		}
-		else {
-			for( int i=rl, ix=rl*_odims[0]; i<ru; i++, ix+=_odims[0] )
-				nnz += UtilFunctions.computeNnz(_data, ix+ol, ou-ol);
-		}
-		return nnz;
+	protected long computeNnz(int bix, int start, int length) {
+		return UtilFunctions.computeNnz(_data, start, length);
 	}
 
 	@Override
@@ -129,22 +111,10 @@ public class DenseBlockBool extends DenseBlockDRB
 		Warnings.warnInvalidBooleanIncrement(delta);
 		_data.set(pos(r, c));
 	}
-	
+
 	@Override
-	public DenseBlock set(double v) {
-		_data.set(0, _rlen*_odims[0], v != 0);
-		return this;
-	}
-	
-	@Override
-	public DenseBlock set(int rl, int ru, int cl, int cu, double v) {
-		boolean bv = v != 0;
-		if( cl==0 && cu == _odims[0] )
-			_data.set(rl*_odims[0], ru*_odims[0], bv);
-		else
-			for(int i=rl, ix=rl*_odims[0]; i<ru; i++, ix+=_odims[0])
-				_data.set(ix+cl, ix+cu, bv);
-		return this;
+	protected void fillBlock(int bix, int fromIndex, int toIndex, double v) {
+		_data.set(fromIndex, toIndex, v != 0);
 	}
 
 	@Override
