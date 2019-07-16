@@ -38,7 +38,12 @@ public class DenseBlockBool extends DenseBlockDRB
 		super(dims);
 		reset(_rlen, _odims, 0);
 	}
-	
+
+	@Override
+	protected void allocateBlock(int bix, int length) {
+		_data = new BitSet(length);
+	}
+
 	public DenseBlockBool(int[] dims, boolean[] data) {
 		super(dims);
 		_data = new BitSet(data.length);
@@ -119,6 +124,11 @@ public class DenseBlockBool extends DenseBlockDRB
 	@Override
 	protected void fillBlock(int bix, int fromIndex, int toIndex, double v) {
 		_data.set(fromIndex, toIndex, v != 0);
+	}
+
+	@Override
+	protected void setInternal(int bix, int ix, double v) {
+
 	}
 
 	@Override

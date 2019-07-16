@@ -41,12 +41,12 @@ public class DenseBlockLBool extends DenseBlockLDRB
 	}
 
 	@Override
-	protected void createBlocks(int numBlocks) {
+	protected void allocateBlocks(int numBlocks) {
 		_blocks = new BitSet[numBlocks];
 	}
 
 	@Override
-	protected void createBlock(int bix, int length) {
+	protected void allocateBlock(int bix, int length) {
 		_blocks[bix] = new BitSet(length);
 	}
 
@@ -81,11 +81,11 @@ public class DenseBlockLBool extends DenseBlockLDRB
 			}
 		} else {
 			int lastBlockSize = (newBlockSize == rlen ? newBlockSize : rlen % newBlockSize)  * odims[0];
-			createBlocks(numBlocks);
-			IntStream.range(0, numBlocks).parallel()
+			allocateBlocks(numBlocks);
+			IntStream.range(0, numBlocks)
 					.forEach((i) -> {
 						int length = i == numBlocks - 1 ? lastBlockSize : newBlockSize;
-						createBlock(i, length);
+						allocateBlock(i, length);
 						_blocks[i].set(0, length, bv);
 					});
 		}

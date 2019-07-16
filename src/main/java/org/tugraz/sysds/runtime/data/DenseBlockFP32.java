@@ -39,6 +39,11 @@ public class DenseBlockFP32 extends DenseBlockDRB
 		reset(_rlen, _odims, 0);
 	}
 
+	@Override
+	protected void allocateBlock(int bix, int length) {
+		_data = new float[length];
+	}
+
 	public DenseBlockFP32(int[] dims, float[] data) {
 		super(dims);
 		_data = data;
@@ -47,22 +52,6 @@ public class DenseBlockFP32 extends DenseBlockDRB
 	@Override
 	public boolean isNumeric() {
 		return true;
-	}
-
-	@Override
-	public void reset(int rlen, int[] odims, double v) {
-		float fv = (float) v;
-		int len = rlen * odims[0];
-		if( len > capacity() ) {
-			_data = new float[len];
-			if( v != 0 )
-				Arrays.fill(_data, fv);
-		}
-		else {
-			Arrays.fill(_data, 0, len, fv);
-		}
-		_rlen = rlen;
-		_odims = odims;
 	}
 
 	@Override
@@ -112,6 +101,11 @@ public class DenseBlockFP32 extends DenseBlockDRB
 	}
 
 	@Override
+	protected void setInternal(int bix, int ix, double v) {
+		_data[ix] = (float)v;
+	}
+
+	@Override
 	public DenseBlock set(int r, int c, double v) {
 		_data[pos(r, c)] = (float)v;
 		return this;
@@ -123,19 +117,6 @@ public class DenseBlockFP32 extends DenseBlockDRB
 		double[] data = db.valuesAt(0);
 		for (int i = 0; i < _rlen * _odims[0]; i++) {
 			_data[i] = (float)data[i];
-		}
-		return this;
-	}
-
-	@Override
-	public DenseBlock set(int rl, int ru, int ol, int ou, DenseBlock db) {
-		float[] a = DataConverter.toFloat(db.valuesAt(0));
-		if( ol == 0 && ou == _odims[0])
-			System.arraycopy(a, 0, _data, rl*_odims[0]+ol, (int)db.size());
-		else {
-			int len = ou - ol;
-			for(int i=rl, ix1=0, ix2=rl*_odims[0]+ol; i<ru; i++, ix1+=len, ix2+=_odims[0])
-				System.arraycopy(a, ix1, _data, ix2, len);
 		}
 		return this;
 	}

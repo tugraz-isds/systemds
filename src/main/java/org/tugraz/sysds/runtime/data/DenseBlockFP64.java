@@ -36,7 +36,12 @@ public class DenseBlockFP64 extends DenseBlockDRB
 		super(dims);
 		reset(_rlen, _odims, 0);
 	}
-	
+
+	@Override
+	protected void allocateBlock(int bix, int length) {
+		_data = new double[length];
+	}
+
 	public DenseBlockFP64(int[] dims, double[] data) {
 		super(dims);
 		_data = data;
@@ -110,6 +115,11 @@ public class DenseBlockFP64 extends DenseBlockDRB
 	@Override
 	protected void fillBlock(int bix, int fromIndex, int toIndex, double v) {
 		Arrays.fill(_data, fromIndex, toIndex, v);
+	}
+
+	@Override
+	protected void setInternal(int bix, int ix, double v) {
+		_data[ix] = v;
 	}
 
 	@Override

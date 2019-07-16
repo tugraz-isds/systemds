@@ -37,7 +37,12 @@ public class DenseBlockInt64 extends DenseBlockDRB
 		super(dims);
 		reset(_rlen, _odims, 0);
 	}
-	
+
+	@Override
+	protected void allocateBlock(int bix, int length) {
+		_data = new long[length];
+	}
+
 	public DenseBlockInt64(int[] dims, long[] data) {
 		super(dims);
 		_data = data;
@@ -48,22 +53,6 @@ public class DenseBlockInt64 extends DenseBlockDRB
 		return true;
 	}
 	
-	@Override
-	public void reset(int rlen, int[] odims, double v) {
-		long lv = UtilFunctions.toLong(v);
-		int len = rlen * odims[0];
-		if( len > capacity() ) {
-			_data = new long[len];
-			if( v != 0 )
-				Arrays.fill(_data, lv);
-		}
-		else {
-			Arrays.fill(_data, 0, len, lv);
-		}
-		_rlen = rlen;
-		_odims = odims;
-	}
-
 	@Override
 	public long capacity() {
 		return (_data!=null) ? _data.length : -1;
@@ -111,6 +100,11 @@ public class DenseBlockInt64 extends DenseBlockDRB
 	}
 
 	@Override
+	protected void setInternal(int bix, int ix, double v) {
+		_data[ix] = UtilFunctions.toLong(v);
+	}
+
+	@Override
 	public DenseBlock set(int r, int c, double v) {
 		_data[pos(r, c)] = UtilFunctions.toLong(v);
 		return this;
@@ -123,20 +117,6 @@ public class DenseBlockInt64 extends DenseBlockDRB
 		return this;
 	}
 	
-	@Override
-	public DenseBlock set(int rl, int ru, int ol, int ou, DenseBlock db) {
-		// ToDo: performance
-		long[] a = DataConverter.toLong(db.valuesAt(0));
-		if( ol == 0 && ou == _odims[0])
-			System.arraycopy(a, 0, _data, rl*_odims[0]+ol, (int)db.size());
-		else {
-			int len = ou - ol;
-			for(int i=rl, ix1=0, ix2=rl*_odims[0]+ol; i<ru; i++, ix1+=len, ix2+=_odims[0])
-				System.arraycopy(a, ix1, _data, ix2, len);
-		}
-		return this;
-	}
-
 	@Override
 	public DenseBlock set(int r, double[] v) {
 		System.arraycopy(DataConverter.toLong(v), 0, _data, pos(r), _odims[0]);

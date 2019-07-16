@@ -24,6 +24,7 @@ package org.tugraz.sysds.runtime.data;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.stream.IntStream;
 
 import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.instructions.cp.KahanObject;
@@ -59,6 +60,15 @@ public abstract class DenseBlock implements Serializable
 		//materialize dim offsets (reverse cumprod)
 		_odims = createDimOffsets(dims);
 	}
+
+	/**
+	 * Create a block in the internal blocks array. `allocateBlocks` has to be called
+	 * before it for Large-Dense-Blocks.
+	 *
+	 * @param bix       block index
+	 * @param length    space to allocate
+	 */
+	protected abstract void allocateBlock(int bix, int length);
 
 	/**
 	 * Get the ith dimensions size of the dense block.
@@ -361,6 +371,14 @@ public abstract class DenseBlock implements Serializable
 	protected abstract void fillBlock(int bix, int fromIndex, int toIndex, double v);
 
 	/**
+	 * Set a value at a position given by block index and index in that block.
+	 * @param bix   block index
+	 * @param ix    block-array index
+	 * @param v     value
+	 */
+	protected abstract void setInternal(int bix, int ix, double v);
+
+	/**
 	 * Set the given value for the entire dense block (fill).
 	 * 
 	 * @param v value
@@ -420,9 +438,30 @@ public abstract class DenseBlock implements Serializable
 	 * @param db dense block
 	 * @return self
 	 */
-	public abstract DenseBlock set(int rl, int ru, int cl, int cu, DenseBlock db);
-	
-	
+	public DenseBlock set(int rl, int ru, int cl, int cu, DenseBlock db) {
+		// ToDo: Optimize if dense block types match
+		// ToDo: Performance
+		boolean allColumns = cl == 0 && cu == _odims[0];
+		for (int bi = index(rl); bi <= index(ru - 1); bi++) {
+			double[] other = db.valuesAt(bi);
+			if (allColumns) {
+				int offset = rl * _odims[0] + cl;
+				IntStream.range(0, (int) db.size())
+						.forEach((i) -> setInternal(0, offset + i, other[i]));
+			}
+			else {
+				int len = cu - cl;
+				for(int i=rl, ix1=0, ix2=rl*_odims[0]+cl; i<ru; i++, ix1+=len, ix2+=_odims[0]) {
+					int finalIx1 = ix1;
+					int finalIx2 = ix2;
+					IntStream.range(0, len)
+							.forEach((ix) -> setInternal(0, finalIx2 + ix, other[finalIx1 + ix]));
+				}
+			}
+		}
+		return this;
+	}
+
 	/**
 	 * Copy the given kahan object sum and correction.
 	 * 

@@ -40,12 +40,12 @@ public class DenseBlockLInt64 extends DenseBlockLDRB
 	}
 
 	@Override
-	protected void createBlocks(int numBlocks) {
+	protected void allocateBlocks(int numBlocks) {
 		_blocks = new long[numBlocks][];
 	}
 
 	@Override
-	protected void createBlock(int bix, int length) {
+	protected void allocateBlock(int bix, int length) {
 		_blocks[bix] = new long[length];
 	}
 

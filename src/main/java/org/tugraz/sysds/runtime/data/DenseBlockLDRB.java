@@ -41,11 +41,13 @@ public abstract class DenseBlockLDRB extends DenseBlock
 		super(dims);
 	}
 
-	protected abstract void createBlocks(int numBlocks);
-
-	protected abstract void createBlock(int bix, int length);
-
-	protected abstract void setInternal(int bix, int ix, double v);
+	/**
+	 * Create the internal array to store the blocks. Does not create
+	 * storage space for a block yet, call allocate block for that.
+	 *
+	 * @param numBlocks the number of blocks to create
+	 */
+	protected abstract void allocateBlocks(int numBlocks);
 
 	@Override
 	public int blockSize() {
@@ -70,11 +72,11 @@ public abstract class DenseBlockLDRB extends DenseBlock
 					});
 		} else {
 			int lastBlockSize = (newBlockSize == rlen ? newBlockSize : rlen % newBlockSize) * odims[0];
-			createBlocks(numBlocks);
+			allocateBlocks(numBlocks);
 			IntStream.range(0, numBlocks)
 					.forEach((i) -> {
 						int length = i == numBlocks - 1 ? lastBlockSize : newBlockSize;
-						createBlock(i, length);
+						allocateBlock(i, length);
 						if (v != 0)
 							fillBlock(i, 0, length, v);
 					});
@@ -198,42 +200,13 @@ public abstract class DenseBlockLDRB extends DenseBlock
 	@Override
 	public DenseBlock set(DenseBlock db) {
 		// ToDo: Optimize if dense block types match
+		// ToDo: Performance
 		for (int ri = 0; ri < _rlen; ri += blockSize()) {
 			int bix = ri / blockSize();
 			double[] other = db.valuesAt(bix);
-
 			IntStream.range(0, blockSize(bix) * _odims[0])
 					.forEach((i) -> setInternal(bix, i, other[i]));
 		}
 		return this;
 	}
-
-	@Override
-	public DenseBlock set(int rl, int ru, int cl, int cu, DenseBlock db) {
-		// ToDo: Optimize if dense block types match
-		boolean allColumns = cl == 0 && cu == _odims[0];
-		int rb = pos(rl);
-		int re = blockSize() * _odims[0];
-		for (int bi = index(rl); bi <= index(ru - 1); bi++) {
-			if (bi == index(ru - 1)) {
-				re = pos(ru - 1) + _odims[0];
-			}
-			double[] other = db.valuesAt(bi);
-			if (allColumns) {
-				int finalBi = bi;
-				IntStream.range(rb, re)
-						.forEach((i) -> setInternal(finalBi, i, other[i]));
-			}
-			else {
-				for (int ri = rb; ri < re; ri += _odims[0]) {
-					int finalBi = bi;
-					IntStream.range(ri + cl, ri + cu)
-							.forEach((i) -> setInternal(finalBi, i, other[i]));
-				}
-			}
-			rb = 0;
-		}
-		return this;
-	}
-
 }

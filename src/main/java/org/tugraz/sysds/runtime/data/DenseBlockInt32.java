@@ -38,6 +38,11 @@ public class DenseBlockInt32 extends DenseBlockDRB
 		reset(_rlen, _odims, 0);
 	}
 
+	@Override
+	protected void allocateBlock(int bix, int length) {
+		_data = new int[length];
+	}
+
 	public DenseBlockInt32(int[] dims, int[] data) {
 		super(dims);
 		_data = data;
@@ -46,22 +51,6 @@ public class DenseBlockInt32 extends DenseBlockDRB
 	@Override
 	public boolean isNumeric() {
 		return true;
-	}
-
-	@Override
-	public void reset(int rlen, int[] odims, double v) {
-		int iv = UtilFunctions.toInt(v);
-		int len = rlen * odims[0];
-		if( len > capacity() ) {
-			_data = new int[len];
-			if( v != 0 )
-				Arrays.fill(_data, iv);
-		}
-		else {
-			Arrays.fill(_data, 0, len, iv);
-		}
-		_rlen = rlen;
-		_odims = odims;
 	}
 
 	@Override
@@ -111,6 +100,11 @@ public class DenseBlockInt32 extends DenseBlockDRB
 	}
 
 	@Override
+	protected void setInternal(int bix, int ix, double v) {
+		_data[ix] = UtilFunctions.toInt(v);
+	}
+
+	@Override
 	public DenseBlock set(int r, int c, double v) {
 		_data[pos(r, c)] = UtilFunctions.toInt(v);
 		return this;
@@ -120,20 +114,6 @@ public class DenseBlockInt32 extends DenseBlockDRB
 	public DenseBlock set(DenseBlock db) {
 		double[] data = db.valuesAt(0);
 		Arrays.parallelSetAll(_data, (i) -> UtilFunctions.toInt(data[i]));
-		return this;
-	}
-
-	@Override
-	public DenseBlock set(int rl, int ru, int ol, int ou, DenseBlock db) {
-		// ToDo: use simple loop instead of arraycopy
-		int[] a = DataConverter.toInt(db.valuesAt(0));
-		if( ol == 0 && ou == _odims[0])
-			System.arraycopy(a, 0, _data, rl*_odims[0]+ol, (int)db.size());
-		else {
-			int len = ou - ol;
-			for(int i=rl, ix1=0, ix2=rl*_odims[0]+ol; i<ru; i++, ix1+=len, ix2+=_odims[0])
-				System.arraycopy(a, ix1, _data, ix2, len);
-		}
 		return this;
 	}
 
