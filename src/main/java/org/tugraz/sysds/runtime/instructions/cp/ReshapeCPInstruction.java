@@ -25,6 +25,7 @@ import org.tugraz.sysds.common.Types;
 import org.tugraz.sysds.common.Types.ValueType;
 import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.controlprogram.context.ExecutionContext;
+import org.tugraz.sysds.runtime.data.LibTensorReorg;
 import org.tugraz.sysds.runtime.data.TensorBlock;
 import org.tugraz.sysds.runtime.instructions.InstructionUtils;
 import org.tugraz.sysds.runtime.matrix.data.LibMatrixReorg;
@@ -65,15 +66,18 @@ public class ReshapeCPInstruction extends UnaryCPInstruction {
 	@Override
 	public void processInstruction(ExecutionContext ec) {
 		if (output.getDataType() == Types.DataType.TENSOR) {
-			TensorBlock out = new TensorBlock(output.getValueType(), getTensorDimensions(ec, _opDims));
-			out.allocateDenseBlock();
+			int[] dims = getTensorDimensions(ec, _opDims);
+			TensorBlock out = new TensorBlock(output.getValueType(), dims);
 			if (input1.getDataType() == Types.DataType.TENSOR) {
 				//get Tensor-data from tensor (reshape)
 				TensorBlock data = ec.getTensorInput(input1.getName());
-				out.set(data);
+				LibTensorReorg.reshape(data, out, dims);
+				ec.releaseTensorInput(input1.getName());
 			} else if (input1.getDataType() == Types.DataType.MATRIX) {
+				out.allocateDenseBlock();
 				//get Tensor-data from matrix
 				MatrixBlock data = ec.getMatrixInput(input1.getName(), getExtendedOpcode());
+				// TODO metadata operation
 				out.set(data);
 				ec.releaseMatrixInput(input1.getName(), getExtendedOpcode());
 			} else {
@@ -90,7 +94,7 @@ public class ReshapeCPInstruction extends UnaryCPInstruction {
 
 			//execute operations
 			MatrixBlock out = new MatrixBlock();
-			out = LibMatrixReorg.reshape(in, out, rows, cols, byRow.getBooleanValue());
+			LibMatrixReorg.reshape(in, out, rows, cols, byRow.getBooleanValue());
 
 			//set output and release inputs
 			ec.setMatrixOutput(output.getName(), out, getExtendedOpcode());

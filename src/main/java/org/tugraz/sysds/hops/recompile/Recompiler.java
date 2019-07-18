@@ -81,6 +81,7 @@ import org.tugraz.sysds.runtime.controlprogram.WhileProgramBlock;
 import org.tugraz.sysds.runtime.controlprogram.caching.CacheableData;
 import org.tugraz.sysds.runtime.controlprogram.caching.FrameObject;
 import org.tugraz.sysds.runtime.controlprogram.caching.MatrixObject;
+import org.tugraz.sysds.runtime.controlprogram.caching.TensorObject;
 import org.tugraz.sysds.runtime.controlprogram.context.ExecutionContext;
 import org.tugraz.sysds.runtime.controlprogram.parfor.opt.OptTreeConverter;
 import org.tugraz.sysds.runtime.instructions.Instruction;
@@ -1272,7 +1273,7 @@ public class Recompiler
 		//recursively process children
 		if( hop.getInput() != null )
 			for( Hop c : hop.getInput() )
-				rUpdateStatistics(c, vars);	
+				rUpdateStatistics(c, vars);
 		
 		//update statistics for transient reads according to current statistics
 		//(with awareness not to override persistent reads to an existing name)
@@ -1291,6 +1292,9 @@ public class Recompiler
 					FrameObject fo = (FrameObject) dat;
 					d.setDim1(fo.getNumRows());
 					d.setDim2(fo.getNumColumns());
+				} else if( dat instanceof TensorObject) {
+					TensorObject to = (TensorObject) dat;
+					d.setNnz(to.getNnz());
 				}
 			}
 		}

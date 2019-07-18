@@ -570,13 +570,22 @@ public class BuiltinFunctionExpression extends DataIdentifier
 		case VAR:
 			// sum(X);
 			checkNumParameters(1);
-			// TODO rewrite this
 			checkMatrixTensorParam(getFirstExpr());
 			output.setDataType(DataType.SCALAR);
 			output.setDimensions(0, 0);
 			output.setBlockDimensions (0, 0);
-			output.setValueType(id.getValueType());
-			
+			switch (id.getValueType()) {
+				case STRING: // TODO think about what we want to get when we sum tensor of strings
+				case FP64:
+				case FP32:
+					output.setValueType(ValueType.FP64);
+					break;
+				case INT64:
+				case INT32:
+				case BOOLEAN:
+					output.setValueType(ValueType.INT64);
+					break;
+			}
 			break;
 		
 		case MEAN:
