@@ -17,10 +17,13 @@
 package org.tugraz.sysds.runtime.data;
 
 import java.io.Serializable;
+import java.util.Arrays;
+import java.util.stream.IntStream;
 
 import org.apache.commons.lang.NotImplementedException;
 import org.tugraz.sysds.common.Types.ValueType;
 import org.tugraz.sysds.runtime.DMLRuntimeException;
+import org.tugraz.sysds.runtime.matrix.data.MatrixBlock;
 import org.tugraz.sysds.runtime.util.UtilFunctions;
 
 public class TensorBlock implements Serializable
@@ -298,17 +301,67 @@ public class TensorBlock implements Serializable
 			_denseBlock.set(ix, v);
 		}
 	}
-	
+
+	public void set(double v) {
+		if (_sparse) {
+			throw new NotImplementedException();
+		} else {
+			_denseBlock.set(v);
+		}
+	}
+
+	public void set(TensorBlock other) {
+		if (_sparse) {
+			throw new NotImplementedException();
+		} else {
+			if (other.isSparse()) {
+				throw new NotImplementedException();
+			} else {
+				_denseBlock.set(0, _dims[0], 0, _denseBlock.getCumODims(0), other.getDenseBlock());
+			}
+		}
+	}
+
+	public void set(MatrixBlock other) {
+		if (_sparse) {
+			throw new NotImplementedException();
+		} else {
+			if (other.isInSparseFormat()) {
+				throw new NotImplementedException();
+			} else {
+				_denseBlock.set(0, _dims[0], 0, _denseBlock.getCumODims(0), other.getDenseBlock());
+			}
+		}
+	}
+
+	public double sum() {
+		// TODO generalize this method to an aggregate method that can do more than just sum
+		if (_sparse) {
+			// TODO implement for sparse
+			throw new NotImplementedException();
+		} else {
+			double sum = 0;
+			int elementsPerRow = Arrays.stream(_dims, 1, _dims.length).reduce(1, (a, b) -> a * b);
+			for (int bix = 0; bix < _denseBlock.numBlocks(); bix++) {
+				double[] values = _denseBlock.valuesAt(bix);
+				for (int r = 0; r < _denseBlock.blockSize(bix); r++) {
+					int finalR = r;
+					sum += IntStream.range(0, elementsPerRow).mapToDouble(i -> values[finalR * elementsPerRow + i]).sum();
+				}
+			}
+			return sum;
+		}
+	}
+
 	private void copy(TensorBlock that) {
 		_dims = that._dims.clone();
 		_sparse = that._sparse;
 		allocateBlock();
 		_nnz = that._nnz;
-		
-		
+
 		// TODO Auto-generated method stub copy
 	}
-	
+
 	////////
 	// Size estimation and format decisions
 	

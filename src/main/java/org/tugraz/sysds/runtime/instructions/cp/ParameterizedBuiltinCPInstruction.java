@@ -1,4 +1,6 @@
 /*
+ * Modifications Copyright 2019 Graz University of Technology
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -35,6 +37,8 @@ import org.tugraz.sysds.runtime.controlprogram.caching.CacheableData;
 import org.tugraz.sysds.runtime.controlprogram.caching.FrameObject;
 import org.tugraz.sysds.runtime.controlprogram.caching.MatrixObject;
 import org.tugraz.sysds.runtime.controlprogram.context.ExecutionContext;
+import org.tugraz.sysds.runtime.data.TensorBlock;
+import org.tugraz.sysds.runtime.data.TensorBlockData;
 import org.tugraz.sysds.runtime.functionobjects.ParameterizedBuiltin;
 import org.tugraz.sysds.runtime.functionobjects.ValueFunction;
 import org.tugraz.sysds.runtime.instructions.InstructionUtils;
@@ -317,8 +321,19 @@ public class ParameterizedBuiltinCPInstruction extends ComputationCPInstruction 
 			String lineseparator = (getParam("linesep") != null) ? getParam("linesep") : TOSTRING_LINESEPARATOR;
 			
 			//get input matrix/frame and convert to string
-			CacheableData<?> data = ec.getCacheableData(getParam("target"));
+			// TODO implement cacheableData for tensor so we can simplify this
+			Data dataVariable = ec.getVariable(getParam("target"));
 			String out = null;
+			if (dataVariable instanceof TensorBlockData) {
+				TensorBlock tensor = ((TensorBlockData) dataVariable).getTensorBlock();
+				// TODO improve truncation to check all dimensions
+				warnOnTrunction(tensor, rows, cols);
+				out = DataConverter.toString(tensor, sparse, separator, lineseparator, "[", "]",
+						rows, cols, decimal);
+				ec.setScalarOutput(output.getName(), new StringObject(out));
+				return;
+			}
+			CacheableData<?> data = ec.getCacheableData(getParam("target"));
 			if( data instanceof MatrixObject ) {
 				MatrixBlock matrix = (MatrixBlock) data.acquireRead();
 				warnOnTrunction(matrix, rows, cols);
@@ -330,7 +345,7 @@ public class ParameterizedBuiltinCPInstruction extends ComputationCPInstruction 
 				out = DataConverter.toString(frame, sparse, separator, lineseparator, rows, cols, decimal);
 			}
 			else {
-				throw new DMLRuntimeException("toString only converts matrix or frames to string");
+				throw new DMLRuntimeException("toString only converts matrix, tensors or frames to string");
 			}
 			ec.releaseCacheableData(getParam("target"));
 			ec.setScalarOutput(output.getName(), new StringObject(out));
@@ -360,6 +375,16 @@ public class ParameterizedBuiltinCPInstruction extends ComputationCPInstruction 
 			LOG.warn("Truncating "+data.getClass().getSimpleName()+" of size "
 				+ data.getNumRows()+"x"+data.getNumColumns()+" to "+rows+"x"+cols+". "
 				+ "Use toString(X, rows=..., cols=...) if necessary.");
+		}
+	}
+
+	private void warnOnTrunction(TensorBlock data, int rows, int cols) {
+		//warn on truncation because users might not be aware and use toString for verification
+		if( (getParam("rows")==null && data.getNumRows()>rows)
+				|| (getParam("cols")==null && data.getNumCols()>cols) )
+		{
+			LOG.warn("Truncating "+data.getClass().getSimpleName()+" of size to "+rows+"x"+cols+". "
+					+ "Use toString(X, rows=..., cols=...) if necessary.");
 		}
 	}
 }

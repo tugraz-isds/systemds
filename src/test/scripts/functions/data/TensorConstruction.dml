@@ -1,0 +1,42 @@
+#-------------------------------------------------------------
+#
+# Copyright 2019 Graz University of Technology
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+#-------------------------------------------------------------
+
+print("Dimension matrix:");
+d = matrix($1, 1, $2);
+dimStr = toString(d, decimal=0)
+print(dimStr)
+
+print("Tensor A: Fillvalue=" + $3 + ", dims=" + dimStr);
+A = tensor($3, d); # fill with value, dimensions given by matrix
+print(toString(A))
+
+print("Tensor B: Reshape A, dims=" + $5);
+B = tensor(A, $5); # reshape tensor, dimensions given by string
+print(toString(B))
+
+print("Tensor C: Values=" + $4 + ", dims=" + $1);
+C = tensor($4, $1); # values given by string, dimensions given by string
+print(toString(C, sparse=TRUE));
+
+print("Tensor D: Values=" + $1 + ", dims=1 " + $2);
+D = tensor($1, list(1, $2)); # values given by string, dimensions given by list
+print(toString(D, decimal=0))
+
+print("Tensor E: Values=" + $4 + ", dims=Tensor D");
+E = tensor($4, D); # values given by string, dimensions given by tensor
+print(toString(E))

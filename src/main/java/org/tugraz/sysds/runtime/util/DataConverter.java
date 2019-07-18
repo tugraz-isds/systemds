@@ -1,4 +1,6 @@
 /*
+ * Copyright 2019 Graz University of Technology
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -29,12 +31,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.tugraz.sysds.common.Types.ValueType;
 import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.data.DenseBlock;
 import org.tugraz.sysds.runtime.data.DenseBlockFactory;
 import org.tugraz.sysds.runtime.data.SparseBlock;
+import org.tugraz.sysds.runtime.data.TensorBlock;
 import org.tugraz.sysds.runtime.instructions.cp.BooleanObject;
 import org.tugraz.sysds.runtime.io.FileFormatProperties;
 import org.tugraz.sysds.runtime.io.MatrixReader;
@@ -901,6 +905,122 @@ public class DataConverter
 			}
 		}
 		
+		return sb.toString();
+	}
+
+	public static String toString(TensorBlock mb) {
+		return toString(mb, false, " ", "\n", "[", "]", mb.getNumRows(), mb.getNumCols(), 3);
+	}
+
+	/**
+	 * Returns a string representation of a tensor
+	 * @param tb tensor block
+	 * @param sparse if true, string will contain a table with row index, col index, value (where value != 0.0)
+	 * 				 otherwise it will be a rectangular string with all values of the tensor block
+	 * @param separator Separator string between each element in a row, or between the columns in sparse format
+	 * @param lineseparator Separator string between each row
+	 * @param leftBorder Characters placed at the start of a new dimension level
+	 * @param rightBorder Characters placed at the end of a new dimension level
+	 * @param rowsToPrint maximum number of rows to print, -1 for all
+	 * @param colsToPrint maximum number of columns to print, -1 for all
+	 * @param decimal number of decimal places to print, -1 for default
+	 * @return tensor as a string
+	 */
+	public static String toString(TensorBlock tb, boolean sparse, String separator, String lineseparator,
+	                              String leftBorder, String rightBorder, int rowsToPrint, int colsToPrint, int decimal){
+		StringBuilder sb = new StringBuilder();
+
+		// Setup number of rows and columns to print
+		int rlen = tb.getNumRows();
+		int clen = tb.getNumCols();
+		int rowLength = rlen;
+		int colLength = clen;
+		if (rowsToPrint >= 0)
+			rowLength = Math.min(rowsToPrint, rlen);
+		if (colsToPrint >= 0)
+			colLength = Math.min(colsToPrint, clen);
+
+		DecimalFormat df = new DecimalFormat();
+		df.setGroupingUsed(false);
+		if (decimal >= 0){
+			df.setMinimumFractionDigits(decimal);
+		}
+
+		if (sparse){ // Sparse Print Format
+			// TODO use sparse iterator for sparse block
+			int[] ix = new int[tb.getNumDims()];
+			for (int i = 0; i < tb.getLength(); i++) {
+				int j = ix.length - 1;
+				Double value = tb.get(ix);
+				if (value.equals(-0.0d))
+					value = 0.0;
+				for (int item : ix) {
+					sb.append(item).append(separator);
+				}
+				sb.append(dfFormat(df, value));
+				ix[j]++;
+				//calculating next index
+				if (ix[j] == tb.getDim(j)) {
+					while (ix[j] == tb.getDim(j) || ix[1] >= colLength) {
+						ix[j] = 0;
+						j--;
+						if (j < 0) {
+							//we are finished
+							break;
+						}
+						ix[j]++;
+					}
+				}
+				sb.append(lineseparator);
+				if (ix[0] >= rowLength) {
+					break;
+				}
+			}
+		}
+		else {	// Dense Print Format
+			int[] ix = new int[tb.getNumDims()];
+			sb.append(StringUtils.repeat(leftBorder, ix.length));
+			for (int i = 0; i < tb.getLength(); i++) {
+				int j = ix.length - 1;
+				Double value = tb.get(ix);
+				if (value.equals(-0.0d))
+					value = 0.0;
+				sb.append(dfFormat(df, value));
+				ix[j]++;
+				//calculating next index
+				if (ix[j] == tb.getDim(j)) {
+					int borderCount = 0;
+					while (ix[j] == tb.getDim(j) || ix[1] >= colLength) {
+						sb.append(rightBorder);
+						borderCount++;
+						ix[j] = 0;
+						j--;
+						if (j < 0) {
+							//we are finished
+							borderCount = 0;
+							break;
+						}
+						ix[j]++;
+					}
+					if (ix[0] >= rowLength) {
+						// If we have a limit on rows end here
+						sb.append(rightBorder);
+						sb.append(lineseparator);
+						break;
+					}
+					sb.append(lineseparator);
+					if (borderCount == 0) {
+						// we are at the end, no offset
+						break;
+					}
+					// Offset so dimensions are aligned
+					sb.append(StringUtils.repeat(" ", (ix.length - borderCount) * leftBorder.length()));
+					sb.append(StringUtils.repeat(leftBorder, borderCount));
+				} else {
+					sb.append(separator);
+				}
+			}
+		}
 		return sb.toString();
 	}
 

@@ -1,4 +1,6 @@
 /*
+ * Modifications Copyright 2019 Graz University of Technology
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -1090,6 +1092,12 @@ public abstract class Hop implements ParseInfo
 		HopsAgg2Lops.put(AggOp.PROD, org.tugraz.sysds.lops.Aggregate.OperationTypes.Product);
 		HopsAgg2Lops.put(AggOp.MEAN, org.tugraz.sysds.lops.Aggregate.OperationTypes.Mean);
 		HopsAgg2Lops.put(AggOp.VAR, org.tugraz.sysds.lops.Aggregate.OperationTypes.Var);
+	}
+
+	protected static final HashMap<Hop.AggOp, org.tugraz.sysds.lops.Aggregate.OperationTypes> HopsTensorAgg2Lops;
+	static {
+		HopsTensorAgg2Lops = new HashMap<>();
+		HopsTensorAgg2Lops.put(AggOp.SUM, org.tugraz.sysds.lops.Aggregate.OperationTypes.Sum);
 	}
 
 	protected static final HashMap<ReOrgOp, org.tugraz.sysds.lops.Transform.OperationTypes> HopsTransf2Lops;

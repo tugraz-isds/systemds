@@ -1,4 +1,6 @@
 /*
+ * Modifications Copyright 2019 Graz University of Technology
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -568,7 +570,12 @@ public class BuiltinFunctionExpression extends DataIdentifier
 		case VAR:
 			// sum(X);
 			checkNumParameters(1);
-			checkMatrixParam(getFirstExpr());
+			// TODO rewrite this
+			if (getOpCode() == Builtins.SUM) {
+				checkMatrixTensorParam(getFirstExpr());
+			} else {
+				checkMatrixParam(getFirstExpr());
+			}
 			
 			output.setDataType(DataType.SCALAR);
 			output.setDimensions(0, 0);
@@ -1711,6 +1718,14 @@ public class BuiltinFunctionExpression extends DataIdentifier
 		if (e.getOutput().getDataType() != DataType.MATRIX) {
 			raiseValidateError(
 					"Expected " + e.getText() + " to be a matrix argument for function " + this.getOpCode().toString().toLowerCase() + "().",
+					false);
+		}
+	}
+
+	protected void checkMatrixTensorParam(Expression e) {
+		if (e.getOutput().getDataType() != DataType.MATRIX && e.getOutput().getDataType() != DataType.TENSOR) {
+			raiseValidateError(
+					"Expected " + e.getText() + " to be a matrix or tensor argument for function " + this.getOpCode().toString().toLowerCase() + "().",
 					false);
 		}
 	}

@@ -1,4 +1,6 @@
 /*
+ * Modifications Copyright 2019 Graz University of Technology
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -28,6 +30,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.tugraz.sysds.conf.ConfigurationManager;
@@ -39,19 +42,8 @@ import org.tugraz.sysds.hops.DataGenOp;
 import org.tugraz.sysds.hops.DataOp;
 import org.tugraz.sysds.hops.DnnOp;
 import org.tugraz.sysds.hops.FunctionOp;
-import org.tugraz.sysds.hops.Hop;
-import org.tugraz.sysds.hops.HopsException;
-import org.tugraz.sysds.hops.IndexingOp;
-import org.tugraz.sysds.hops.LeftIndexingOp;
-import org.tugraz.sysds.hops.LiteralOp;
-import org.tugraz.sysds.hops.MemoTable;
-import org.tugraz.sysds.hops.NaryOp;
-import org.tugraz.sysds.hops.OptimizerUtils;
-import org.tugraz.sysds.hops.ParameterizedBuiltinOp;
-import org.tugraz.sysds.hops.ReorgOp;
-import org.tugraz.sysds.hops.TernaryOp;
-import org.tugraz.sysds.hops.UnaryOp;
 import org.tugraz.sysds.hops.FunctionOp.FunctionType;
+import org.tugraz.sysds.hops.Hop;
 import org.tugraz.sysds.hops.Hop.AggOp;
 import org.tugraz.sysds.hops.Hop.DataGenMethod;
 import org.tugraz.sysds.hops.Hop.DataOpTypes;
@@ -63,6 +55,19 @@ import org.tugraz.sysds.hops.Hop.OpOpDnn;
 import org.tugraz.sysds.hops.Hop.OpOpN;
 import org.tugraz.sysds.hops.Hop.ParamBuiltinOp;
 import org.tugraz.sysds.hops.Hop.ReOrgOp;
+import org.tugraz.sysds.hops.HopsException;
+import org.tugraz.sysds.hops.IndexingOp;
+import org.tugraz.sysds.hops.LeftIndexingOp;
+import org.tugraz.sysds.hops.LiteralOp;
+import org.tugraz.sysds.hops.MemoTable;
+import org.tugraz.sysds.hops.NaryOp;
+import org.tugraz.sysds.hops.OptimizerUtils;
+import org.tugraz.sysds.hops.ParameterizedBuiltinOp;
+import org.tugraz.sysds.hops.ReorgOp;
+import org.tugraz.sysds.hops.TensorAggUnaryOp;
+import org.tugraz.sysds.hops.TensorGenOp;
+import org.tugraz.sysds.hops.TernaryOp;
+import org.tugraz.sysds.hops.UnaryOp;
 import org.tugraz.sysds.hops.codegen.SpoofCompiler;
 import org.tugraz.sysds.hops.codegen.SpoofCompiler.IntegrationType;
 import org.tugraz.sysds.hops.codegen.SpoofCompiler.PlanCachePolicy;
@@ -94,7 +99,7 @@ import org.tugraz.sysds.runtime.instructions.Instruction;
 public class DMLTranslator 
 {
 	private static final Log LOG = LogFactory.getLog(DMLTranslator.class.getName());
-	private DMLProgram _dmlProg = null;
+	private DMLProgram _dmlProg;
 	
 	public DMLTranslator(DMLProgram dmlp) {
 		_dmlProg = dmlp;
@@ -2053,8 +2058,11 @@ public class DMLTranslator
 			tmp.add( 3, paramHops.get(DataExpression.RAND_BY_ROW) );
 			currBuiltinOp = new ReorgOp(target.getName(), target.getDataType(), target.getValueType(), ReOrgOp.RESHAPE, tmp);
 			break;
-			
-			
+
+		case TENSOR:
+			currBuiltinOp = new TensorGenOp(target, paramHops);
+			break;
+
 		default:
 			throw new ParseException(source.printErrorLocation() + 
 					"processDataExpression():: Unknown operation:  "
@@ -2255,6 +2263,11 @@ public class DMLTranslator
 			break;
 		
 		case SUM:
+			if (expr.getDataType() == DataType.TENSOR) {
+				currBuiltinOp = new TensorAggUnaryOp(target.getName(), DataType.SCALAR, target.getValueType(),
+						AggOp.valueOf(source.getOpCode().name()), Direction.RowCol, expr);
+				break;
+			}
 		case PROD:
 		case VAR:
 			currBuiltinOp = new AggUnaryOp(target.getName(), DataType.SCALAR, target.getValueType(),

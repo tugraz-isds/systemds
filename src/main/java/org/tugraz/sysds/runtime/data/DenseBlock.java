@@ -83,6 +83,16 @@ public abstract class DenseBlock implements Serializable
 	}
 
 	/**
+	 * Get the ith cumulative dimensions size of the dense block, without row.
+	 *
+	 * @param i the number of the cumulative dimension to get (0 equals the second dimension!)
+	 * @return the size of the dimension cumulative with all following dimensions
+	 */
+	public final int getCumODims(int i) {
+		return _odims[i];
+	}
+
+	/**
 	 * Resets the dense block by deleting non-zero values. After this
 	 * call all countNonZeros() calls are guaranteed to return 0.
 	 */

@@ -1,4 +1,6 @@
 /*
+ * Modifications Copyright 2019 Graz University of Technology
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -38,6 +40,7 @@ public abstract class Lop
 	
 	public enum Type {
 		Data, DataGen,                                      //CP/MR read/write/datagen 
+		TensorGen,                                          //CP tensor creation
 		ReBlock, CSVReBlock,                                //MR reblock operations
 		MMCJ, MMRJ, MMTSJ, PMMJ, MapMult, MapMultChain,     //MR matrix multiplications
 		UnaryCP, UNARY, BinaryCP, Binary, Ternary, Nary,    //CP/MR unary/binary/ternary

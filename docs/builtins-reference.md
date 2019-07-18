@@ -22,24 +22,101 @@ limitations under the License.
 ## Table of Contents
 
   * [Introduction](#introduction)
-  * [DML-bodied builtin functions](#dml-bodied-builtin-functions)
-    * [`lm`-function](#lm-function)
-    * [`lmDS`-function](#lmds-function)
-    * [`lmCG`-function](#lmcg-function)
-    * [`lmpredict`-function](#lmpredict-function)
+  * [Built-In Construction Functions](#built-in-construction-functions)
+    * [`tensor`-Function](#tensor-function)
+  * [DML-Bodied Built-In functions](#dml-bodied-built-in-functions)
+    * [`lm`-Function](#lm-function)
+    * [`lmDS`-Function](#lmds-function)
+    * [`lmCG`-Function](#lmcg-function)
+    * [`lmpredict`-Function](#lmpredict-function)
     
 # Introduction
 
-The DML (Declarative Machine Learning) language has builtin functions which enable access to both low- and high-level functions
+The DML (Declarative Machine Learning) language has built-in functions which enable access to both low- and high-level functions
 to support all kinds of use cases.
 
 Builtins are either implemented on a compiler level or as DML scripts that are loaded at compile time.
 
-# DML-bodied builtin functions
+# Built-In Construction Functions
 
-**DML-bodied builtin functions** are written as DML-Scripts and executed as such when called.
+There are some functions which generate an object for us. They create matrices, tensors, lists and other non-primitive
+objects.
 
-## `lm`-function
+## `tensor`-Function
+
+The `tensor`-function creates a **tensor** for us.
+
+### Usage
+```r
+tensor(data, dims, byRow = TRUE)
+```
+
+### Arguments
+| Name    | Type           | Default  | Description |
+| :------ | :------------- | -------- | :---------- |
+| data    | Matrix[?], Tensor[?], String, Scalar[?] | required | The data with which the tensor should be filled. See [`data`-Argument](#data-argument).|
+| dims    | Matrix[Integer], Tensor[Integer], String, List[Integer] | required | The dimensions of the tensor. See [`dims`-Argument](#dims-argument). |
+| byRow   | Boolean        | TRUE     | NOT USED. Will probably be removed or replaced. |
+
+Note that this function is highly **unstable** and will be overworked and might change signature and functionality.
+
+### Returns
+| Type           | Description |
+| :------------- | :---------- |
+| Tensor[Double] | The generated Tensor. Will support more datatypes than `Double`. |
+
+##### `data`-Argument
+
+The `data`-argument can be a `Matrix` of any datatype from which the elements will be taken and placed in the tensor 
+until filled. If given as a `Tensor` the same procedure takes place. We iterate through `Matrix` and `Tensor` by starting
+with each dimension index at `0` and then incrementing the lowest one, until we made a complete pass over the dimension,
+and then increasing the dimension index above. This will be done until the `Tensor` is completely filled.
+
+Currently the datatype of `data`-argument will not change the return value, which will always be a `Tensor[Double]` for now.
+
+A `String` will be interpreted as a vector of `Double` concatenated by spaces and then we apply the same procedure as with
+a `Matrix`.
+
+If `data` is a `Scalar`, we fill the whole tensor with the value.
+
+##### `dims`-Argument
+
+The dimension of the tensor can either be given by a vector represented by either by a `Matrix`, `Tensor`, `String` or `List`.
+Dimensions given by a `String` will be expected to be concatenated by spaces.
+
+### Example
+```r
+print("Dimension matrix:");
+d = matrix("2 3 4", 1, 3);
+dimStr = toString(d, decimal=0)
+print(dimStr)
+
+print("Tensor A: Fillvalue=3, dims=" + dimStr);
+A = tensor(3, d); # fill with value, dimensions given by matrix
+print(toString(A))
+
+print("Tensor B: Reshape A, dims=4 3 2");
+B = tensor(A, "4 3 2"); # reshape tensor, dimensions given by string
+print(toString(B))
+
+print("Tensor C: Values=1 2 3 4 5 6, dims=2 3");
+C = tensor("1 2 3 4 5 6", "2 3"); # values given by string, dimensions given by string
+print(toString(C, sparse=TRUE));
+
+print("Tensor D: Values=3 2, dims=1 2");
+D = tensor("3 2", list(1, 2)); # values given by string, dimensions given by list
+print(toString(D, decimal=0))
+
+print("Tensor E: Values=1 2 3 4 5 6, dims=Tensor D");
+E = tensor("1 2 3 4 5 6", D); # values given by string, dimensions given by tensor
+print(toString(E))
+```
+
+# DML-Bodied Built-In Functions
+
+**DML-bodied built-in functions** are written as DML-Scripts and executed as such when called.
+
+## `lm`-Function
 
 The `lm`-function solves linear regression using either the **direct solve method** or the **conjugate gradient algorithm**
 depending on the input size of the matrices (See [`lmDS`-function](#lmds-function) and 
@@ -61,7 +138,7 @@ lm(X, y, icpt = 0, reg = 1e-7, tol = 1e-7, maxi = 0, verbose = TRUE)
 | maxi    | Integer        | `0`      | Maximum number of conjugate gradient iterations. 0 = no maximum |
 | verbose | Boolean        | `TRUE`   | If `TRUE` print messages are activated |
 
-Note that if number of *features* is small enough (`rows of X/y < 2000`), the [`lmDS`-function'](#lmds-function)
+Note that if number of *features* is small enough (`rows of X/y < 2000`), the [`lmDS`-Function'](#lmds-function)
 is called internally and parameters `tol` and `maxi` are ignored.
 
 ### Returns
@@ -69,7 +146,7 @@ is called internally and parameters `tol` and `maxi` are ignored.
 | :------------- | :---------- |
 | Matrix[Double] | 1-column matrix of weights. |
 
-##### icpt-Argument
+##### `icpt`-Argument
 
 The *icpt-argument* can be set to 3 modes:
  
@@ -84,7 +161,7 @@ y = X %*% rand(rows=ncol(X), 1)
 lm(X = X, y = y)
 ```
 
-## `lmDS`-function
+## `lmDS`-Function
 
 The `lmDS`-function solves linear regression by directly solving the *linear system*.
 
@@ -114,7 +191,7 @@ y = X %*% rand(rows=ncol(X), 1)
 lmDS(X = X, y = y)
 ```
 
-## `lmCG`-function
+## `lmCG`-Function
 
 The `lmCG`-function solves linear regression using the *conjugate gradient algorithm*.
 
@@ -146,7 +223,7 @@ y = X %*% rand(rows=ncol(X), 1)
 lmCG(X = X, y = y, maxi = 10)
 ```
 
-## `lmpredict`-function
+## `lmpredict`-Function
 
 The `lmpredict`-function predicts the class of a feature vector.
 
