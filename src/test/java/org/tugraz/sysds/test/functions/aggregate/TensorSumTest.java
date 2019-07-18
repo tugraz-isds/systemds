@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.tugraz.sysds.test.functions.data;
+package org.tugraz.sysds.test.functions.aggregate;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -31,7 +31,7 @@ import java.util.Collection;
 public class TensorSumTest extends AutomatedTestBase
 {
 
-	private final static String TEST_DIR = "functions/data/";
+	private final static String TEST_DIR = "functions/aggregate/";
 	private final static String TEST_NAME = "TensorSum";
 	private final static String TEST_CLASS_DIR = TEST_DIR + TensorSumTest.class.getSimpleName() + "/";
 
@@ -52,6 +52,10 @@ public class TensorSumTest extends AutomatedTestBase
 				{new int[]{1, 1}, 8},
 				{new int[]{7, 1, 1}, 0.5},
 				{new int[]{10, 2, 4}, 1},
+				{new int[]{1000, 100, 100, 10}, 3},
+				{new int[]{10000000, 2}, 8},
+				{new int[]{100000, 1, 1000}, 0.5},
+				{new int[]{1, 1, 1, 2, 1, 1, 1000}, 1},
 				};
 		return Arrays.asList(data);
 	}
@@ -63,7 +67,7 @@ public class TensorSumTest extends AutomatedTestBase
 	}
 
 	@Test
-	public void testTensorConstruction()
+	public void tensorSumTest()
 	{
 		ExecMode platformOld = rtplatform;
 		try

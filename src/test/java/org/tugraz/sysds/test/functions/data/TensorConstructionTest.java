@@ -51,6 +51,10 @@ public class TensorConstructionTest extends AutomatedTestBase
 				{new long[]{1, 1}, 8},
 				{new long[]{7, 1, 1}, 0.5},
 				{new long[]{10, 2, 4}, 1},
+				{new long[]{30, 40, 50}, 3},
+				{new long[]{1000, 20}, 8},
+				{new long[]{1000, 10, 10, 10, 10}, 0.5},
+				{new long[]{1, 1, 1, 1, 1, 1, 100}, 1},
 				};
 		return Arrays.asList(data);
 	}
