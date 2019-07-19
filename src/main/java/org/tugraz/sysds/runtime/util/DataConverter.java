@@ -31,8 +31,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
+import org.dmg.pmml.DataType;
 import org.tugraz.sysds.common.Types.ValueType;
 import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.data.DenseBlock;
@@ -40,6 +42,7 @@ import org.tugraz.sysds.runtime.data.DenseBlockFactory;
 import org.tugraz.sysds.runtime.data.SparseBlock;
 import org.tugraz.sysds.runtime.data.TensorBlock;
 import org.tugraz.sysds.runtime.instructions.cp.BooleanObject;
+import org.tugraz.sysds.runtime.instructions.cp.DoubleObject;
 import org.tugraz.sysds.runtime.io.FileFormatProperties;
 import org.tugraz.sysds.runtime.io.MatrixReader;
 import org.tugraz.sysds.runtime.io.MatrixReaderFactory;
@@ -951,13 +954,14 @@ public class DataConverter
 			int[] ix = new int[tb.getNumDims()];
 			for (int i = 0; i < tb.getLength(); i++) {
 				int j = ix.length - 1;
-				Double value = tb.get(ix);
-				if (value.equals(-0.0d))
-					value = 0.0;
-				for (int item : ix) {
-					sb.append(item).append(separator);
+				String str = tb.getString(ix);
+				if (str != null && !str.isEmpty() && Double.parseDouble(str) != 0) {
+					for (int item : ix) {
+						sb.append(item).append(separator);
+					}
+					concatenateTensorValue(tb, sb, df, ix);
+					sb.append(lineseparator);
 				}
-				sb.append(dfFormat(df, value));
 				ix[j]++;
 				//calculating next index
 				if (ix[j] == tb.getDim(j)) {
@@ -971,7 +975,6 @@ public class DataConverter
 						ix[j]++;
 					}
 				}
-				sb.append(lineseparator);
 				if (ix[0] >= rowLength) {
 					break;
 				}
@@ -982,10 +985,7 @@ public class DataConverter
 			sb.append(StringUtils.repeat(leftBorder, ix.length));
 			for (int i = 0; i < tb.getLength(); i++) {
 				int j = ix.length - 1;
-				Double value = tb.get(ix);
-				if (value.equals(-0.0d))
-					value = 0.0;
-				sb.append(dfFormat(df, value));
+				concatenateTensorValue(tb, sb, df, ix);
 				ix[j]++;
 				//calculating next index
 				if (ix[j] == tb.getDim(j)) {
@@ -1022,6 +1022,36 @@ public class DataConverter
 			}
 		}
 		return sb.toString();
+	}
+
+	/**
+	 * Concatenates a single tensor value to the `StringBuilder` by converting it to the correct format.
+	 *
+	 * @param tb the TensorBlock
+	 * @param sb the StringBuilder to use
+	 * @param df DecimalFormat with the correct settings for double or float values
+	 * @param ix the index of the TensorBlock value
+	 */
+	private static void concatenateTensorValue(TensorBlock tb, StringBuilder sb, DecimalFormat df, int[] ix) {
+		switch (tb.getValueType()) {
+			case FP32:
+			case FP64:
+				Double value = tb.get(ix);
+				if (value.equals(-0.0d))
+					value = 0.0;
+				sb.append(dfFormat(df, value));
+				break;
+			case INT32:
+			case INT64:
+				sb.append((long) tb.get(ix));
+				break;
+			case BOOLEAN:
+				sb.append(Boolean.toString(tb.get(ix) != 0).toUpperCase());
+				break;
+			case STRING:
+				sb.append(tb.getString(ix));
+				break;
+		}
 	}
 
 	public static String toString(FrameBlock fb) {

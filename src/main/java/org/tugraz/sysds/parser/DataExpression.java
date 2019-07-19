@@ -1689,9 +1689,9 @@ public class DataExpression extends DataIdentifier
 						+ RAND_DATA + ", " + RAND_DIMS	+ ", " + RAND_BY_ROW);
 
 			//validate correct value types
-			if (getVarParam(RAND_DATA) != null && (getVarParam(RAND_DATA) instanceof BooleanIdentifier)){
+			/*if (getVarParam(RAND_DATA) != null && (getVarParam(RAND_DATA) instanceof BooleanIdentifier)){
 				raiseValidateError("for tensor statement " + RAND_DATA + " has incorrect value type", conditional);
-			}
+			}*/
 			if (getVarParam(RAND_DIMS) != null && (getVarParam(RAND_DIMS) instanceof BooleanIdentifier)){
 				raiseValidateError("for tensor statement " + RAND_DIMS + " has incorrect value type", conditional);
 			}

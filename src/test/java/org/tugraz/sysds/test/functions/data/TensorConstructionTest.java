@@ -36,10 +36,10 @@ public class TensorConstructionTest extends AutomatedTestBase
 	private final static String TEST_NAME = "TensorConstruction";
 	private final static String TEST_CLASS_DIR = TEST_DIR + TensorConstructionTest.class.getSimpleName() + "/";
 
-	private double value;
+	private String value;
 	private long[] dimensions;
 
-	public TensorConstructionTest(long[] dims, double v) {
+	public TensorConstructionTest(long[] dims, String v) {
 		dimensions = dims;
 		value = v;
 	}
@@ -47,14 +47,14 @@ public class TensorConstructionTest extends AutomatedTestBase
 	@Parameters
 	public static Collection<Object[]> data() {
 		Object[][] data = new Object[][] { 
-				{new long[]{3, 4, 5}, 3},
-				{new long[]{1, 1}, 8},
-				{new long[]{7, 1, 1}, 0.5},
-				{new long[]{10, 2, 4}, 1},
-				{new long[]{30, 40, 50}, 3},
-				{new long[]{1000, 20}, 8},
-				{new long[]{1000, 10, 10, 10, 10}, 0.5},
-				{new long[]{1, 1, 1, 1, 1, 1, 100}, 1},
+				{new long[]{3, 4, 5}, "3"},
+				{new long[]{1, 1}, "8"},
+				{new long[]{7, 1, 1}, "0.5"},
+				{new long[]{10, 2, 4}, "TRUE"},
+				//{new long[]{30, 40, 50}, 3},
+				//{new long[]{1000, 20}, 8},
+				//{new long[]{1000, 10, 10, 10, 10}, 0.5},
+				//{new long[]{1, 1, 1, 1, 1, 1, 100}, 1},
 				};
 		return Arrays.asList(data);
 	}
@@ -91,7 +91,7 @@ public class TensorConstructionTest extends AutomatedTestBase
 			String reversedDimStr = reverseDimsStrBuilder.toString();
 
 			programArgs = new String[]{"-explain", "-args",
-				dimensionsString, Integer.toString(dimensions.length), Double.toString(value), values.toString(),
+				dimensionsString, Integer.toString(dimensions.length), value, values.toString(),
 				reversedDimStr};
 
 			// Generate Data in CP

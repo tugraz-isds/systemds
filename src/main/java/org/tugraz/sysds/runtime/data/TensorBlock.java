@@ -293,8 +293,26 @@ public class TensorBlock implements Serializable
 			return _denseBlock.get(ix);
 		}
 	}
-	
+
+	public String getString(int[] ix) {
+		if (_sparse) {
+			// TODO: Implement sparse
+			throw new NotImplementedException();
+			//return _sparseBlock.get(ix);
+		} else {
+			return _denseBlock.getString(ix);
+		}
+	}
+
 	public void set(int[] ix, double v) {
+		if (_sparse) {
+			throw new NotImplementedException();
+		} else {
+			_denseBlock.set(ix, v);
+		}
+	}
+
+	public void set(int[] ix, String v) {
 		if (_sparse) {
 			throw new NotImplementedException();
 		} else {

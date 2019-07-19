@@ -35,7 +35,7 @@ print(toString(C, sparse=TRUE));
 
 print("Tensor D: Values=" + $1 + ", dims=1 " + $2);
 D = tensor($1, list(1, $2)); # values given by string, dimensions given by list
-print(toString(D, decimal=0))
+print(toString(D, decimal=1))
 
 print("Tensor E: Values=" + $4 + ", dims=Tensor D");
 E = tensor($4, D); # values given by string, dimensions given by tensor
