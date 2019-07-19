@@ -121,10 +121,9 @@ public class TensorGenCPInstruction extends UnaryCPInstruction {
 			throw new DMLRuntimeException("TensorGenCPInstruction only supports a scalar of type `String` and matrix " +
 					"as dimensions parameter.");
 		}
-		// TODO implement for other ValueTypes
+		out = new TensorBlock(output.getValueType(), dims);
+		out.allocateDenseBlock();
 		if (input1.getDataType() == Types.DataType.SCALAR) {
-			out = new TensorBlock(Types.ValueType.FP64, dims);
-			out.allocateDenseBlock();
 			//get Tensor-data as String
 			// TODO use string as value with which to fill a complete string tensor?
 			if (input1.getValueType() == Types.ValueType.STRING) {
@@ -152,9 +151,6 @@ public class TensorGenCPInstruction extends UnaryCPInstruction {
 					}
 				}
 			} else {
-				// TODO implement for non double ValueTypes
-				out = new TensorBlock(input1.getValueType(), dims);
-				out.allocateDenseBlock();
 				// Values will be converted to the value type internally
 				double value = ec.getScalarInput(input1).getDoubleValue();
 				//execute operations
@@ -163,17 +159,13 @@ public class TensorGenCPInstruction extends UnaryCPInstruction {
 		} else if (input1.getDataType() == Types.DataType.TENSOR) {
 			//get Tensor-data from tensor (reshape)
 			TensorBlock data = ec.getTensorInput(input1.getName());
-			out = new TensorBlock(data.getValueType(), dims);
-			out.allocateDenseBlock();
 			out.set(data);
 		} else if (input1.getDataType() == Types.DataType.MATRIX) {
 			//get Tensor-data from matrix
 			MatrixBlock data = ec.getMatrixInput(_opDims.getName(), getExtendedOpcode());
-			out = new TensorBlock(Types.ValueType.FP64, dims);
 			//execute operations
 			out.set(data);
 			ec.releaseMatrixInput(_opDims.getName(), getExtendedOpcode());
-
 		} else {
 			// TODO support frame and list. Before we implement list it might be good to implement heterogeneous tensors
 			throw new DMLRuntimeException("TensorGenCPInstruction only supports scalar (string and number) and tensor" +

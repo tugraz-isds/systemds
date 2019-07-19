@@ -81,7 +81,18 @@ public class TensorGenOp extends MultiThreadedHop
 		// TODO multiple ValueTypes
 		// TODO think about branching here depending on inputs, at the moment interpreting the parameters, for example
 		//  dims which can be given as a string, matrix or tensor, is done at instruction level
-		TensorGen tensorGen = new TensorGen(linputs, ValueType.FP64, et);
+		ValueType vt;
+		if (linputs[0].getDataType() == DataType.SCALAR) {
+			if (linputs[0].getValueType() == ValueType.STRING) {
+				// TODO consider not interpreting string as list of values concatenated by spaces
+				vt = ValueType.FP64;
+			} else {
+				vt = linputs[0].getValueType();
+			}
+		} else {
+			vt = linputs[0].getValueType();
+		}
+		TensorGen tensorGen = new TensorGen(linputs, vt, et);
 		setOutputDimensions(tensorGen);
 		setLineNumbers(tensorGen);
 		setLops(tensorGen);
