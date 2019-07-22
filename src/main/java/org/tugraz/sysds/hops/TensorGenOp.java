@@ -150,8 +150,8 @@ public class TensorGenOp extends MultiThreadedHop
 	
 	@Override
 	public void refreshSizeInformation() {
-		Hop input1 = getInput().get(0);
-		Hop input2 = getInput().get(1); // dims
+		//Hop input1 = getInput().get(0);
+		//Hop input2 = getInput().get(1); // dims
 		// TODO get size from dims
 		//refreshRowsParameterInformation(?); //refresh rows
 		//refreshColsParameterInformation(?); //refresh cols

@@ -11,7 +11,7 @@
  * 
  *   http://www.apache.org/licenses/LICENSE-2.0
  * 
- * Unless required by applicable law or agreed to in writing,
+ * Unless required by applicabltensorAggree law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
@@ -59,7 +59,6 @@ import org.tugraz.sysds.runtime.instructions.cp.QuaternaryCPInstruction;
 import org.tugraz.sysds.runtime.instructions.cp.ReorgCPInstruction;
 import org.tugraz.sysds.runtime.instructions.cp.SpoofCPInstruction;
 import org.tugraz.sysds.runtime.instructions.cp.StringInitCPInstruction;
-import org.tugraz.sysds.runtime.instructions.cp.TensorAggregateUnaryCPInstruction;
 import org.tugraz.sysds.runtime.instructions.cp.TensorGenCPInstruction;
 import org.tugraz.sysds.runtime.instructions.cp.TernaryCPInstruction;
 import org.tugraz.sysds.runtime.instructions.cp.UaggOuterChainCPInstruction;
@@ -110,10 +109,6 @@ public class CPInstructionParser extends InstructionParser
 		String2CPInstructionType.put( "length"  ,CPType.AggregateUnary);
 		String2CPInstructionType.put( "exists"  ,CPType.AggregateUnary);
 		String2CPInstructionType.put( "lineage" ,CPType.AggregateUnary);
-
-		String2CPInstructionType.put( "tua+"     , CPType.TensorAggregateUnary);
-		String2CPInstructionType.put( "tuar+"    , CPType.TensorAggregateUnary);
-		String2CPInstructionType.put( "tuac+"    , CPType.TensorAggregateUnary);
 
 		String2CPInstructionType.put( "uaggouterchain", CPType.UaggOuterChain);
 		
@@ -373,9 +368,6 @@ public class CPInstructionParser extends InstructionParser
 
 			case TensorGen:
 				return TensorGenCPInstruction.parseInstruction(str);
-
-			case TensorAggregateUnary:
-				return TensorAggregateUnaryCPInstruction.parseInstruction(str);
 
 			case StringInit:
 				return StringInitCPInstruction.parseInstruction(str);

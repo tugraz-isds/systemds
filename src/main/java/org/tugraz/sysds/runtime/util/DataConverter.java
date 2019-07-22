@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Graz University of Technology
+ * Modifications copyright 2019 Graz University of Technology
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -950,7 +950,6 @@ public class DataConverter
 			// TODO use sparse iterator for sparse block
 			int[] ix = new int[tb.getNumDims()];
 			for (int i = 0; i < tb.getLength(); i++) {
-				int j = ix.length - 1;
 				String str = tb.getString(ix);
 				if (str != null && !str.isEmpty() && Double.parseDouble(str) != 0) {
 					for (int item : ix) {
@@ -959,19 +958,7 @@ public class DataConverter
 					concatenateTensorValue(tb, sb, df, ix);
 					sb.append(lineseparator);
 				}
-				ix[j]++;
-				//calculating next index
-				if (ix[j] == tb.getDim(j)) {
-					while (ix[j] == tb.getDim(j) || ix[1] >= colLength) {
-						ix[j] = 0;
-						j--;
-						if (j < 0) {
-							//we are finished
-							break;
-						}
-						ix[j]++;
-					}
-				}
+				tb.getNextIndexes(ix);
 				if (ix[0] >= rowLength) {
 					break;
 				}
@@ -981,40 +968,41 @@ public class DataConverter
 			int[] ix = new int[tb.getNumDims()];
 			sb.append(StringUtils.repeat(leftBorder, ix.length));
 			for (int i = 0; i < tb.getLength(); i++) {
-				int j = ix.length - 1;
 				concatenateTensorValue(tb, sb, df, ix);
+				int j = ix.length - 1;
 				ix[j]++;
 				//calculating next index
-				if (ix[j] == tb.getDim(j)) {
-					int borderCount = 0;
-					while (ix[j] == tb.getDim(j) || ix[1] >= colLength) {
-						sb.append(rightBorder);
-						borderCount++;
-						ix[j] = 0;
-						j--;
-						if (j < 0) {
-							//we are finished
-							borderCount = 0;
-							break;
-						}
-						ix[j]++;
-					}
-					if (ix[0] >= rowLength) {
-						// If we have a limit on rows end here
-						sb.append(rightBorder);
-						sb.append(lineseparator);
+				int borderCount = 0;
+				while (ix[j] == tb.getDim(j) || ix[1] >= colLength) {
+					// we either reached the dimension limit or the colLength if j == 1
+					// so we add border (because of the completely iterated dimension) and increment the next
+					// dimension while setting the current one to 0
+					sb.append(rightBorder);
+					borderCount++;
+					ix[j] = 0;
+					j--;
+					if (j < 0) {
 						break;
 					}
+					ix[j]++;
+				}
+				if (ix[0] >= rowLength) {
+					// If we have a limit on rows end here
+					sb.append("...").append(rightBorder).append(lineseparator);
+					break;
+				}
+				if (j < 0) {
+					// we are at the end, no offset
 					sb.append(lineseparator);
-					if (borderCount == 0) {
-						// we are at the end, no offset
-						break;
-					}
+					break;
+				}
+				if (borderCount == 0) {
+					sb.append(separator);
+				} else {
 					// Offset so dimensions are aligned
+					sb.append(lineseparator);
 					sb.append(StringUtils.repeat(" ", (ix.length - borderCount) * leftBorder.length()));
 					sb.append(StringUtils.repeat(leftBorder, borderCount));
-				} else {
-					sb.append(separator);
 				}
 			}
 		}

@@ -30,7 +30,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.tugraz.sysds.conf.ConfigurationManager;
@@ -64,7 +63,6 @@ import org.tugraz.sysds.hops.NaryOp;
 import org.tugraz.sysds.hops.OptimizerUtils;
 import org.tugraz.sysds.hops.ParameterizedBuiltinOp;
 import org.tugraz.sysds.hops.ReorgOp;
-import org.tugraz.sysds.hops.TensorAggUnaryOp;
 import org.tugraz.sysds.hops.TensorGenOp;
 import org.tugraz.sysds.hops.TernaryOp;
 import org.tugraz.sysds.hops.UnaryOp;
@@ -2263,11 +2261,6 @@ public class DMLTranslator
 			break;
 		
 		case SUM:
-			if (expr.getDataType() == DataType.TENSOR) {
-				currBuiltinOp = new TensorAggUnaryOp(target.getName(), DataType.SCALAR, target.getValueType(),
-						AggOp.valueOf(source.getOpCode().name()), Direction.RowCol, expr);
-				break;
-			}
 		case PROD:
 		case VAR:
 			currBuiltinOp = new AggUnaryOp(target.getName(), DataType.SCALAR, target.getValueType(),

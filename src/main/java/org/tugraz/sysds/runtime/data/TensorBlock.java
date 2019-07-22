@@ -235,6 +235,29 @@ public class TensorBlock implements Serializable
 	public long getNonZeros() {
 		return _nnz;
 	}
+
+	/**
+	 * Calculates the next index array. Note that if the given index array was the last element, the next index will
+	 * be the first one.
+	 *
+	 * @param ix the index array which will be incremented to the next index array
+	 */
+	public void getNextIndexes(int[] ix) {
+		int i = ix.length - 1;
+		ix[i]++;
+		//calculating next index
+		if (ix[i] == getDim(i)) {
+			while (ix[i] == getDim(i)) {
+				ix[i] = 0;
+				i--;
+				if (i < 0) {
+					//we are finished
+					break;
+				}
+				ix[i]++;
+			}
+		}
+	}
 	
 	public boolean isVector() {
 		return getNumDims() <= 2 
@@ -353,6 +376,7 @@ public class TensorBlock implements Serializable
 	}
 
 	public double sum() {
+		// TODO perf
 		// TODO generalize this method to an aggregate method that can do more than just sum
 		if (_sparse) {
 			// TODO implement for sparse

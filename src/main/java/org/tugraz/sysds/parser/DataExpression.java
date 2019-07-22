@@ -24,6 +24,7 @@ package org.tugraz.sysds.parser;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
@@ -444,11 +445,7 @@ public class DataExpression extends DataIdentifier
 		// check name is valid
 		boolean found = false;
 		if (paramName != null ){
-			for (String name : TENSOR_VALID_PARAM_NAMES){
-				if (name.equals(paramName)) {
-					found = true;
-				}
-			}
+			found = Arrays.stream(TENSOR_VALID_PARAM_NAMES).anyMatch((name) -> name.equals(paramName));
 		}
 
 		if (!found){

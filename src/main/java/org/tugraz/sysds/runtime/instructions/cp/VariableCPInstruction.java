@@ -537,8 +537,7 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 				//			.append('_').append(_uniqueVarID.getNextID()).toString();
 				//}
 				// TODO Cacheable tensor block
-				// TODO TensorBlock constructor call with different ValueType (default FP64)
-				TensorBlockData tensor = new TensorBlockData(ValueType.FP64);
+				TensorBlockData tensor = new TensorBlockData(getInput1().getValueType());
 				//MatrixObject mobj = new MatrixObject(getInput1().getValueType(), fname );
 				//clone meta data because it is updated on copy-on-write, otherwise there
 				//is potential for hidden side effects between variables.

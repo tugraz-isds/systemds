@@ -571,12 +571,7 @@ public class BuiltinFunctionExpression extends DataIdentifier
 			// sum(X);
 			checkNumParameters(1);
 			// TODO rewrite this
-			if (getOpCode() == Builtins.SUM) {
-				checkMatrixTensorParam(getFirstExpr());
-			} else {
-				checkMatrixParam(getFirstExpr());
-			}
-			
+			checkMatrixTensorParam(getFirstExpr());
 			output.setDataType(DataType.SCALAR);
 			output.setDimensions(0, 0);
 			output.setBlockDimensions (0, 0);
@@ -586,12 +581,12 @@ public class BuiltinFunctionExpression extends DataIdentifier
 		
 		case MEAN:
 			//checkNumParameters(2, false); // mean(Y) or mean(Y,W)
-            if (getSecondExpr() != null) {
-            	checkNumParameters (2);
-            }
-            else {
-            	checkNumParameters (1);
-            }
+			if (getSecondExpr() != null) {
+				checkNumParameters (2);
+			}
+			else {
+				checkNumParameters (1);
+			}
 			
 			checkMatrixParam(getFirstExpr());
 			if ( getSecondExpr() != null ) {
@@ -1723,10 +1718,14 @@ public class BuiltinFunctionExpression extends DataIdentifier
 	}
 
 	protected void checkMatrixTensorParam(Expression e) {
-		if (e.getOutput().getDataType() != DataType.MATRIX && e.getOutput().getDataType() != DataType.TENSOR) {
-			raiseValidateError(
-					"Expected " + e.getText() + " to be a matrix or tensor argument for function " + this.getOpCode().toString().toLowerCase() + "().",
-					false);
+		if (e.getOutput().getDataType() != DataType.MATRIX) {
+			// Param is not a matrix
+			// TODO get supported Operations form builtins
+			if (e.getOutput().getDataType() != DataType.TENSOR || getOpCode() != Builtins.SUM) {
+				// Param is also not a tensor, or the operation is not supported on tensor
+				raiseValidateError("Expected " + e.getText() + " to be a matrix or tensor argument for function "
+						+ this.getOpCode().toString().toLowerCase() + "().", false);
+			}
 		}
 	}
 
