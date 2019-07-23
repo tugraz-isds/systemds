@@ -1034,7 +1034,7 @@ public class DataConverter
 				sb.append(Boolean.toString(tb.get(ix) != 0).toUpperCase());
 				break;
 			case STRING:
-				sb.append(tb.getString(ix));
+				sb.append("\"").append(tb.getString(ix)).append("\"");
 				break;
 		}
 	}

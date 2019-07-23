@@ -427,11 +427,8 @@ public class CostEstimatorStaticRuntime extends CostEstimator
 							return xbu * d1m * d1n;
 					}
 
-				case TensorGen: //opcodes: tensor
-					// TODO Cost estimation tensor
-					return 0;
 				case Reorg: //opcodes: r', rdiag
-				case MatrixReshape: //opcodes: rshape
+				case Reshape: //opcodes: rshape
 					if( leftSparse )
 						return d1m * d1n * d1s;
 					else

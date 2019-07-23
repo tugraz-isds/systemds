@@ -10,8 +10,8 @@
  * with the License.  You may obtain a copy of the License at
  * 
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
- * Unless required by applicabltensorAggree law or agreed to in writing,
+ *
+ * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
@@ -28,7 +28,6 @@ import org.tugraz.sysds.lops.DataGen;
 import org.tugraz.sysds.lops.LeftIndex;
 import org.tugraz.sysds.lops.LopProperties.ExecType;
 import org.tugraz.sysds.lops.RightIndex;
-import org.tugraz.sysds.lops.TensorGen;
 import org.tugraz.sysds.lops.UnaryCP;
 import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.instructions.cp.AggregateBinaryCPInstruction;
@@ -48,7 +47,7 @@ import org.tugraz.sysds.runtime.instructions.cp.FunctionCallCPInstruction;
 import org.tugraz.sysds.runtime.instructions.cp.IndexingCPInstruction;
 import org.tugraz.sysds.runtime.instructions.cp.MMChainCPInstruction;
 import org.tugraz.sysds.runtime.instructions.cp.MMTSJCPInstruction;
-import org.tugraz.sysds.runtime.instructions.cp.MatrixReshapeCPInstruction;
+import org.tugraz.sysds.runtime.instructions.cp.ReshapeCPInstruction;
 import org.tugraz.sysds.runtime.instructions.cp.MultiReturnBuiltinCPInstruction;
 import org.tugraz.sysds.runtime.instructions.cp.MultiReturnParameterizedBuiltinCPInstruction;
 import org.tugraz.sysds.runtime.instructions.cp.PMMJCPInstruction;
@@ -59,7 +58,6 @@ import org.tugraz.sysds.runtime.instructions.cp.QuaternaryCPInstruction;
 import org.tugraz.sysds.runtime.instructions.cp.ReorgCPInstruction;
 import org.tugraz.sysds.runtime.instructions.cp.SpoofCPInstruction;
 import org.tugraz.sysds.runtime.instructions.cp.StringInitCPInstruction;
-import org.tugraz.sysds.runtime.instructions.cp.TensorGenCPInstruction;
 import org.tugraz.sysds.runtime.instructions.cp.TernaryCPInstruction;
 import org.tugraz.sysds.runtime.instructions.cp.UaggOuterChainCPInstruction;
 import org.tugraz.sysds.runtime.instructions.cp.UnaryCPInstruction;
@@ -234,7 +232,7 @@ public class CPInstructionParser extends InstructionParser
 		String2CPInstructionType.put( "r'"   	    , CPType.Reorg);
 		String2CPInstructionType.put( "rev"   	    , CPType.Reorg);
 		String2CPInstructionType.put( "rdiag"       , CPType.Reorg);
-		String2CPInstructionType.put( "rshape"      , CPType.MatrixReshape);
+		String2CPInstructionType.put( "rshape"      , CPType.Reshape);
 		String2CPInstructionType.put( "rsort"      , CPType.Reorg);
 
 		// Opcodes related to convolutions
@@ -272,8 +270,7 @@ public class CPInstructionParser extends InstructionParser
 		String2CPInstructionType.put( DataGen.SINIT_OPCODE  , CPType.StringInit);
 		String2CPInstructionType.put( DataGen.SAMPLE_OPCODE , CPType.Rand);
 		String2CPInstructionType.put( DataGen.TIME_OPCODE   , CPType.Rand);
-		String2CPInstructionType.put(TensorGen.TENSOR_OPCODE, CPType.TensorGen);
-		
+
 		String2CPInstructionType.put( "ctable", 		CPType.Ctable);
 		String2CPInstructionType.put( "ctableexpand", 	CPType.Ctable);
 		
@@ -354,8 +351,8 @@ public class CPInstructionParser extends InstructionParser
 			case UaggOuterChain:
 				return UaggOuterChainCPInstruction.parseInstruction(str);
 				
-			case MatrixReshape:
-				return MatrixReshapeCPInstruction.parseInstruction(str);
+			case Reshape:
+				return ReshapeCPInstruction.parseInstruction(str);
 	
 			case Append:
 				return AppendCPInstruction.parseInstruction(str);
@@ -365,9 +362,6 @@ public class CPInstructionParser extends InstructionParser
 				
 			case Rand:
 				return DataGenCPInstruction.parseInstruction(str);
-
-			case TensorGen:
-				return TensorGenCPInstruction.parseInstruction(str);
 
 			case StringInit:
 				return StringInitCPInstruction.parseInstruction(str);

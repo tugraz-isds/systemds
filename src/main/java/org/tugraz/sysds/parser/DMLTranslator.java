@@ -63,7 +63,6 @@ import org.tugraz.sysds.hops.NaryOp;
 import org.tugraz.sysds.hops.OptimizerUtils;
 import org.tugraz.sysds.hops.ParameterizedBuiltinOp;
 import org.tugraz.sysds.hops.ReorgOp;
-import org.tugraz.sysds.hops.TensorGenOp;
 import org.tugraz.sysds.hops.TernaryOp;
 import org.tugraz.sysds.hops.UnaryOp;
 import org.tugraz.sysds.hops.codegen.SpoofCompiler;
@@ -2043,22 +2042,21 @@ public class DMLTranslator
 			
 		case RAND:
 			// We limit RAND_MIN, RAND_MAX, RAND_SPARSITY, RAND_SEED, and RAND_PDF to be constants
-			DataGenMethod method = (paramHops.get(DataExpression.RAND_MIN).getValueType()==ValueType.STRING) ?
-					               DataGenMethod.SINIT : DataGenMethod.RAND;
+			DataGenMethod method = (paramHops.get(DataExpression.RAND_MIN).getValueType()==ValueType.STRING &&
+					target.getDataType() == DataType.MATRIX) ? DataGenMethod.SINIT : DataGenMethod.RAND;
 			currBuiltinOp = new DataGenOp(method, target, paramHops);
-			break;
-		
-		case MATRIX:
-			ArrayList<Hop> tmp = new ArrayList<>();
-			tmp.add( 0, paramHops.get(DataExpression.RAND_DATA) );
-			tmp.add( 1, paramHops.get(DataExpression.RAND_ROWS) );
-			tmp.add( 2, paramHops.get(DataExpression.RAND_COLS) );
-			tmp.add( 3, paramHops.get(DataExpression.RAND_BY_ROW) );
-			currBuiltinOp = new ReorgOp(target.getName(), target.getDataType(), target.getValueType(), ReOrgOp.RESHAPE, tmp);
 			break;
 
 		case TENSOR:
-			currBuiltinOp = new TensorGenOp(target, paramHops);
+		case MATRIX:
+			ArrayList<Hop> tmpMatrix = new ArrayList<>();
+			tmpMatrix.add( 0, paramHops.get(DataExpression.RAND_DATA) );
+			tmpMatrix.add( 1, paramHops.get(DataExpression.RAND_ROWS) );
+			tmpMatrix.add( 2, paramHops.get(DataExpression.RAND_COLS) );
+			tmpMatrix.add( 3, paramHops.get(DataExpression.RAND_DIMS) );
+			tmpMatrix.add( 4, paramHops.get(DataExpression.RAND_BY_ROW) );
+			currBuiltinOp = new ReorgOp(target.getName(), target.getDataType(), target.getValueType(),
+					ReOrgOp.RESHAPE, tmpMatrix);
 			break;
 
 		default:

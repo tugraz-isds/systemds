@@ -63,7 +63,7 @@ Note that this function is highly **unstable** and will be overworked and might 
 ### Returns
 | Type           | Description |
 | :------------- | :---------- |
-| Tensor[Double] | The generated Tensor. Will support more datatypes than `Double`. |
+| Tensor[?] | The generated Tensor. Will support more datatypes than `Double`. |
 
 ##### `data`-Argument
 
@@ -71,11 +71,6 @@ The `data`-argument can be a `Matrix` of any datatype from which the elements wi
 until filled. If given as a `Tensor` the same procedure takes place. We iterate through `Matrix` and `Tensor` by starting
 with each dimension index at `0` and then incrementing the lowest one, until we made a complete pass over the dimension,
 and then increasing the dimension index above. This will be done until the `Tensor` is completely filled.
-
-Currently the datatype of `data`-argument will not change the return value, which will always be a `Tensor[Double]` for now.
-
-A `String` will be interpreted as a vector of `Double` concatenated by spaces and then we apply the same procedure as with
-a `Matrix`.
 
 If `data` is a `Scalar`, we fill the whole tensor with the value.
 
@@ -88,28 +83,23 @@ Dimensions given by a `String` will be expected to be concatenated by spaces.
 ```r
 print("Dimension matrix:");
 d = matrix("2 3 4", 1, 3);
-dimStr = toString(d, decimal=0)
-print(dimStr)
+print(toString(d, decimal=1))
 
-print("Tensor A: Fillvalue=3, dims=" + dimStr);
+print("Tensor A: Fillvalue=3, dims=2 3 4");
 A = tensor(3, d); # fill with value, dimensions given by matrix
 print(toString(A))
 
-print("Tensor B: Reshape A, dims=4 3 2");
-B = tensor(A, "4 3 2"); # reshape tensor, dimensions given by string
+print("Tensor B: Reshape A, dims=4 2 3");
+B = tensor(A, "4 2 3"); # reshape tensor, dimensions given by string
 print(toString(B))
 
-print("Tensor C: Values=1 2 3 4 5 6, dims=2 3");
-C = tensor("1 2 3 4 5 6", "2 3"); # values given by string, dimensions given by string
-print(toString(C, sparse=TRUE));
+print("Tensor C: Reshape dimension matrix, dims=1 3");
+C = tensor(d, list(1, 3)); # values given by matrix, dimensions given by list
+print(toString(C, decimal=1))
 
-print("Tensor D: Values=3 2, dims=1 2");
-D = tensor("3 2", list(1, 2)); # values given by string, dimensions given by list
-print(toString(D, decimal=0))
-
-print("Tensor E: Values=1 2 3 4 5 6, dims=Tensor D");
-E = tensor("1 2 3 4 5 6", D); # values given by string, dimensions given by tensor
-print(toString(E))
+print("Tensor D: Values=tst, dims=Tensor C");
+D = tensor("tst", C); # fill with string, dimensions given by tensor
+print(toString(D))
 ```
 
 # DML-Bodied Built-In Functions

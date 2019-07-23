@@ -125,7 +125,13 @@ public class DenseBlockBool extends DenseBlockDRB
 
 	@Override
 	protected void setInternal(int bix, int ix, double v) {
+		_data.set(ix, v != 0);
+	}
 
+	@Override
+	public DenseBlock set(String s) {
+		_data.set(0, blockSize() * _odims[0], Boolean.parseBoolean(s));
+		return this;
 	}
 
 	@Override

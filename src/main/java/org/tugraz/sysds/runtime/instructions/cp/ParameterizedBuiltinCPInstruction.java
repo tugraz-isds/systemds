@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.tugraz.sysds.lops.Lop;
 import org.tugraz.sysds.parser.ParameterizedBuiltinFunctionExpression;
@@ -56,7 +57,7 @@ import org.tugraz.sysds.runtime.util.DataConverter;
 
 public class ParameterizedBuiltinCPInstruction extends ComputationCPInstruction {
 	private static final int TOSTRING_MAXROWS = 100;
-	private static final int TOSTRING_MAXCOLS = 100;
+	private static final int TOSTRING_MAXCOLS = 10;
 	private static final int TOSTRING_DECIMAL = 3;
 	private static final boolean TOSTRING_SPARSE = false;
 	private static final String TOSTRING_SEPARATOR = " ";
@@ -323,7 +324,7 @@ public class ParameterizedBuiltinCPInstruction extends ComputationCPInstruction 
 			//get input matrix/frame and convert to string
 			// TODO implement cacheableData for tensor so we can simplify this
 			Data dataVariable = ec.getVariable(getParam("target"));
-			String out = null;
+			String out;
 			if (dataVariable instanceof TensorBlockData) {
 				TensorBlock tensor = ((TensorBlockData) dataVariable).getTensorBlock();
 				// TODO improve truncation to check all dimensions
@@ -383,7 +384,15 @@ public class ParameterizedBuiltinCPInstruction extends ComputationCPInstruction 
 		if( (getParam("rows")==null && data.getNumRows()>rows)
 				|| (getParam("cols")==null && data.getNumCols()>cols) )
 		{
-			LOG.warn("Truncating "+data.getClass().getSimpleName()+" of size to "+rows+"x"+cols+". "
+			StringBuilder sb = new StringBuilder();
+			IntStream.range(0, data.getNumDims()).forEach((i) -> {
+						if ((i == data.getNumDims() - 1)) {
+							sb.append(data.getDim(i));
+						} else {
+							sb.append(data.getDim(i)).append("x");
+						}
+					});
+			LOG.warn("Truncating "+data.getClass().getSimpleName()+" of size "+sb.toString()+" to "+rows+"x"+cols+". "
 					+ "Use toString(X, rows=..., cols=...) if necessary.");
 		}
 	}

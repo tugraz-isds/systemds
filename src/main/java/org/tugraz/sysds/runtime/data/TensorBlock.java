@@ -351,6 +351,14 @@ public class TensorBlock implements Serializable
 		}
 	}
 
+	public void set(String str) {
+		if (_sparse) {
+			throw new NotImplementedException();
+		} else {
+			_denseBlock.set(str);
+		}
+	}
+
 	public void set(TensorBlock other) {
 		if (_sparse) {
 			throw new NotImplementedException();

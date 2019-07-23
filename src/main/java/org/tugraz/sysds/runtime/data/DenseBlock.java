@@ -391,7 +391,19 @@ public abstract class DenseBlock implements Serializable
 	 * @return self
 	 */
 	public abstract DenseBlock set(double v);
-	
+
+	/**
+	 * Set the given string for the entire dense block (fill). Generally the string will be parsed, except for string
+	 * DenseBlock.
+	 *
+	 * @param s string
+	 * @return self
+	 */
+	public DenseBlock set(String s) {
+		set(Double.parseDouble(s));
+		return this;
+	}
+
 	/**
 	 * Set the given value for an entire index range of the 
 	 * dense block (fill).

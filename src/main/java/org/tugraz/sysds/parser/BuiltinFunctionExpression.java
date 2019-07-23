@@ -1711,9 +1711,8 @@ public class BuiltinFunctionExpression extends DataIdentifier
 
 	protected void checkMatrixParam(Expression e) {
 		if (e.getOutput().getDataType() != DataType.MATRIX) {
-			raiseValidateError(
-					"Expected " + e.getText() + " to be a matrix argument for function " + this.getOpCode().toString().toLowerCase() + "().",
-					false);
+			raiseValidateError("Expected " + e.getText() + " to be a matrix argument for function " +
+					this.getOpCode().toString().toLowerCase() + "().", false);
 		}
 	}
 
