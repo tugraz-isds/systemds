@@ -1485,7 +1485,7 @@ public class DataExpression extends DataIdentifier
 			getOutput().setFormatType(FormatType.BINARY);
 			if (tensorOperation) {
 				getOutput().setDataType(DataType.TENSOR);
-				getOutput().setValueType(minExpr.getOutput().getValueType());
+				getOutput().setValueType(dataParam.getOutput().getValueType());
 				// TODO set correct dimensions
 				getOutput().setDimensions(0, 0);
 			} else {

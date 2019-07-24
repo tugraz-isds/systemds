@@ -292,7 +292,7 @@ public abstract class DenseBlock implements Serializable
 	 * @return number of non-zeros
 	 */
 	public abstract long countNonZeros(int rl, int ru, int cl, int cu);
-	
+
 	/**
 	 * Get the allocated block for the given row. This call
 	 * is equivalent to valuesAt(indexes(r)).

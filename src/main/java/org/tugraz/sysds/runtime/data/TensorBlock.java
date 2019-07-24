@@ -390,16 +390,17 @@ public class TensorBlock implements Serializable
 			// TODO implement for sparse
 			throw new NotImplementedException();
 		} else {
-			double sum = 0;
-			int elementsPerRow = Arrays.stream(_dims, 1, _dims.length).reduce(1, (a, b) -> a * b);
-			for (int bix = 0; bix < _denseBlock.numBlocks(); bix++) {
-				double[] values = _denseBlock.valuesAt(bix);
-				for (int r = 0; r < _denseBlock.blockSize(bix); r++) {
-					int finalR = r;
-					sum += IntStream.range(0, elementsPerRow).mapToDouble(i -> values[finalR * elementsPerRow + i]).sum();
+			if (_vt == ValueType.BOOLEAN) {
+				return _denseBlock.countNonZeros();
+			} else {
+				double sum = 0;
+				for (int bix = 0; bix < _denseBlock.numBlocks(); bix++) {
+					double[] values = _denseBlock.valuesAt(bix);
+					for (int i = 0; i < _denseBlock.blockSize(bix) * _denseBlock.getCumODims(0); i++)
+						sum += values[i];
 				}
+				return sum;
 			}
-			return sum;
 		}
 	}
 
