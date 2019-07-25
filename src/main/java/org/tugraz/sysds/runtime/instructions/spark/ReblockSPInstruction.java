@@ -54,7 +54,7 @@ import org.tugraz.sysds.utils.Statistics;
 
 import java.util.ArrayList;
 
-public class ReblockSPInstruction extends UnarySPInstruction implements LineageTraceable {
+public class ReblockSPInstruction extends UnarySPInstruction{
 	private int brlen;
 	private int bclen;
 	private boolean outputEmptyBlocks;
@@ -242,16 +242,16 @@ public class ReblockSPInstruction extends UnarySPInstruction implements LineageT
 		}
 	}
 
-	@Override
-	public LineageItem[] getLineageItems() {
-		ArrayList<LineageItem> lineages = new ArrayList<>();
-		if (input1 != null)
-			lineages.add(Lineage.getOrCreate(input1));
-		if (input2 != null)
-			lineages.add(Lineage.getOrCreate(input2));
-		if (input3 != null)
-			lineages.add(Lineage.getOrCreate(input3));
-
-		return new LineageItem[]{new LineageItem(output.getName(), getOpcode(), lineages.toArray(new LineageItem[0]))};
-	}
+//	@Override
+//	public LineageItem[] getLineageItems() {
+//		ArrayList<LineageItem> lineages = new ArrayList<>();
+//		if (input1 != null)
+//			lineages.add(Lineage.getOrCreate(input1));
+//		if (input2 != null)
+//			lineages.add(Lineage.getOrCreate(input2));
+//		if (input3 != null)
+//			lineages.add(Lineage.getOrCreate(input3));
+//
+//		return new LineageItem[]{new LineageItem(output.getName(), getOpcode(), lineages.toArray(new LineageItem[0]))};
+//	}
 }
