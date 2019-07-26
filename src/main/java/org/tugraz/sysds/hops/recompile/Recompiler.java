@@ -1301,6 +1301,9 @@ public class Recompiler
 					d.setDim2(fo.getNumColumns());
 				} else if( dat instanceof TensorObject) {
 					TensorObject to = (TensorObject) dat;
+					// TODO: correct dimensions
+					d.setDim1(to.getNumRows());
+					d.setDim2(to.getNumColumns());
 					d.setNnz(to.getNnz());
 				}
 			}
