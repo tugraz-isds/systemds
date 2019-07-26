@@ -39,12 +39,9 @@ import org.tugraz.sysds.runtime.controlprogram.caching.MatrixObject;
 import org.tugraz.sysds.runtime.controlprogram.caching.MatrixObject.UpdateType;
 import org.tugraz.sysds.runtime.controlprogram.context.ExecutionContext;
 import org.tugraz.sysds.runtime.instructions.Instruction;
-import org.tugraz.sysds.runtime.instructions.cp.BooleanObject;
-import org.tugraz.sysds.runtime.instructions.cp.Data;
-import org.tugraz.sysds.runtime.instructions.cp.DoubleObject;
-import org.tugraz.sysds.runtime.instructions.cp.IntObject;
-import org.tugraz.sysds.runtime.instructions.cp.ScalarObject;
-import org.tugraz.sysds.runtime.instructions.cp.StringObject;
+import org.tugraz.sysds.runtime.instructions.cp.*;
+import org.tugraz.sysds.runtime.lineage.LineageItem;
+import org.tugraz.sysds.runtime.lineage.LineageCache;
 import org.tugraz.sysds.runtime.matrix.data.MatrixBlock;
 import org.tugraz.sysds.utils.Statistics;
 
@@ -201,8 +198,13 @@ public abstract class ProgramBlock implements ParseInfo
 			// pre-process instruction (debug state, inst patching, listeners)
 			Instruction tmp = currInst.preprocessInstruction( ec );
 
-			// process actual instruction
-			tmp.processInstruction( ec );
+			// Try to reuse instruction result from lineage cache
+			boolean reused = LineageCache.reuse(tmp, ec);
+			
+			if (!reused) {
+				// process actual instruction
+				tmp.processInstruction(ec);
+			}
 
 			// post-process instruction (debug)
 			tmp.postprocessInstruction( ec );

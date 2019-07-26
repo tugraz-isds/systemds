@@ -25,7 +25,12 @@ import org.tugraz.sysds.api.DMLScript;
 import org.tugraz.sysds.lops.Lop;
 import org.tugraz.sysds.parser.DataIdentifier;
 import org.tugraz.sysds.runtime.controlprogram.context.ExecutionContext;
+import org.tugraz.sysds.runtime.instructions.cp.ComputationCPInstruction;
+import org.tugraz.sysds.runtime.instructions.cp.Data;
 import org.tugraz.sysds.runtime.lineage.Lineage;
+import org.tugraz.sysds.runtime.lineage.LineageCache;
+import org.tugraz.sysds.runtime.lineage.LineageItem;
+import org.tugraz.sysds.runtime.lineage.LineageTraceable;
 
 
 public abstract class Instruction 
@@ -236,7 +241,16 @@ public abstract class Instruction
 	 * @param ec execution context
 	 */
 	public void postprocessInstruction(ExecutionContext ec) {
-		if (DMLScript.LINEAGE)
+		if (DMLScript.LINEAGE) {
 			Lineage.trace(this, ec);
+			
+			if (this instanceof ComputationCPInstruction) {
+				LineageItem[] items = ((LineageTraceable) this).getLineageItems();
+				if (items.length == 1) {
+					Data dat = ec.getVariable(((ComputationCPInstruction) this).output);
+					LineageCache.put(items[0], dat);
+				}
+			}
+		}
 	}
 }
