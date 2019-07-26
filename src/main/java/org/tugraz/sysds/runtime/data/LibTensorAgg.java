@@ -128,7 +128,7 @@ public class LibTensorAgg {
 	private static TensorBlock aggregateUnaryTensorEmpty(TensorBlock in, TensorBlock out, AggType optype,
 	                                                     IndexFunction ixFn) {
 		// TODO implement for other optypes and IndexFunctions
-		if( ixFn instanceof ReduceAll && (in.getNumRows() == 0 || in.getNumCols() == 0) ) {
+		if( ixFn instanceof ReduceAll && (in.getNumRows() == 0 || in.getNumColumns() == 0) ) {
 			double val;
 			if (optype == AggType.KAHAN_SUM) {
 				val = 0;

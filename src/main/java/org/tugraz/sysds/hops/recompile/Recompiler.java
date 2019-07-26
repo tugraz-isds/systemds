@@ -1121,7 +1121,7 @@ public class Recompiler
 
 	public static void extractDAGOutputStatistics(Hop hop, LocalVariableMap vars, boolean overwrite)
 	{
-		if(    hop instanceof DataOp && ((DataOp)hop).getDataOpType()==DataOpTypes.TRANSIENTWRITE ) //for all writes to symbol table
+		if( hop instanceof DataOp && ((DataOp)hop).getDataOpType()==DataOpTypes.TRANSIENTWRITE ) //for all writes to symbol table
 		{
 			String varName = hop.getName();
 			if( !vars.keySet().contains(varName) || overwrite ) //not existing so far
@@ -1135,6 +1135,13 @@ public class Recompiler
 					MetaDataFormat meta = new MetaDataFormat(mc,null,null);
 					mo.setMetaData(meta);	
 					vars.put(varName, mo);
+				} else if( hop.getDataType()==DataType.TENSOR ) {
+					TensorObject to = new TensorObject(hop.getValueType(), null);
+					MatrixCharacteristics mc = new MatrixCharacteristics(hop.getDim1(), hop.getDim2(),
+							ConfigurationManager.getBlocksize(), ConfigurationManager.getBlocksize(), hop.getNnz());
+					MetaDataFormat meta = new MetaDataFormat(mc,null,null);
+					to.setMetaData(meta);
+					vars.put(varName, to);
 				}
 				//extract scalar constants for second constant propagation
 				else if( hop.getDataType()==DataType.SCALAR )

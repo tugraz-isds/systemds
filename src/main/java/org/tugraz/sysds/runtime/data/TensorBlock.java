@@ -573,24 +573,6 @@ public class TensorBlock implements CacheBlock
 	}
 
 	@Override
-	public void write(DataOutput out) throws IOException {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void readFields(DataInput in) throws IOException {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public int getNumColumns() {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
 	public long getInMemorySize() {
 		// TODO Auto-generated method stub
 		return 0;
