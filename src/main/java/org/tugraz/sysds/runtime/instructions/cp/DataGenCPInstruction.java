@@ -59,6 +59,10 @@ public class DataGenCPInstruction extends UnaryCPInstruction {
 	private final boolean replace;
 	private final int numThreads;
 
+	// seed positions
+	private static final int SEED_POSITION_RAND = 9;
+	private static final int SEED_POSITION_SAMPLE = 4;
+
 	private DataGenCPInstruction(Operator op, DataGenMethod mthd, CPOperand in, CPOperand out, 
 			CPOperand rows, CPOperand cols, CPOperand dims, int rpb, int cpb, String minValue, String maxValue, double sparsity, long seed,
 			String probabilityDensityFunction, String pdfParams, int k, 
@@ -132,6 +136,8 @@ public class DataGenCPInstruction extends UnaryCPInstruction {
 	public long getCols() {
 		return cols.isLiteral() ? Long.parseLong(cols.getName()) : -1;
 	}
+
+	public String getDims() { return dims.getName(); }
 	
 	public int getRowsInBlock() {
 		return rowsInBlock;
@@ -204,8 +210,8 @@ public class DataGenCPInstruction extends UnaryCPInstruction {
 			int cpb = Integer.parseInt(s[5]);
 			double sparsity = !s[8].contains(Lop.VARIABLE_NAME_PLACEHOLDER) ?
 					Double.valueOf(s[8]) : -1;
-			long seed = !s[9].contains(Lop.VARIABLE_NAME_PLACEHOLDER) ?
-					Long.valueOf(s[9]) : -1;
+			long seed = !s[SEED_POSITION_RAND].contains(Lop.VARIABLE_NAME_PLACEHOLDER) ?
+					Long.valueOf(s[SEED_POSITION_RAND]) : -1;
 			String pdf = s[10];
 			String pdfParams = !s[11].contains( Lop.VARIABLE_NAME_PLACEHOLDER) ?
 				s[11] : null;
@@ -231,7 +237,7 @@ public class DataGenCPInstruction extends UnaryCPInstruction {
 			boolean replace = (!s[3].contains(Lop.VARIABLE_NAME_PLACEHOLDER) 
 				&& Boolean.valueOf(s[3]));
 			
-			long seed = Long.parseLong(s[4]);
+			long seed = Long.parseLong(s[SEED_POSITION_SAMPLE]);
 			int rpb = Integer.parseInt(s[5]);
 			int cpb = Integer.parseInt(s[6]);
 			
@@ -357,8 +363,8 @@ public class DataGenCPInstruction extends UnaryCPInstruction {
 	public LineageItem[] getLineageItems() {
 		String tmpInstStr = instString;
 		if (getSeed() == DataGenOp.UNSPECIFIED_SEED) {
-			int position = (method == DataGenMethod.RAND) ? 10 :
-				(method == DataGenMethod.SAMPLE) ? 5 : 0;
+			int position = (method == DataGenMethod.RAND) ? SEED_POSITION_RAND + 1 :
+				(method == DataGenMethod.SAMPLE) ? SEED_POSITION_SAMPLE + 1 : 0;
 			tmpInstStr = InstructionUtils.replaceOperand(
 				tmpInstStr, position, String.valueOf(runtimeSeed));
 		}
