@@ -266,7 +266,7 @@ public class DataGenCPInstruction extends UnaryCPInstruction {
 			
 			//generate pseudo-random seed (because not specified) 
 			long lSeed = seed; //seed per invocation
-			if (lSeed == DataGenOp.UNSPECIFIED_SEED) {
+			if( lSeed == DataGenOp.UNSPECIFIED_SEED ) {
 				if (runtimeSeed == null)
 					runtimeSeed = DataGenOp.generateRandomSeed();
 				lSeed = runtimeSeed;
@@ -364,7 +364,6 @@ public class DataGenCPInstruction extends UnaryCPInstruction {
 	public LineageItem[] getLineageItems() {
 		String tmpInstStr = instString;
 		if (getSeed() == DataGenOp.UNSPECIFIED_SEED) {
-			
 			//generate pseudo-random seed (because not specified)
 			if (runtimeSeed == null)
 				runtimeSeed = DataGenOp.generateRandomSeed();
@@ -374,7 +373,6 @@ public class DataGenCPInstruction extends UnaryCPInstruction {
 			tmpInstStr = InstructionUtils.replaceOperand(
 					tmpInstStr, position, String.valueOf(runtimeSeed));
 		}
-		
 		return new LineageItem[]{new LineageItem(output.getName(), tmpInstStr, getOpcode())};
 	}
 }

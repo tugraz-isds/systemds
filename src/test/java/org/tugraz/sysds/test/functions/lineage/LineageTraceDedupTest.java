@@ -119,8 +119,7 @@ public class LineageTraceDedupTest extends AutomatedTestBase {
 			proArgs.add(output("R"));
 			programArgs = proArgs.toArray(new String[proArgs.size()]);
 
-			LineageItem.resetIDSequence();
-			Lineage.resetLineageMaps();
+			Lineage.resetObjects();
 			runTest(true, EXCEPTION_NOT_EXPECTED, null, -1);
 
 			String trace = readDMLLineageFromHDFS("R");
@@ -137,7 +136,7 @@ public class LineageTraceDedupTest extends AutomatedTestBase {
 			proArgs.add(output("R"));
 			programArgs = proArgs.toArray(new String[proArgs.size()]);
 			
-			LineageItem.resetIDSequence();
+			Lineage.resetObjects();
 			runTest(true, EXCEPTION_NOT_EXPECTED, null, -1);
 			
 			String dedup_trace = readDMLLineageFromHDFS("R");

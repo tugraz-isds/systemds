@@ -143,6 +143,8 @@ public class LineageItemUtils {
 		pb.setInstructions(dag.getJobs(null,
 				ConfigurationManager.getDMLConfig()));
 		
+		// reset cache due to cleaned data objects
+		LineageCache.resetCache();
 		//execute instructions and get result
 		pb.execute(ec);
 		return ec.getVariable(varname);
