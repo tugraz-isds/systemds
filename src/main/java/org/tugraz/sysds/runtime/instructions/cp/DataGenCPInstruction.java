@@ -50,7 +50,7 @@ public class DataGenCPInstruction extends UnaryCPInstruction {
 	private final double minValue, maxValue, sparsity;
 	private final String pdf, pdfParams;
 	private final long seed;
-	private long runtimeSeed;
+	private Long runtimeSeed;
 
 	// sequence specific attributes
 	private final CPOperand seq_from, seq_to, seq_incr;
@@ -266,9 +266,10 @@ public class DataGenCPInstruction extends UnaryCPInstruction {
 			
 			//generate pseudo-random seed (because not specified) 
 			long lSeed = seed; //seed per invocation
-			if( lSeed == DataGenOp.UNSPECIFIED_SEED ) {
-				lSeed = DataGenOp.generateRandomSeed();
-				runtimeSeed = lSeed;
+			if (lSeed == DataGenOp.UNSPECIFIED_SEED) {
+				if (runtimeSeed == null)
+					runtimeSeed = DataGenOp.generateRandomSeed();
+				lSeed = runtimeSeed;
 			}
 			
 			if( LOG.isTraceEnabled() )
@@ -363,11 +364,17 @@ public class DataGenCPInstruction extends UnaryCPInstruction {
 	public LineageItem[] getLineageItems() {
 		String tmpInstStr = instString;
 		if (getSeed() == DataGenOp.UNSPECIFIED_SEED) {
+			
+			//generate pseudo-random seed (because not specified)
+			if (runtimeSeed == null)
+				runtimeSeed = DataGenOp.generateRandomSeed();
+			
 			int position = (method == DataGenMethod.RAND) ? SEED_POSITION_RAND + 1 :
-				(method == DataGenMethod.SAMPLE) ? SEED_POSITION_SAMPLE + 1 : 0;
+					(method == DataGenMethod.SAMPLE) ? SEED_POSITION_SAMPLE + 1 : 0;
 			tmpInstStr = InstructionUtils.replaceOperand(
-				tmpInstStr, position, String.valueOf(runtimeSeed));
+					tmpInstStr, position, String.valueOf(runtimeSeed));
 		}
+		
 		return new LineageItem[]{new LineageItem(output.getName(), tmpInstStr, getOpcode())};
 	}
 }
