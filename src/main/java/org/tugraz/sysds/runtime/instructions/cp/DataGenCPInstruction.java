@@ -338,7 +338,7 @@ public class DataGenCPInstruction extends UnaryCPInstruction {
 				soresBlock.examSparsity();
 		
 			//release created output
-			ec.setMatrixOutput(output.getName(), soresBlock, getExtendedOpcode());
+			ec.setMatrixOutput(output.getName(), soresBlock);
 		} else if(output.isTensor()) {
 			// TODO memory optimization
 			ec.setTensorOutput(output.getName(), tensorBlock);
@@ -357,7 +357,7 @@ public class DataGenCPInstruction extends UnaryCPInstruction {
 	public LineageItem[] getLineageItems() {
 		String tmpInstStr = instString;
 		if (getSeed() == DataGenOp.UNSPECIFIED_SEED) {
-			int position = (method == DataGenMethod.RAND) ? 9 :
+			int position = (method == DataGenMethod.RAND) ? 10 :
 				(method == DataGenMethod.SAMPLE) ? 5 : 0;
 			tmpInstStr = InstructionUtils.replaceOperand(
 				tmpInstStr, position, String.valueOf(runtimeSeed));

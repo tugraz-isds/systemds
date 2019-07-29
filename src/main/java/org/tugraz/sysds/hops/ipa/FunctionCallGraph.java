@@ -185,6 +185,28 @@ public class FunctionCallGraph
 	}
 	
 	/**
+	 * Replaces a function call to fkeyOld with a call to fkey,
+	 * but using the function op and statement block from the old.
+	 * 
+	 * @param fkeyOld old function key of called function
+	 * @param fkey new function key of called function
+	 */
+	public void replaceFunctionCalls(String fkeyOld, String fkey) {
+		ArrayList<FunctionOp> fopTmp = _fCalls.get(fkeyOld);
+		ArrayList<StatementBlock> sbTmp =_fCallsSB.get(fkeyOld);
+		_fCalls.remove(fkeyOld);
+		_fCallsSB.remove(fkeyOld);
+		_fCalls.put(fkey, fopTmp);
+		_fCallsSB.put(fkey, sbTmp);
+		//additional cleanups fold no longer reachable
+		_fRecursive.remove(fkeyOld);
+		_fSideEffectFree.remove(fkeyOld);
+		_fGraph.remove(fkeyOld);
+		for( HashSet<String> hs : _fGraph.values() )
+			hs.remove(fkeyOld);
+	}
+	
+	/**
 	 * Indicates if the given function is either directly or indirectly recursive.
 	 * An example of an indirect recursive function is foo2 in the following call
 	 * chain: foo1 -&gt; foo2 -&gt; foo1.

@@ -76,10 +76,9 @@ public class ReshapeCPInstruction extends UnaryCPInstruction {
 			} else if (input1.getDataType() == Types.DataType.MATRIX) {
 				out.allocateDenseBlock();
 				//get Tensor-data from matrix
-				MatrixBlock data = ec.getMatrixInput(input1.getName(), getExtendedOpcode());
-				// TODO metadata operation
+				MatrixBlock data = ec.getMatrixInput(input1.getName());
 				out.set(data);
-				ec.releaseMatrixInput(input1.getName(), getExtendedOpcode());
+				ec.releaseMatrixInput(input1.getName());
 			} else {
 				// TODO support frame and list. Before we implement list it might be good to implement heterogeneous tensors
 				throw new DMLRuntimeException("ReshapeInstruction only supports tensor and matrix as data parameter.");
@@ -87,7 +86,7 @@ public class ReshapeCPInstruction extends UnaryCPInstruction {
 			ec.setTensorOutput(output.getName(), out);
 		} else {
 			//get inputs
-			MatrixBlock in = ec.getMatrixInput(input1.getName(), getExtendedOpcode());
+			MatrixBlock in = ec.getMatrixInput(input1.getName());
 			int rows = (int) ec.getScalarInput(_opRows).getLongValue(); //save cast
 			int cols = (int) ec.getScalarInput(_opCols).getLongValue(); //save cast
 			BooleanObject byRow = (BooleanObject) ec.getScalarInput(_opByRow.getName(), ValueType.BOOLEAN, _opByRow.isLiteral());
@@ -97,8 +96,8 @@ public class ReshapeCPInstruction extends UnaryCPInstruction {
 			LibMatrixReorg.reshape(in, out, rows, cols, byRow.getBooleanValue());
 
 			//set output and release inputs
-			ec.setMatrixOutput(output.getName(), out, getExtendedOpcode());
-			ec.releaseMatrixInput(input1.getName(), getExtendedOpcode());
+			ec.setMatrixOutput(output.getName(), out);
+			ec.releaseMatrixInput(input1.getName());
 		}
 	}
 }
