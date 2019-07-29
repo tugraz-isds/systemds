@@ -20,7 +20,6 @@ import org.tugraz.sysds.common.Types;
 import org.tugraz.sysds.lops.PartialAggregate;
 import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.functionobjects.IndexFunction;
-import org.tugraz.sysds.runtime.functionobjects.KahanFunction;
 import org.tugraz.sysds.runtime.functionobjects.KahanPlus;
 import org.tugraz.sysds.runtime.functionobjects.Mean;
 import org.tugraz.sysds.runtime.functionobjects.ReduceAll;
@@ -230,6 +229,7 @@ public class LibTensorAgg {
 		final int n = in.getDim(1);
 		final int cix = (m-1)*n;
 
+		// TODO: generalize for large blocks
 		double[] a = in.getDenseBlock().valuesAt(0);
 
 		KahanObject buffer = new KahanObject(0, 0);
@@ -311,44 +311,19 @@ public class LibTensorAgg {
 	 * @param ru row upper index
 	 */
 	private static void d_uakp( DenseBlock a, DenseBlock c, KahanObject kbuff, KahanPlus kplus, int rl, int ru ) {
-		final int bil = a.index(rl);
-		final int biu = a.index(ru-1);
 		if (a instanceof DenseBlockBool || a instanceof DenseBlockLBool) {
 			kbuff._sum = a.countNonZeros(rl, ru, 0, a.getCumODims(0));
-		} else if (a instanceof DenseBlockFP64 || a instanceof DenseBlockLFP64) {
-			for (int bix = bil; bix <= biu; bix++) {
-				double[] values = a.valuesAt(bix);
-				int lpos = (bix==bil) ? a.pos(rl) : 0;
-				int len = (bix==biu) ? a.pos(ru - 1) - lpos + a.getCumODims(0) : a.blockSize(bix) * a.getCumODims(0);
-				sum(values, lpos, len, kbuff, kplus);
-			}
+		} else if (a instanceof DenseBlockString || a instanceof DenseBlockLString) {
+			throw new DMLRuntimeException("Sum over string tensor is not supported.");
 		} else {
 			// TODO special case String: currently converted to double, should be concatenated?
-			// Less readable and makes use of how row-column-getter actually works, but is a lot faster than
-			// using the index[]-getter.
-			long sum = 0;
-			for (int bix = bil; bix <= biu; bix++) {
-				int lpos = (bix == bil) ? a.pos(rl) : 0;
-				int len = (bix == biu) ? a.pos(ru - 1) - lpos + a.getCumODims(0) : a.blockSize(bix) * a.getCumODims(0);
-				for (int i = 0; i < len; i++)
-					sum += UtilFunctions.toLong(a.get(bix * a.blockSize() * a.getCumODims(0), lpos + i));
+			for (int r = rl; r < ru; r++) {
+				for (int col = 0; col < a.getCumODims(0); col++) {
+					kplus.execute2(kbuff, a.get(r, col));
+				}
 			}
-			kbuff._sum = sum;
 		}
 		c.set(kbuff);
-	}
-
-	/**
-	 * Sum an array with kahan
-	 * @param a the array to sum
-	 * @param ai the starting to index
-	 * @param len number of elements to sum
-	 * @param kbuff the kahan buffer object
-	 * @param kplus the kahan function
-	 */
-	private static void sum(double[] a, int ai, final int len, KahanObject kbuff, KahanFunction kplus) {
-		for (int i=ai; i<ai+len; i++)
-			kplus.execute2(kbuff, a[i]);
 	}
 
 	// TODO maybe merge this, and other parts, with `LibMatrixAgg`
