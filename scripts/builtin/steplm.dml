@@ -79,14 +79,13 @@
 m_steplm = function(Matrix[Double] X, Matrix[Double] y, Integer icpt = 0, Double reg = 1e-7, Double tol = 1e-7, Integer maxi = 0, Boolean verbose = TRUE)
   return() {
 
-  write_beta = ifdef($write_beta, TRUE);
 
   # currently only the forward selection strategy in supported: start from one feature and iteratively add 
   # features until AIC improves
   dir = "forward";
 
-  fmt = ifdef($fmt, "text");
-  intercept_status = icpt;
+  #fmt = ifdef($fmt, "text");
+  #icpt = intercept_status;
   thr = ifdef($thr, 0.001);
  
 
@@ -107,7 +106,7 @@ m_steplm = function(Matrix[Double] X, Matrix[Double] y, Integer icpt = 0, Double
     # X_global stores the best model found at each step
     X_global = matrix(0, rows = n, cols = 1);
 
-    if (intercept_status == 1 | intercept_status == 2) {
+    if (icpt == 1 | icpt == 2) {
       beta = mean(y);
       AIC_best = 2 + n * log(sum((beta - y) ^ 2) / n);
     } else {
@@ -119,7 +118,7 @@ m_steplm = function(Matrix[Double] X, Matrix[Double] y, Integer icpt = 0, Double
     print("Best AIC without any features: " + AIC_best);
 
     boa_ncol = ncol(X_orig);
-    if (intercept_status != 0) {
+    if (icpt != 0) {
       boa_ncol = boa_ncol + 1
     }
 
@@ -130,7 +129,7 @@ m_steplm = function(Matrix[Double] X, Matrix[Double] y, Integer icpt = 0, Double
     # First pass to examine single features
     for (i in 1:m_orig, check = 0) {
       columns_fixed_ordered_1 = matrix(i, rows = 1, cols = 1);
-      [AIC_1, beta_out_i] = linear_regression(X_orig[, i], y, intercept_status);
+      [AIC_1, beta_out_i] = linear_regression(X_orig[, i], y, icpt);
 
       print(" mibeta "  + toString(beta_out_i))
       AICs[1, i] = AIC_1;
@@ -151,7 +150,7 @@ m_steplm = function(Matrix[Double] X, Matrix[Double] y, Integer icpt = 0, Double
       print("AIC of an empty model is " + AIC_best + " and adding no feature achieves more than " +
            (thr * 100) + "% decrease in AIC!");
       Selected = matrix(0, rows = 1, cols = 1);
-      if (intercept_status == 0) {
+      if (icpt == 0) {
         B = matrix(beta, rows = m_orig, cols = 1);
       } else {
         B_tmp = matrix(0, rows = m_orig + 1, cols = 1);
@@ -189,7 +188,7 @@ m_steplm = function(Matrix[Double] X, Matrix[Double] y, Integer icpt = 0, Double
           tmp[1, 1] = i;
           columns_fixed_ordered_2 = append(columns_fixed_ordered, tmp);
       
-          [AIC_2, beta_out_i] = linear_regression(X, y, intercept_status);
+          [AIC_2, beta_out_i] = linear_regression(X, y, icpt);
 
           beta_out_all_2[1:nrow(beta_out_i), (i - 1) * y_ncol + 1:i * y_ncol] = beta_out_i[, 1:1];
 
@@ -230,11 +229,11 @@ m_steplm = function(Matrix[Double] X, Matrix[Double] y, Integer icpt = 0, Double
 
     # run linear regression with selected set of features
     print("Running linear regression with selected features...");
-    [AIC, beta_out] = linear_regression(X_global, y, intercept_status);
+    [AIC, beta_out] = linear_regression(X_global, y, icpt);
 
 
     Selected = columns_fixed_ordered;
-    if (intercept_status != 0) {
+    if (icpt != 0) {
       Selected = cbind(Selected, matrix(boa_ncol, rows = 1, cols = 1))
     }
 
@@ -258,12 +257,11 @@ m_steplm = function(Matrix[Double] X, Matrix[Double] y, Integer icpt = 0, Double
 linear_regression = function(Matrix[Double] X, Matrix[Double] y, Integer icpt = 0)
   return(Double AIC, Matrix[Double] beta) {
 
-  intercept_status = icpt;
   n = nrow(X);
   m = ncol(X);
 
   # Introduce the intercept, shift and rescale the columns of X if needed
-  if (intercept_status == 1 | intercept_status == 2) {
+  if (icpt == 1 | icpt == 2) {
     # add the intercept column
     ones_n = matrix(1, rows = n, cols = 1);
     X = cbind(X, ones_n);
