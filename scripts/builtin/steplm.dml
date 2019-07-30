@@ -1,3 +1,79 @@
+#-------------------------------------------------------------
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+# 
+#   http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+#-------------------------------------------------------------
+
+#
+# THIS SCRIPT CHOOSES A LINEAR MODEL IN A STEPWISE ALGIRITHM USING AIC
+# EACH LINEAR REGRESSION USES A DIRECT SOLVER FOR (X^T X) beta = X^T y
+#
+# INPUT PARAMETERS:
+# --------------------------------------------------------------------------------------------
+# NAME        TYPE    DEFAULT    MEANING
+# --------------------------------------------------------------------------------------------
+# X           String     ---   Location (on HDFS) to read the matrix X of feature vectors
+# Y           String     ---   Location (on HDFS) to read the 1-column matrix Y of response values
+# B           String     ---   Location to store estimated regression parameters (the betas)
+# S           String     ---   Location to write the selected features ordered as computed by the algorithm
+# O           String     " "   Location to write the printed statistics; by default is standard output
+# icpt        Int        0     Intercept presence, shifting and rescaling the columns of X:
+#                              0 = no intercept, no shifting, no rescaling;
+#                              1 = add intercept, but neither shift nor rescale X;
+#                              2 = add intercept, shift & rescale X columns to mean = 0, variance = 1
+# thr         Double    0.01   Threshold to stop the algorithm: if the decrease in the value of AIC falls below thr
+#                              no further features are being checked and the algorithm stops 
+# fmt         String   "text"  Matrix output format for B (the betas) only, usually "text" or "csv"
+# write_beta  Boolean   TRUE   Should the beta's be returned?
+#                              0 = no
+#                              1 = yes
+# --------------------------------------------------------------------------------------------
+# OUTPUT: Matrix of regression parameters (the betas) and its size depend on icpt input value:
+#         OUTPUT SIZE:   OUTPUT CONTENTS:                HOW TO PREDICT Y FROM X AND B:
+# icpt=0: ncol(X)   x 1  Betas for X only                Y ~ X %*% B[1:ncol(X), 1], or just X %*% B
+# icpt=1: ncol(X)+1 x 1  Betas for X and intercept       Y ~ X %*% B[1:ncol(X), 1] + B[ncol(X)+1, 1]
+# icpt=2: ncol(X)+1 x 2  Col.1: betas for X & intercept  Y ~ X %*% B[1:ncol(X), 1] + B[ncol(X)+1, 1]
+#                        Col.2: betas for shifted/rescaled X and intercept
+#
+# In addition, in the last run of linear regression some statistics are provided in CSV format, one comma-separated
+# name-value pair per each line, as follows:
+#
+# NAME                  MEANING
+# -------------------------------------------------------------------------------------
+# AVG_TOT_Y             Average of the response value Y
+# STDEV_TOT_Y           Standard Deviation of the response value Y
+# AVG_RES_Y             Average of the residual Y - pred(Y|X), i.e. residual bias
+# STDEV_RES_Y           Standard Deviation of the residual Y - pred(Y|X)
+# DISPERSION            GLM-style dispersion, i.e. residual sum of squares / # deg. fr.
+# R2                    R^2 of residual with bias included vs. total average
+# ADJUSTED_R2           Adjusted R^2 of residual with bias included vs. total average
+# R2_NOBIAS             R^2 of residual with bias subtracted vs. total average
+# ADJUSTED_R2_NOBIAS    Adjusted R^2 of residual with bias subtracted vs. total average
+# R2_VS_0               * R^2 of residual with bias included vs. zero constant
+# ADJUSTED_R2_VS_0      * Adjusted R^2 of residual with bias included vs. zero constant
+# -------------------------------------------------------------------------------------
+# * The last two statistics are only printed if there is no intercept (icpt=0)
+# If the best AIC is achieved without any features the matrix of selected features contains 0.  
+# Moreover, in this case no further statistics will be produced  
+#
+# HOW TO INVOKE THIS SCRIPT - EXAMPLE:
+# hadoop jar SystemML.jar -f StepLinearRegDS.dml -nvargs X=INPUT_DIR/X Y=INPUT_DIR/Y B=OUTPUT_DIR/betas
+#     O=OUTPUT_DIR/stats S=OUTPUT_DIR/selected icpt=2 thr=0.01 fmt=csv write_beta=TRUE
 
 
 m_steplm = function(Matrix[Double] X, Matrix[Double] y, Integer icpt = 0, Double reg = 1e-7, Double tol = 1e-7, Integer maxi = 0, Boolean verbose = TRUE)
@@ -12,15 +88,7 @@ m_steplm = function(Matrix[Double] X, Matrix[Double] y, Integer icpt = 0, Double
   fmt = ifdef($fmt, "text");
   intercept_status = icpt;
   thr = ifdef($thr, 0.001);
-  #A= 9;
-  #A = seq(1,3,1);
-  #B =seq(2,1);
-  #C = matrix(4, 3, 1)
-  # print()
-
-  #Y = table(A, B, C)#nrow = 10, ncol= 10);
-
-  #print("Y table  " + toString(Y));
+ 
 
   print("BEGIN STEPWISE LINEAR REGRESSION SCRIPT");
   print("Reading X and Y...");
@@ -99,9 +167,7 @@ m_steplm = function(Matrix[Double] X, Matrix[Double] y, Integer icpt = 0, Double
 
       write(Selected, $4);
       write(beta_out, $3);
-      #write(Selected, fileS, format = fmt);
-      #write(beta_out, fileB, format = fmt);
-
+   
       stop("");
     }
     print("Best AIC " + AIC_best + " achieved with feature: " + column_best);
@@ -122,9 +188,7 @@ m_steplm = function(Matrix[Double] X, Matrix[Double] y, Integer icpt = 0, Double
           tmp = matrix(0, rows = 1, cols = 1);
           tmp[1, 1] = i;
           columns_fixed_ordered_2 = append(columns_fixed_ordered, tmp);
-          #beta_out_i = lm(X = x, y = y);
-          # m_ext = ncol(x);
-
+      
           [AIC_2, beta_out_i] = linear_regression(X, y, intercept_status);
 
           beta_out_all_2[1:nrow(beta_out_i), (i - 1) * y_ncol + 1:i * y_ncol] = beta_out_i[, 1:1];
@@ -169,10 +233,6 @@ m_steplm = function(Matrix[Double] X, Matrix[Double] y, Integer icpt = 0, Double
     [AIC, beta_out] = linear_regression(X_global, y, intercept_status);
 
 
-
-    #beta_out = lm(X = x, y = y);
-    #m_ext = ncol(x);
-
     Selected = columns_fixed_ordered;
     if (intercept_status != 0) {
       Selected = cbind(Selected, matrix(boa_ncol, rows = 1, cols = 1))
@@ -184,8 +244,7 @@ m_steplm = function(Matrix[Double] X, Matrix[Double] y, Integer icpt = 0, Double
     print("Selected " + toString(Selected));
     write(Selected, $4);
     write(beta_out, $3);
-    #write(Selected, fileS, format = fmt);
-    #write(beta_out, fileB, format = fmt);
+ 
 
   } else {
     stop("Currently only forward selection strategy is supported!");
