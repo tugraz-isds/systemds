@@ -1,0 +1,263 @@
+
+
+m_steplm = function(Matrix[Double] X, Matrix[Double] y, Integer icpt = 0, Double reg = 1e-7, Double tol = 1e-7, Integer maxi = 0, Boolean verbose = TRUE)
+  return() {
+
+  write_beta = ifdef($write_beta, TRUE);
+
+  # currently only the forward selection strategy in supported: start from one feature and iteratively add 
+  # features until AIC improves
+  dir = "forward";
+
+  fmt = ifdef($fmt, "text");
+  intercept_status = icpt;
+  thr = ifdef($thr, 0.001);
+  #A= 9;
+  #A = seq(1,3,1);
+  #B =seq(2,1);
+  #C = matrix(4, 3, 1)
+  # print()
+
+  #Y = table(A, B, C)#nrow = 10, ncol= 10);
+
+  #print("Y table  " + toString(Y));
+
+  print("BEGIN STEPWISE LINEAR REGRESSION SCRIPT");
+  print("Reading X and Y...");
+  X_orig = X;
+
+  n = nrow(X_orig);
+  m_orig = ncol(X_orig);
+
+  # BEGIN STEPWISE LINEAR REGRESSION
+
+  if (dir == "forward") {
+    continue = TRUE;
+    columns_fixed = matrix(0, rows = 1, cols = m_orig);
+    columns_fixed_ordered = matrix(0, rows = 1, cols = 1);
+
+    # X_global stores the best model found at each step
+    X_global = matrix(0, rows = n, cols = 1);
+
+    if (intercept_status == 1 | intercept_status == 2) {
+      beta = mean(y);
+      AIC_best = 2 + n * log(sum((beta - y) ^ 2) / n);
+    } else {
+      beta = 0.0;
+      AIC_best = n * log(sum(y ^ 2) / n);
+    }
+
+    AICs = matrix(AIC_best, rows = 1, cols = m_orig);
+    print("Best AIC without any features: " + AIC_best);
+
+    boa_ncol = ncol(X_orig);
+    if (intercept_status != 0) {
+      boa_ncol = boa_ncol + 1
+    }
+
+    beta_out_all = matrix(0, rows = boa_ncol, cols = m_orig * 1);
+
+    y_ncol = 1;
+    column_best = 0;
+    # First pass to examine single features
+    for (i in 1:m_orig, check = 0) {
+      columns_fixed_ordered_1 = matrix(i, rows = 1, cols = 1);
+      [AIC_1, beta_out_i] = linear_regression(X_orig[, i], y, intercept_status);
+
+      print(" mibeta "  + toString(beta_out_i))
+      AICs[1, i] = AIC_1;
+      AIC_cur = as.scalar(AICs[1, i]);
+      if ((AIC_cur < AIC_best) & ((AIC_best - AIC_cur) > abs(thr * AIC_best))) {
+        column_best = i;
+        AIC_best = as.scalar(AICs[1, i]);
+      }
+
+      beta_out_all[1:nrow(beta_out_i), (i - 1) * y_ncol + 1:i * y_ncol] = beta_out_i[, 1:1];
+
+    }
+
+    # beta best so far
+    beta_best = beta_out_all[, (column_best - 1) * y_ncol + 1:column_best * y_ncol];
+
+    if (column_best == 0) {
+      print("AIC of an empty model is " + AIC_best + " and adding no feature achieves more than " +
+           (thr * 100) + "% decrease in AIC!");
+      Selected = matrix(0, rows = 1, cols = 1);
+      if (intercept_status == 0) {
+        B = matrix(beta, rows = m_orig, cols = 1);
+      } else {
+        B_tmp = matrix(0, rows = m_orig + 1, cols = 1);
+        B_tmp[m_orig + 1,] = beta;
+        B = B_tmp;
+      }
+
+      beta_out = B;
+
+      print("estoy en el stop");
+      print(toString(beta_out) + " mi beta out");
+      print("Selected " + toString(Selected));
+
+      write(Selected, $4);
+      write(beta_out, $3);
+      #write(Selected, fileS, format = fmt);
+      #write(beta_out, fileB, format = fmt);
+
+      stop("");
+    }
+    print("Best AIC " + AIC_best + " achieved with feature: " + column_best);
+    columns_fixed[1, column_best] = 1;
+    columns_fixed_ordered[1, 1] = column_best;
+    X_global = X_orig[, column_best];
+
+    while (continue) {
+      # Subsequent passes over the features
+      beta_out_all_2 = matrix(0, rows = boa_ncol, cols = m_orig * 1);
+
+      for (i in 1:m_orig, check = 0) {
+        if (as.scalar(columns_fixed[1, i]) == 0) {
+
+          # Construct the feature matrix
+          X = cbind(X_global, X_orig[, i]);
+
+          tmp = matrix(0, rows = 1, cols = 1);
+          tmp[1, 1] = i;
+          columns_fixed_ordered_2 = append(columns_fixed_ordered, tmp);
+          #beta_out_i = lm(X = x, y = y);
+          # m_ext = ncol(x);
+
+          [AIC_2, beta_out_i] = linear_regression(X, y, intercept_status);
+
+          beta_out_all_2[1:nrow(beta_out_i), (i - 1) * y_ncol + 1:i * y_ncol] = beta_out_i[, 1:1];
+
+          AICs[1, i] = AIC_2;
+
+          AIC_cur = as.scalar(AICs[1, i]);
+        if ((AIC_cur < AIC_best) & ((AIC_best - AIC_cur) > abs(thr * AIC_best)) &
+            (as.scalar(columns_fixed[1, i]) == 0)) {
+          column_best = i;
+          AIC_best = as.scalar(AICs[1, i]);
+        }
+        }
+      }
+
+
+      # have the best beta store in the matrix
+      beta_best = beta_out_all_2[, (column_best - 1) * y_ncol + 1:column_best * y_ncol];
+
+      # Append best found features (i.e., columns) to X_global
+      if (as.scalar(columns_fixed[1, column_best]) == 0) {
+        # new best feature found
+        print("Best AIC " + AIC_best + " achieved with feature: " + column_best);
+        columns_fixed[1, column_best] = 1;
+        columns_fixed_ordered = cbind(columns_fixed_ordered, as.matrix(column_best));
+
+        if (ncol(columns_fixed_ordered) == m_orig) {
+          # all features examined
+          X_global = cbind(X_global, X_orig[, column_best]);
+          continue = FALSE;
+        } else {
+          X_global = cbind(X_global, X_orig[, column_best]);
+        }
+      } else {
+        continue = FALSE;
+      }
+
+    }
+
+    # run linear regression with selected set of features
+    print("Running linear regression with selected features...");
+    [AIC, beta_out] = linear_regression(X_global, y, intercept_status);
+
+
+
+    #beta_out = lm(X = x, y = y);
+    #m_ext = ncol(x);
+
+    Selected = columns_fixed_ordered;
+    if (intercept_status != 0) {
+      Selected = cbind(Selected, matrix(boa_ncol, rows = 1, cols = 1))
+    }
+
+    beta_out = reorder_matrix(boa_ncol, beta_out, Selected);
+
+    print(toString(beta_out) + " mi beta out");
+    print("Selected " + toString(Selected));
+    write(Selected, $4);
+    write(beta_out, $3);
+    #write(Selected, fileS, format = fmt);
+    #write(beta_out, fileB, format = fmt);
+
+  } else {
+    stop("Currently only forward selection strategy is supported!");
+  }
+
+}
+
+
+# Computes linear regression using a direct solver for (X^T X) beta = X^T y.
+# It also outputs the AIC of the computed model.
+linear_regression = function(Matrix[Double] X, Matrix[Double] y, Integer icpt = 0)
+  return(Double AIC, Matrix[Double] beta) {
+
+  intercept_status = icpt;
+  n = nrow(X);
+  m = ncol(X);
+
+  # Introduce the intercept, shift and rescale the columns of X if needed
+  if (intercept_status == 1 | intercept_status == 2) {
+    # add the intercept column
+    ones_n = matrix(1, rows = n, cols = 1);
+    X = cbind(X, ones_n);
+    m = m - 1;
+  }
+
+  m_ext = ncol(X);
+
+  # BEGIN THE DIRECT SOLVE ALGORITHM (EXTERNAL CALL)
+  beta = lm(X = X, y = y);
+
+  m_ext = ncol(X);
+  # COMPUTE AIC
+  y_residual = y - X %*% beta;
+  ss_res = sum(y_residual ^ 2);
+  eq_deg_of_freedom = m_ext;
+  AIC = (2 * eq_deg_of_freedom) + n * log(ss_res / n);
+
+  # TODO IMP NOTE: with the fix in PR-22, we have not accounted for
+  # intercept=2 and # the code before # was not matching so we have removed it
+  # for now. Pl see the git revision history and diff to see the changes.
+  # in future we will have this feature. For now it is disabled
+
+}
+
+reorder_matrix = function(
+  double ncolX, # number of column in X, inlcuding the intercept column
+  matrix[double] B, # beta
+  matrix[double] S # Selected
+) return(matrix[double] Y) {
+  # This function assumes that B and S have same number of elements.
+  # if the intercept is included in the model, all inputs should be adjusted
+  # appropriately before calling this function.
+
+  S = t(S);
+  num_empty_B = ncolX - nrow(B);
+  if (num_empty_B < 0) {
+    stop("Error: unable to re-order the matrix. Reason: B more than matrix X");
+  }
+
+  if (num_empty_B > 0) {
+    pad_zeros = matrix(0, rows = num_empty_B, cols = 1);
+    B = rbind(B, pad_zeros);
+    S = rbind(S, pad_zeros);
+  }
+
+  # since the table won't accept zeros as index we hack it.
+  S0 = replace(target = S, pattern = 0, replacement = ncolX + 1);
+  seqS = seq(1, nrow(S0));
+  P = table(seqS, S0, ncolX, ncolX);
+
+  Y = t(P) %*% B;
+}
+
+  
+  
