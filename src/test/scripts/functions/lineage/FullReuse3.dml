@@ -15,27 +15,19 @@
 # limitations under the License.
 #
 #-------------------------------------------------------------
+# Increase rows and cols for better performance gain
 
-# How to invoke this dml script LineageTrace.dml?
-# Assume LR_HOME is set to the home of the dml script
-# Assume rows = 20 and cols = 20 for X
-# hadoop jar SystemML.jar -f $LR_HOME/LineageTrace.dml -args "$INPUT_DIR/X" "$OUTPUT_DIR/X" "$OUTPUT_DIR/Y"
+X = rand(rows=1024, cols=16, seed=42);
+tmp = X[,1];
+R = matrix(0, ncol(X), 1);
 
-# Increase rows and cols for performance comparision
-X = rand(rows=1000000, cols=100, seed=42);
-y = rand(rows=1000000, cols=1, seed=43);
+for(i in 2:ncol(X)) {
+  A = t(tmp) %*% tmp;
+  R[i,] = sum(A)
 
-j = 10
-R = matrix(0, ncol(X), j);
-
-for(i in 1:j) {
-  lambda = 10 ^ -i;
-
-  A = t(X) %*% X + diag(matrix(lambda, rows=ncol(X), cols=1));
-  b = t(X) %*% y;
-  beta = solve(A, b);
-
-  R[,i] = beta;
+  tmp = cbind(tmp, X[,i]);
+  A = t(tmp) %*% tmp;
+  R[i,] += sum(A)
 }
 
-write(R, $2, format="text");
+write(R, $1, format="text");

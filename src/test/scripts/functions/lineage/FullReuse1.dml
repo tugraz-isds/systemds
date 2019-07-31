@@ -15,15 +15,9 @@
 # limitations under the License.
 #
 #-------------------------------------------------------------
-
-# How to invoke this dml script LineageTrace.dml?
-# Assume LR_HOME is set to the home of the dml script
-# Assume rows = 20 and cols = 20 for X
-# hadoop jar SystemML.jar -f $LR_HOME/LineageTrace.dml -args "$INPUT_DIR/X" "$OUTPUT_DIR/X" "$OUTPUT_DIR/Y"
+# Increase k for better performance gains
 
 X = rand(rows=1024, cols=1024, seed=42);
-
-# Increase k for better performance gains
 k = 10
 
 for(i in 1:k){

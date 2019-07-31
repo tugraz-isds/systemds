@@ -28,9 +28,13 @@ import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.controlprogram.caching.MatrixObject;
 import org.tugraz.sysds.runtime.controlprogram.caching.MatrixObject.UpdateType;
 import org.tugraz.sysds.runtime.controlprogram.context.ExecutionContext;
+import org.tugraz.sysds.runtime.lineage.Lineage;
+import org.tugraz.sysds.runtime.lineage.LineageItem;
 import org.tugraz.sysds.runtime.matrix.data.MatrixBlock;
 import org.tugraz.sysds.runtime.util.IndexRange;
 import org.tugraz.sysds.utils.Statistics;
+
+import java.util.ArrayList;
 
 public final class MatrixIndexingCPInstruction extends IndexingCPInstruction {
 
@@ -116,5 +120,27 @@ public final class MatrixIndexingCPInstruction extends IndexingCPInstruction {
 		}
 		else
 			throw new DMLRuntimeException("Invalid opcode (" + opcode +") encountered in MatrixIndexingCPInstruction.");
+	}
+	
+	@Override
+	public LineageItem[] getLineageItems() {
+		ArrayList<LineageItem> lineages = new ArrayList<>();
+		if (input1 != null)
+			lineages.add(Lineage.getOrCreate(input1));
+		if (input2 != null)
+			lineages.add(Lineage.getOrCreate(input2));
+		if (input3 != null)
+			lineages.add(Lineage.getOrCreate(input3));
+		if (colLower != null)
+			lineages.add(Lineage.getOrCreate(colLower));
+		if (colUpper != null)
+			lineages.add(Lineage.getOrCreate(colUpper));
+		if (rowLower != null)
+			lineages.add(Lineage.getOrCreate(rowLower));
+		if (rowUpper != null)
+			lineages.add(Lineage.getOrCreate(rowUpper));
+		
+		return new LineageItem[]{new LineageItem(output.getName(),
+				getOpcode(), lineages.toArray(new LineageItem[0]))};
 	}
 }
