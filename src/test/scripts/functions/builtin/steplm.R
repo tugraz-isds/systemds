@@ -47,7 +47,7 @@ reorder_matrix <- function(
 
   S0 = matrix(0, nrow = nrow(S), ncol = ncol(S));
   S0 = S;
-  
+
   # since the table won't accept zeros as index we hack it.
   for (a in 1:nrow(S)) {
     for (b in 1:ncol(S)) {
@@ -85,7 +85,7 @@ reorder_matrix <- function(
   return(Y)
 }
 
-# currently only the forward selection strategy in supported: start from one feature and iteratively add 
+# currently only the forward selection strategy in supported: start from one feature and iteratively add
 # features until AIC improves
 dir = 0;
 stop = 0;
@@ -169,7 +169,7 @@ if (dir == 0) {
     }
 
     b = as.matrix(beta_out_i)
-  
+
     beta_out_all[1:nrow(b), i:i] = b[1, 1];
 
 
@@ -179,7 +179,7 @@ if (dir == 0) {
   beta_best = beta_out_all[, (column_best - 1) * y_ncol + 1:column_best * y_ncol];
 
   if (column_best == 0) {
-    
+
     Selected = matrix(0, nrow = 1, ncol = 1);
     if (intercept_status == 0) {
       B = matrix(beta, nrow = m_orig, ncol = 1);
@@ -219,7 +219,7 @@ if (dir == 0) {
         tmp = matrix(0, nrow = 1, ncol = 1);
         tmp[1, 1] = i;
         columns_fixed_ordered_2 = append(columns_fixed_ordered, tmp);
-        
+
 
         x = as.matrix(X);
         n = nrow(x);
@@ -237,7 +237,7 @@ if (dir == 0) {
 
         # BEGIN THE DIRECT SOLVE ALGORITHM (EXTERNAL CALL)
         beta_out_i = lm.fit(x, y)$coefficients
-      
+
         # COMPUTE AIC
         y_residual = y - x %*% beta_out_i;
         ss_res = sum(y_residual ^ 2);
@@ -282,7 +282,7 @@ if (dir == 0) {
 
     # run linear regression with selected set of features
     print("Running linear regression with selected features...");
-   
+
     x = as.matrix(X_global);
     n = nrow(x);
     m = ncol(x);
@@ -325,19 +325,3 @@ if (dir == 0) {
 } else {
   stop("Currently only forward selection strategy is supported!");
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Computes linear regression using a direct solver for (X^T X) beta = X^T y.
-# It also outputs the AIC of the computed model.

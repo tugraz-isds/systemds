@@ -18,11 +18,6 @@
 
 X = read($1)
 y = read($2)
-S = steplm(X = X, y = y, icpt = 1);
-
-
-
-
-
-
-
+[S, C] = steplm(X = X, y = y, icpt = 1);
+write(S, "S");
+write(C, "C");
