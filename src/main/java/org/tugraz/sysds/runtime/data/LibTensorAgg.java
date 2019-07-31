@@ -17,12 +17,8 @@ package org.tugraz.sysds.runtime.data;
 
 import org.apache.commons.lang.NotImplementedException;
 import org.tugraz.sysds.common.Types;
-import org.tugraz.sysds.lops.PartialAggregate;
 import org.tugraz.sysds.runtime.DMLRuntimeException;
-import org.tugraz.sysds.runtime.functionobjects.IndexFunction;
 import org.tugraz.sysds.runtime.functionobjects.KahanPlus;
-import org.tugraz.sysds.runtime.functionobjects.Mean;
-import org.tugraz.sysds.runtime.functionobjects.ReduceAll;
 import org.tugraz.sysds.runtime.functionobjects.ValueFunction;
 import org.tugraz.sysds.runtime.instructions.cp.KahanObject;
 import org.tugraz.sysds.runtime.matrix.operators.AggregateOperator;
@@ -45,7 +41,7 @@ public class LibTensorAgg {
 	 * Check if a aggregation fulfills the constraints to be split to multiple threads.
 	 *
 	 * @param in the tensor block to be aggregated
-	 * @param k the number of threads
+	 * @param k  the number of threads
 	 * @return true if aggregation should be done on multiple threads, false otherwise
 	 */
 	public static boolean satisfiesMultiThreadingConstraints(TensorBlock in, int k) {
@@ -54,118 +50,83 @@ public class LibTensorAgg {
 	}
 
 	/**
-	 * Aggregate a tensor-block with the given unary operator on multiple threads. Might choose to do it on a single
-	 * thread if certain constraints are not fulfilled (See `satisfiesMultiThreadingConstraints()`).
-	 *
-	 * @param in the input tensor block
-	 * @param out the output tensor block
-	 * @param uaop the unary operation to apply
-	 * @param k the number of threads to use
-	 */
-	public static void aggregateUnaryTensor(TensorBlock in, TensorBlock out, AggregateUnaryOperator uaop, int k) {
-		AggType aggType = getAggType(uaop);
-		//fall back to sequential version if necessary
-		if( !satisfiesMultiThreadingConstraints(in, k) ) {
-			aggregateUnaryTensor(in, out, uaop);
-			return;
-		}
-		// TODO filter empty input blocks (incl special handling for sparse-unsafe operations)
-		if( in.isEmpty(false) ){
-			aggregateUnaryTensorEmpty(in, out, aggType, uaop.indexFn);
-			return;
-		}
-		try {
-			ExecutorService pool = CommonThreadPool.get(k);
-			ArrayList<AggTask> tasks = new ArrayList<>();
-			ArrayList<Integer> blklens = UtilFunctions.getBalancedBlockSizesDefault(in.getDim(0), k, false);
-			for( int i=0, lb=0; i<blklens.size(); lb+=blklens.get(i), i++ ) {
-				tasks.add(new PartialAggTask(in, out, aggType, uaop, lb, lb+blklens.get(i)) );
-			}
-			pool.invokeAll(tasks);
-			pool.shutdown();
-			//aggregate partial results
-			out.copy(((PartialAggTask)tasks.get(0)).getResult()); //for init
-			for( int i=1; i<tasks.size(); i++ )
-				aggregateFinalResult(uaop.aggOp, out, ((PartialAggTask)tasks.get(i)).getResult());
-		}
-		catch(Exception ex) {
-			throw new DMLRuntimeException(ex);
-		}
-		// TODO change to sparse if worth it
-	}
-
-	/**
 	 * Aggregate a tensor-block with the given unary operator.
 	 *
-	 * @param in the input tensor block
-	 * @param out the output tensor block containing the aggregated result
+	 * @param in   the input tensor block
+	 * @param out  the output tensor block containing the aggregated result
 	 * @param uaop the unary operation to apply
 	 */
 	public static void aggregateUnaryTensor(TensorBlock in, TensorBlock out, AggregateUnaryOperator uaop) {
 		AggType aggType = getAggType(uaop);
 		// TODO filter empty input blocks (incl special handling for sparse-unsafe operations)
-		if( in.isEmpty(false) ){
-			aggregateUnaryTensorEmpty(in, out, aggType, uaop.indexFn);
+		if (in.isEmpty(false)) {
+			aggregateUnaryTensorEmpty(in, out, aggType);
 			return;
 		}
-		if( !in.isSparse() )
-			aggregateUnaryTensorDense(in, out, aggType, uaop.aggOp.increOp.fn, uaop.indexFn, 0, in.getDim(0));
-		else
-			// TODO aggregation for sparse tensors
-			throw new NotImplementedException("Tensor aggregation not supported for sparse tensors.");
+		int numThreads = uaop.getNumThreads();
+		if (satisfiesMultiThreadingConstraints(in, numThreads)) {
+			try {
+				ExecutorService pool = CommonThreadPool.get(numThreads);
+				ArrayList<AggTask> tasks = new ArrayList<>();
+				ArrayList<Integer> blklens = UtilFunctions.getBalancedBlockSizesDefault(in.getDim(0), numThreads, false);
+				for (int i = 0, lb = 0; i < blklens.size(); lb += blklens.get(i), i++) {
+					tasks.add(new PartialAggTask(in, out, aggType, uaop, lb, lb + blklens.get(i)));
+				}
+				pool.invokeAll(tasks);
+				pool.shutdown();
+				//aggregate partial results
+				out.copy(((PartialAggTask) tasks.get(0)).getResult()); //for init
+				for (int i = 1; i < tasks.size(); i++)
+					aggregateFinalResult(uaop.aggOp, out, ((PartialAggTask) tasks.get(i)).getResult());
+			} catch (Exception ex) {
+				throw new DMLRuntimeException(ex);
+			}
+		} else {
+			// Actually a complete aggregation
+			if (!in.isSparse()) {
+				aggregateUnaryTensorPartial(in, out, aggType, uaop.aggOp.increOp.fn, 0, in.getDim(0));
+			} else {
+				throw new NotImplementedException("Tensor aggregation not supported for sparse tensors.");
+			}
+		}
 		// TODO change to sparse if worth it
 	}
 
 	/**
 	 * Aggregate a empty tensor-block with a unary operator.
-	 * @param in the tensor-block to aggregate
-	 * @param out the resulting tensor-block
+	 *
+	 * @param in     the tensor-block to aggregate
+	 * @param out    the resulting tensor-block
 	 * @param optype the operation to apply
-	 * @param ixFn the indexFunction
-	 * @return the resulting tensor-block
 	 */
-	private static TensorBlock aggregateUnaryTensorEmpty(TensorBlock in, TensorBlock out, AggType optype,
-	                                                     IndexFunction ixFn) {
-		// TODO implement for other optypes and IndexFunctions
-		if( ixFn instanceof ReduceAll && (in.getNumRows() == 0 || in.getNumColumns() == 0) ) {
-			double val;
-			if (optype == AggType.KAHAN_SUM) {
-				val = 0;
-			} else {
-				val = Double.NaN;
-			}
-			out.set(new int[]{0, 0}, val);
-			return out;
+	private static void aggregateUnaryTensorEmpty(TensorBlock in, TensorBlock out, AggType optype) {
+		// TODO implement for other optypes
+		double val;
+		if (optype == AggType.KAHAN_SUM) {
+			val = 0;
+		} else {
+			val = Double.NaN;
 		}
-		return out;
+		out.set(new int[]{0, 0}, val);
 	}
 
 	/**
 	 * Core incremental tensor aggregate (ak+) as used for uack+ and acrk+.
 	 * Embedded correction values.
 	 *
-	 * @param in tensor block
+	 * @param in     tensor block
 	 * @param aggVal aggregate operator
-	 * @param aop aggregate operator
 	 */
 	public static void aggregateBinaryTensor(TensorBlock in, TensorBlock aggVal, AggregateOperator aop) {
 		//check validity
-		if(in.getLength() != aggVal.getLength()) {
+		if (in.getLength() != aggVal.getLength()) {
 			throw new DMLRuntimeException("Binary tensor aggregation requires consistent numbers of cells (" +
 					Arrays.toString(in._dims) + ", " + Arrays.toString(aggVal._dims) + ").");
 		}
 
 		//core aggregation
-		boolean lastRowCorr = (aop.correctionLocation == PartialAggregate.CorrectionLocationType.LASTROW);
-		boolean lastColCorr = (aop.correctionLocation == PartialAggregate.CorrectionLocationType.LASTCOLUMN);
-		if( !in.isSparse() && lastRowCorr )
-			aggregateBinaryTensorLastRowDenseGeneric(in, aggVal);
-		else if( in.isSparse() && lastRowCorr )
-			throw new DMLRuntimeException("Aggregation on sparse tensors not yet supported.");
-		else if( !in.isSparse() && lastColCorr )
-			aggregateBinaryTensorLastColDenseGeneric(in, aggVal);
-		else if( in.isSparse() && lastColCorr )
-			throw new DMLRuntimeException("Aggregation on sparse tensors not yet supported.");
+		// TODO is the correction always the last column?
+		aggregateBinaryTensorLastColGeneric(in, aggVal);
 	}
 
 	/**
@@ -176,7 +137,6 @@ public class LibTensorAgg {
 	 */
 	private static AggType getAggType(AggregateUnaryOperator op) {
 		ValueFunction vfn = op.aggOp.increOp.fn;
-
 		//(kahan) sum
 		if (vfn instanceof KahanPlus)
 			return AggType.KAHAN_SUM;
@@ -185,152 +145,122 @@ public class LibTensorAgg {
 
 	/**
 	 * Determines whether the unary operator is supported.
+	 *
 	 * @param op the unary operator to check
 	 * @return true if the operator is supported, false otherwise
 	 */
-	public static boolean isSupportedUnaryAggregateOperator( AggregateUnaryOperator op ) {
-		AggType type = getAggType( op );
-		return (type != AggType.INVALID);
+	public static boolean isSupportedUnaryAggregateOperator(AggregateUnaryOperator op) {
+		AggType type = getAggType(op);
+		return type != AggType.INVALID;
 	}
 
 	/**
 	 * Aggregate a subset of rows of a dense tensor block.
-	 * @param in the tensor block to aggregate
-	 * @param out the aggregation result with correction
+	 *
+	 * @param in      the tensor block to aggregate
+	 * @param out     the aggregation result with correction
 	 * @param aggtype the type of aggregation to use
-	 * @param fn the function to use
-	 * @param ixFn the IndexFunction to use
-	 * @param rl the lower index of rows to use
-	 * @param ru the upper index of rows to use (exclusive)
+	 * @param fn      the function to use
+	 * @param rl      the lower index of rows to use
+	 * @param ru      the upper index of rows to use (exclusive)
 	 */
-	private static void aggregateUnaryTensorDense(TensorBlock in, TensorBlock out, AggType aggtype, ValueFunction fn,
-	                                              IndexFunction ixFn, int rl, int ru) {
+	private static void aggregateUnaryTensorPartial(TensorBlock in, TensorBlock out, AggType aggtype, ValueFunction fn,
+	                                                int rl, int ru) {
 		//note: due to corrections, even the output might be a large dense block
-		DenseBlock a = in.getDenseBlock();
-		DenseBlock c = out.getDenseBlock();
 		if (aggtype == AggType.KAHAN_SUM) {
-			KahanObject kbuff = new KahanObject(0, 0);
-			if (ixFn instanceof ReduceAll) // SUM
-				d_uakp(a, c, kbuff, (KahanPlus) fn, rl, ru);
+			// TODO handle different index functions
+			kahanSum(in, out, (KahanPlus) fn, rl, ru);
 		}
 		// TODO other aggregations
 	}
 
 	/**
-	 * Add two tensor-blocks, which contain the result of an aggregation with correction in the last row, together.
-	 * @param in the tensor block to add
-	 * @param aggVal the tensor block to which the first should be added
-	 */
-	private static void aggregateBinaryTensorLastRowDenseGeneric(TensorBlock in, TensorBlock aggVal) {
-		if( in._denseBlock==null || in.isEmpty(false) )
-			return;
-
-		final int m = in.getDim(0);
-		final int n = in.getDim(1);
-		final int cix = (m-1)*n;
-
-		// TODO: generalize for large blocks
-		double[] a = in.getDenseBlock().valuesAt(0);
-
-		KahanObject buffer = new KahanObject(0, 0);
-		KahanPlus akplus = KahanPlus.getKahanPlusFnObject();
-
-		//incl implicit nnz maintenance
-		for(int i=0, ix=0; i<m-1; i++)
-			for(int j=0; j<n; j++, ix++) {
-				buffer._sum = aggVal.get(new int[]{i, j});
-				buffer._correction = aggVal.get(new int[]{m - 1, j});
-				akplus.execute(buffer, a[ix], a[cix + j]);
-				aggVal.set(new int[]{i, j}, buffer._sum);
-				aggVal.set(new int[]{m - 1, j}, buffer._correction);
-			}
-		// TODO check sparsity
-	}
-
-	/**
 	 * Add two tensor-blocks, which contain the result of an aggregation with correction in the last column, together.
-	 * @param in the tensor block to add
+	 *
+	 * @param in     the tensor block to add
 	 * @param aggVal the tensor block to which the first should be added
 	 */
-	private static void aggregateBinaryTensorLastColDenseGeneric(TensorBlock in, TensorBlock aggVal) {
-		if( in._denseBlock==null || in.isEmpty(false) )
-			return;
+	private static void aggregateBinaryTensorLastColGeneric(TensorBlock in, TensorBlock aggVal) {
+		if (!in.isSparse()) {
+			if (in._denseBlock == null || in.isEmpty(false)) return;
 
-		final int m = in.getDim(0);
-		final int n = in.getDim(1);
+			final int m = in.getDim(0);
+			final int n = in.getDim(1);
 
-		double[] a = in.getDenseBlock().valuesAt(0);
+			DenseBlock a = in.getDenseBlock();
+			//double[] a = in.getDenseBlock().valuesAt(0);
+			KahanObject buffer = new KahanObject(0, 0);
+			KahanPlus akplus = KahanPlus.getKahanPlusFnObject();
 
-		KahanObject buffer = new KahanObject(0, 0);
-		KahanPlus akplus = KahanPlus.getKahanPlusFnObject();
-
-		//incl implicit nnz maintenance
-		for(int i=0, ix=0; i<m; i++, ix+=n)
-			for(int j=0; j<n-1; j++) {
-				buffer._sum = aggVal.get(new int[]{i, j});
-				buffer._correction = aggVal.get(new int[]{i, n - 1});
-				akplus.execute(buffer, a[ix + j], a[ix + j + 1]);
-				aggVal.set(new int[]{i, j}, buffer._sum);
-				aggVal.set(new int[]{i, n - 1}, buffer._correction);
-			}
+			//incl implicit nnz maintenance
+			for (int i = 0, ix = 0; i < m; i++, ix+= n)
+				for (int j = 0; j < n - 1; j++) {
+					buffer._sum = aggVal.get(new int[]{i, j});
+					buffer._correction = aggVal.get(new int[]{i, n - 1});
+					akplus.execute(buffer, a.get(i, j), a.get(i, j + 1));
+					//akplus.execute(buffer, a[ix + j], a[ix + j + 1]);
+					aggVal.set(new int[]{i, j}, buffer._sum);
+					aggVal.set(new int[]{i, n - 1}, buffer._correction);
+				}
+		} else {
+			throw new DMLRuntimeException("Sparse aggregation not implemented");
+		}
 		// TODO check sparsity
 	}
 
 	/**
 	 * Add two partial aggregations together.
-	 * @param aop the aggregation operator
-	 * @param out the tensor-block which contains partial result and should be increased to contain sum of both results
+	 *
+	 * @param aop     the aggregation operator
+	 * @param out     the tensor-block which contains partial result and should be increased to contain sum of both results
 	 * @param partout the tensor-block which contains partial result and should be added to other partial result
 	 */
-	private static void aggregateFinalResult(AggregateOperator aop, TensorBlock out, TensorBlock partout ) {
-		AggregateOperator laop = aop;
-
+	private static void aggregateFinalResult(AggregateOperator aop, TensorBlock out, TensorBlock partout) {
 		//TODO special handling for mean where the final aggregate operator (kahan plus)
 		// is not equals to the partial aggregate operator
-		if( aop.increOp.fn instanceof Mean ) {
-			laop = new AggregateOperator(0, KahanPlus.getKahanPlusFnObject(), aop.correctionExists,
-					aop.correctionLocation);
-		}
-
 		//incremental aggregation of final results
-		if( laop.correctionExists )
-			out.incrementalAggregate(laop, partout);
+		if (aop.correctionExists)
+			out.incrementalAggregate(aop, partout);
 		else
 			throw new NotImplementedException();
-			//out.binaryOperationsInPlace(laop.increOp, partout);
+		//out.binaryOperationsInPlace(laop.increOp, partout);
 	}
 
-	/**
-	 * SUM, opcode: uak+, dense input.
-	 *
-	 * @param a input dense block
-	 * @param c output dense block with correction
-	 * @param kbuff kahan buffer
-	 * @param kplus kahan plus object
-	 * @param rl row lower index
-	 * @param ru row upper index
-	 */
-	private static void d_uakp( DenseBlock a, DenseBlock c, KahanObject kbuff, KahanPlus kplus, int rl, int ru ) {
-		if (a instanceof DenseBlockBool || a instanceof DenseBlockLBool) {
-			kbuff._sum = a.countNonZeros(rl, ru, 0, a.getCumODims(0));
-		} else if (a instanceof DenseBlockString || a instanceof DenseBlockLString) {
-			throw new DMLRuntimeException("Sum over string tensor is not supported.");
-		} else {
-			// TODO special case String: currently converted to double, should be concatenated?
-			for (int r = rl; r < ru; r++) {
-				for (int col = 0; col < a.getCumODims(0); col++) {
-					kplus.execute2(kbuff, a.get(r, col));
+	private static void kahanSum(TensorBlock in, TensorBlock out, KahanPlus kplus, int rl, int ru) {
+		KahanObject kbuff = new KahanObject(0, 0);
+		// TODO: SparseBlock
+		if (in.isSparse()) {
+			throw new DMLRuntimeException("Sparse aggregation not implemented for Tensor");
+		}
+		switch (in.getValueType()) {
+			case BOOLEAN: {
+				// TODO: switch to in.getNonZeros() once working
+				kbuff._sum = in.getDenseBlock().countNonZeros();
+				break;
+			}
+			case STRING: {
+				throw new DMLRuntimeException("Sum over string tensor is not supported.");
+			}
+			case FP64:
+			case FP32:
+			case INT64:
+			case INT32: {
+				DenseBlock a = in.getDenseBlock();
+				for (int r = rl; r < ru; r++) {
+					for (int c = 0; c < a.getCumODims(0); c++) {
+						kplus.execute2(kbuff, a.get(r, c));
+					}
 				}
+				break;
 			}
 		}
-		c.set(kbuff);
+		out.getDenseBlock().set(kbuff);
 	}
 
 	// TODO maybe merge this, and other parts, with `LibMatrixAgg`
 	private static abstract class AggTask implements Callable<Object> {}
 
-	private static class PartialAggTask extends AggTask
-	{
+	private static class PartialAggTask extends AggTask {
 		private TensorBlock _in;
 		private TensorBlock _ret;
 		private AggType _aggtype;
@@ -338,8 +268,7 @@ public class LibTensorAgg {
 		private int _rl;
 		private int _ru;
 
-		protected PartialAggTask( TensorBlock in, TensorBlock ret, AggType aggtype, AggregateUnaryOperator uaop, int rl,
-		                          int ru ) {
+		protected PartialAggTask(TensorBlock in, TensorBlock ret, AggType aggtype, AggregateUnaryOperator uaop, int rl, int ru) {
 			_in = in;
 			_ret = ret;
 			_aggtype = aggtype;
@@ -351,15 +280,10 @@ public class LibTensorAgg {
 		@Override
 		public Object call() {
 			//thead-local allocation for partial aggregation
-			// _ret should always have exactly two dimensions, sum value and correction value as a vector
 			_ret = new TensorBlock(_ret._vt, new int[]{_ret.getDim(0), _ret.getDim(1)});
 			_ret.allocateDenseBlock();
 
-			if( !_in.isSparse() )
-				aggregateUnaryTensorDense(_in, _ret, _aggtype, _uaop.aggOp.increOp.fn, _uaop.indexFn, _rl, _ru);
-			else
-				throw new DMLRuntimeException("Sparse aggregation not implemented for Tensor");
-
+			aggregateUnaryTensorPartial(_in, _ret, _aggtype, _uaop.aggOp.increOp.fn, _rl, _ru);
 			//TODO recompute non-zeros of partial result
 			return null;
 		}

@@ -27,6 +27,7 @@ import org.tugraz.sysds.lops.PartialAggregate;
 import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.controlprogram.caching.CacheBlock;
 import org.tugraz.sysds.runtime.functionobjects.KahanPlus;
+import org.tugraz.sysds.runtime.functionobjects.ReduceAll;
 import org.tugraz.sysds.runtime.matrix.data.MatrixBlock;
 import org.tugraz.sysds.runtime.matrix.operators.AggregateOperator;
 import org.tugraz.sysds.runtime.matrix.operators.AggregateUnaryOperator;
@@ -550,12 +551,13 @@ public class TensorBlock implements CacheBlock
 		else
 			result.reset(new int[]{dim0, dim1}, false);
 
-		if( LibTensorAgg.isSupportedUnaryAggregateOperator(op) ) {
-			if(op.getNumThreads() > 1)
-				LibTensorAgg.aggregateUnaryTensor(this, result, op, op.getNumThreads());
-			else
+		if( LibTensorAgg.isSupportedUnaryAggregateOperator(op) )
+			if (op.indexFn instanceof ReduceAll)
 				LibTensorAgg.aggregateUnaryTensor(this, result, op);
-		}
+			else
+				throw new DMLRuntimeException("Only ReduceAll UnaryAggregationOperators are supported for tensor");
+		else
+			throw new DMLRuntimeException("Current UnaryAggregationOperator not supported for tensor");
 		return result;
 	}
 
