@@ -15,9 +15,19 @@
 # limitations under the License.
 #
 #-------------------------------------------------------------
+# Increase rows and cols for better performance gain
 
-X = read($1)
-y = read($2)
-[C,S] = steplm(X = X, y = y, icpt = 1);
-write(S, $4);
-write(C, $3);
+X = rand(rows=1024, cols=16, seed=42);
+tmp = X[,1];
+R = matrix(0, ncol(X), 1);
+
+for(i in 2:ncol(X)) {
+  A = t(tmp) %*% tmp;
+  R[i,] = sum(A)
+
+  tmp = cbind(tmp, X[,i]);
+  A = t(tmp) %*% tmp;
+  R[i,] += sum(A)
+}
+
+write(R, $1, format="text");

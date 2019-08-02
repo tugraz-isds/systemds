@@ -28,6 +28,7 @@ import java.util.HashSet;
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.NotImplementedException;
 import org.tugraz.sysds.common.Builtins;
 import org.tugraz.sysds.common.Types.DataType;
 import org.tugraz.sysds.common.Types.ValueType;
@@ -570,13 +571,24 @@ public class BuiltinFunctionExpression extends DataIdentifier
 		case VAR:
 			// sum(X);
 			checkNumParameters(1);
-			// TODO rewrite this
 			checkMatrixTensorParam(getFirstExpr());
 			output.setDataType(DataType.SCALAR);
 			output.setDimensions(0, 0);
 			output.setBlockDimensions (0, 0);
-			output.setValueType(id.getValueType());
-			
+			switch (id.getValueType()) {
+				case STRING: // TODO think about what we want to get when we sum tensor of strings
+				case FP64:
+				case FP32:
+					output.setValueType(ValueType.FP64);
+					break;
+				case INT64:
+				case INT32:
+				case BOOLEAN:
+					output.setValueType(ValueType.INT64);
+					break;
+				case UNKNOWN:
+					throw new NotImplementedException();
+			}
 			break;
 		
 		case MEAN:
@@ -1555,19 +1567,7 @@ public class BuiltinFunctionExpression extends DataIdentifier
 	
 	@Override
 	public boolean multipleReturns() {
-		switch(_opcode) {
-		case QR:
-		case LU:
-		case EIGEN:
-		case LSTM:
-		case LSTM_BACKWARD:
-		case BATCH_NORM2D:
-		case BATCH_NORM2D_BACKWARD:
-		case SVD:
-			return true;
-		default:
-			return false;
-		}
+		return _opcode.isMultiReturn();
 	}
 
 	private static boolean isConstant(Expression expr) {

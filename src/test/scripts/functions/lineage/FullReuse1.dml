@@ -15,9 +15,14 @@
 # limitations under the License.
 #
 #-------------------------------------------------------------
+# Increase k for better performance gains
 
-X = read($1)
-y = read($2)
-[C,S] = steplm(X = X, y = y, icpt = 1);
-write(S, $4);
-write(C, $3);
+X = rand(rows=1024, cols=1024, seed=42);
+k = 10
+
+for(i in 1:k){
+    tmp = t(X) %*% X;
+}
+
+write(tmp, $1, format="text");
+

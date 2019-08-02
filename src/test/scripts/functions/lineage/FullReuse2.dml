@@ -15,9 +15,25 @@
 # limitations under the License.
 #
 #-------------------------------------------------------------
+# Increase rows and cols for better performance gains
 
-X = read($1)
-y = read($2)
-[C,S] = steplm(X = X, y = y, icpt = 1);
-write(S, $4);
-write(C, $3);
+r = 100000
+c = 100
+
+X = rand(rows=r, cols=c, seed=42);
+y = rand(rows=r, cols=1, seed=43);
+
+j = 10
+R = matrix(0, c, j);
+
+for(i in 1:j) {
+  lambda = 10 ^ -i;
+
+  A = t(X) %*% X + diag(matrix(lambda, rows=ncol(X), cols=1));
+  b = t(X) %*% y;
+  beta = solve(A, b);
+
+  R[,i] = beta;
+}
+
+write(R, $1, format="text");

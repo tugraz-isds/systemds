@@ -19,35 +19,47 @@ package org.tugraz.sysds.test.functions.lineage;
 import org.junit.Test;
 import org.tugraz.sysds.hops.OptimizerUtils;
 import org.tugraz.sysds.runtime.lineage.Lineage;
-import org.tugraz.sysds.runtime.lineage.LineageItem;
-import org.tugraz.sysds.runtime.lineage.LineageParser;
+import org.tugraz.sysds.runtime.matrix.data.MatrixValue;
 import org.tugraz.sysds.test.AutomatedTestBase;
+import org.tugraz.sysds.test.TestConfiguration;
 import org.tugraz.sysds.test.TestUtils;
-import org.tugraz.sysds.utils.Explain;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
-public class LineageTraceRandomTest extends AutomatedTestBase {
+public class FullReuseTest extends AutomatedTestBase {
 	
 	protected static final String TEST_DIR = "functions/lineage/";
-	protected static final String TEST_NAME1 = "LineageTraceRandom1";
-	protected static final String TEST_NAME2 = "LineageTraceRandom2";
-	protected String TEST_CLASS_DIR = TEST_DIR + LineageTraceRandomTest.class.getSimpleName() + "/";
+	protected static final String TEST_NAME1 = "FullReuse1";
+	protected static final String TEST_NAME2 = "FullReuse2";
+	protected static final String TEST_NAME3 = "FullReuse3";
+	protected String TEST_CLASS_DIR = TEST_DIR + FullReuseTest.class.getSimpleName() + "/";
 	
 	@Override
 	public void setUp() {
-		addTestConfiguration(TEST_CLASS_DIR, TEST_NAME1);
-		addTestConfiguration(TEST_CLASS_DIR, TEST_NAME2);
+		TestUtils.clearAssertionInformation();
+		addTestConfiguration(TEST_NAME1, new TestConfiguration(TEST_CLASS_DIR, TEST_NAME1));
+		addTestConfiguration(TEST_NAME2, new TestConfiguration(TEST_CLASS_DIR, TEST_NAME2));
+		addTestConfiguration(TEST_NAME3, new TestConfiguration(TEST_CLASS_DIR, TEST_NAME3));
 	}
 	
 	@Test
-	public void testLineageTraceRandom1() { testLineageTraceRandom(TEST_NAME1); }
-
-	@Test
-	public void testLineageTraceRandom2() { testLineageTraceRandom(TEST_NAME2); }
+	public void testLineageTrace1() {
+		testLineageTrace(TEST_NAME1);
+	}
 	
-	private void testLineageTraceRandom(String testname) {
+	@Test
+	public void testLineageTrace2() {
+		testLineageTrace(TEST_NAME2);
+	}
+	
+	@Test
+	public void testLineageTrace3() {
+		testLineageTrace(TEST_NAME3);
+	}
+	
+	public void testLineageTrace(String testname) {
 		boolean old_simplification = OptimizerUtils.ALLOW_ALGEBRAIC_SIMPLIFICATION;
 		boolean old_sum_product = OptimizerUtils.ALLOW_SUM_PRODUCT_REWRITES;
 		
@@ -58,30 +70,36 @@ public class LineageTraceRandomTest extends AutomatedTestBase {
 			OptimizerUtils.ALLOW_SUM_PRODUCT_REWRITES = false;
 			
 			getAndLoadTestConfiguration(testname);
+			fullDMLScriptName = getScript();
 			
-			List<String> proArgs = new ArrayList<String>();
-			
+			// Without lineage-based reuse enabled
+			List<String> proArgs = new ArrayList<>();
 			proArgs.add("-stats");
 			proArgs.add("-lineage");
-			proArgs.add("-explain");
+//			proArgs.add("-explain");
 			proArgs.add("-args");
 			proArgs.add(output("X"));
-			proArgs.add(output("Y"));
 			programArgs = proArgs.toArray(new String[proArgs.size()]);
-			
-			fullDMLScriptName = getScript();
 			
 			Lineage.resetInternalState();
 			runTest(true, EXCEPTION_NOT_EXPECTED, null, -1);
+			HashMap<MatrixValue.CellIndex, Double> X_orig = readDMLMatrixFromHDFS("X");
 			
-			String X_lineage = readDMLLineageFromHDFS("X");
-			String Y_lineage = readDMLLineageFromHDFS("Y");
+			// With lineage-based reuse enabled
+			proArgs.clear();
+			proArgs.add("-stats");
+			proArgs.add("-lineage");
+			proArgs.add("reuse");
+//			proArgs.add("-explain");
+			proArgs.add("-args");
+			proArgs.add(output("X"));
+			programArgs = proArgs.toArray(new String[proArgs.size()]);
 			
-			LineageItem X_li = LineageParser.parseLineageTrace(X_lineage);
-			LineageItem Y_li = LineageParser.parseLineageTrace(Y_lineage);
+			Lineage.resetInternalState();
+			runTest(true, EXCEPTION_NOT_EXPECTED, null, -1);
+			HashMap<MatrixValue.CellIndex, Double> X_reused = readDMLMatrixFromHDFS("X");
 			
-			TestUtils.compareScalars(X_lineage, Explain.explain(X_li));
-			TestUtils.compareScalars(Y_lineage, Explain.explain(Y_li));
+			TestUtils.compareMatrices(X_orig, X_reused, 1e-6, "Origin", "Reused");
 		} finally {
 			OptimizerUtils.ALLOW_ALGEBRAIC_SIMPLIFICATION = old_simplification;
 			OptimizerUtils.ALLOW_SUM_PRODUCT_REWRITES = old_sum_product;
