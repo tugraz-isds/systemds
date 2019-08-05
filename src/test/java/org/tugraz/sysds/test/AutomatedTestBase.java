@@ -1,4 +1,6 @@
 /*
+ * Modifications Copyright 2019 Graz University of Technology
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -1147,7 +1149,7 @@ public abstract class AutomatedTestBase
 	 *            expected exception
 	 * @param errMessage
 	 * 		      expected error message
-	 * @param maxMRJobs
+	 * @param maxSparkInst
 	 *            specifies a maximum limit for the number of MR jobs. If set to
 	 *            -1 there is no limit.
 	 */
@@ -1763,7 +1765,7 @@ public abstract class AutomatedTestBase
 	 *
 	 * @param name
 	 *            directory name
-	 * @param matrix
+	 * @param data
 	 *            two dimensional frame data
 	 * @param schema
 	 * @param oi

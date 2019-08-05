@@ -16,10 +16,6 @@
 
 package org.tugraz.sysds.runtime.data;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-
 import org.apache.commons.lang.NotImplementedException;
 import org.tugraz.sysds.common.Types.BlockType;
 import org.tugraz.sysds.common.Types.ValueType;
@@ -32,14 +28,24 @@ import org.tugraz.sysds.runtime.matrix.data.MatrixBlock;
 import org.tugraz.sysds.runtime.matrix.operators.AggregateOperator;
 import org.tugraz.sysds.runtime.matrix.operators.AggregateUnaryOperator;
 import org.tugraz.sysds.runtime.util.UtilFunctions;
+import scala.Array;
 
-public class TensorBlock implements CacheBlock
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+
+public class TensorBlock implements CacheBlock, Externalizable
 {
+	private static final long serialVersionUID = -1887367304030494999L;
+
 	public static final double SPARSITY_TURN_POINT = 0.4;
 	public static final ValueType DEFAULT_VTYPE = ValueType.FP64;
 	public static final int[] DEFAULT_DIMS = new int[]{0, 0};
 	public static final SparseBlock.Type DEFAULT_SPARSEBLOCK = SparseBlock.Type.MCSR;
-	
+
 	//constant value type of tensor block
 	protected ValueType _vt;
 	
@@ -220,7 +226,13 @@ public class TensorBlock implements CacheBlock
 	public ValueType getValueType() {
 		return _vt;
 	}
-	
+
+	public int[] getDims() {
+		int[] dims = new int[_dims.length];
+		Array.copy(_dims, 0, dims, 0, _dims.length);
+		return dims;
+	}
+
 	public int getNumDims() {
 		return _dims.length;
 	}
@@ -342,6 +354,7 @@ public class TensorBlock implements CacheBlock
 							case INT32: a.set(i, j, in.readInt()); break;
 							case INT64: a.set(i, j, in.readLong()); break;
 							case BOOLEAN: a.set(i, j, in.readByte()); break;
+							case STRING: a.set(new int[]{i, j}, in.readUTF()); break;
 						}
 					}
 				break;
@@ -381,6 +394,7 @@ public class TensorBlock implements CacheBlock
 						case INT32: out.writeInt((int)a.get(i, j)); break;
 						case INT64: out.writeLong((long)a.get(i, j)); break;
 						case BOOLEAN: out.writeBoolean(a.get(i, j) != 0); break;
+						case STRING: out.writeUTF(a.getString(new int[] {i, j})); break;
 					}
 				}
 		}
@@ -479,7 +493,13 @@ public class TensorBlock implements CacheBlock
 			throw new NotImplementedException();
 		} else {
 			if (other.isInSparseFormat()) {
-				throw new NotImplementedException();
+				if (other.isEmpty()) {
+					_denseBlock.set(0);
+				} else {
+					// TODO implement sparse set instead of converting to dense
+					other.sparseToDense();
+					_denseBlock.set(0, _dims[0], 0, _denseBlock.getCumODims(0), other.getDenseBlock());
+				}
 			} else {
 				_denseBlock.set(0, _dims[0], 0, _denseBlock.getCumODims(0), other.getDenseBlock());
 			}
@@ -523,6 +543,23 @@ public class TensorBlock implements CacheBlock
 		//allocate and copy dense block
 		allocateDenseBlock(false);
 		_denseBlock.set(that._denseBlock);
+	}
+
+	public void copy(long[] offsets, TensorBlock src) {
+		// TODO consider sparse
+		if (src.isEmpty(false)) {
+			return;
+		}
+		int rowLower = (int)offsets[0];
+		int rowUpper = (int)offsets[0] + src.getDim(0);
+		int columnLower = (int) offsets[offsets.length - 1];
+		int columnUpper = src.getDim(offsets.length - 1);
+		for (int i = 1; i < offsets.length - 1; i++) {
+			columnLower += offsets[i] * _denseBlock.getCumODims(i);
+			columnUpper *= src.getDim(i);
+		}
+		columnUpper += columnLower;
+		_denseBlock.set(rowLower, rowUpper, columnLower, columnUpper, src.getDenseBlock());
 	}
 
 	////////
@@ -636,9 +673,46 @@ public class TensorBlock implements CacheBlock
 		return null;
 	}
 
+	public TensorBlock slice(int[] offsets, TensorBlock block) {
+		assert offsets.length == block.getNumDims();
+		int[] srcIx = new int[offsets.length];
+		Array.copy(offsets, 0, srcIx, 0, offsets.length);
+		int[] destIx = new int[offsets.length];
+		for (int l = 0; l < block.getLength(); l++) {
+			block.set(destIx, get(srcIx));
+			int i = block.getNumDims() - 1;
+			destIx[i]++;
+			//calculating next index
+			if (destIx[i] == block.getDim(i)) {
+				while (destIx[i] == block.getDim(i)) {
+					destIx[i] = 0;
+					srcIx[i] = offsets[i];
+					i--;
+					if (i < 0) {
+						//we are finished
+						return block;
+					}
+					destIx[i]++;
+					srcIx[i]++;
+				}
+			}
+		}
+		return block;
+	}
+
 	@Override
 	public void merge(CacheBlock that, boolean appendOnly) {
 		// TODO Auto-generated method stub
 
+	}
+
+	@Override
+	public void writeExternal(ObjectOutput out) throws IOException {
+		write(out);
+	}
+
+	@Override
+	public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+		readFields(in);
 	}
 }

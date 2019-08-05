@@ -1,4 +1,6 @@
 /*
+ * Modifications Copyright 2019 Graz University of Technology
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -19,15 +21,6 @@
 
 package org.tugraz.sysds.runtime.controlprogram.context;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.Future;
-import java.util.stream.Collectors;
-import java.util.stream.LongStream;
-
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -43,21 +36,24 @@ import org.apache.spark.storage.RDDInfo;
 import org.apache.spark.storage.StorageLevel;
 import org.apache.spark.util.LongAccumulator;
 import org.tugraz.sysds.api.DMLScript;
-import org.tugraz.sysds.common.Types.ExecMode;
 import org.tugraz.sysds.api.mlcontext.MLContext;
 import org.tugraz.sysds.api.mlcontext.MLContextUtil;
+import org.tugraz.sysds.common.Types.ExecMode;
+import org.tugraz.sysds.common.Types.ValueType;
 import org.tugraz.sysds.conf.ConfigurationManager;
 import org.tugraz.sysds.hops.OptimizerUtils;
 import org.tugraz.sysds.lops.Checkpoint;
-import org.tugraz.sysds.common.Types.ValueType;
 import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.controlprogram.Program;
 import org.tugraz.sysds.runtime.controlprogram.caching.CacheBlock;
 import org.tugraz.sysds.runtime.controlprogram.caching.CacheableData;
 import org.tugraz.sysds.runtime.controlprogram.caching.FrameObject;
 import org.tugraz.sysds.runtime.controlprogram.caching.MatrixObject;
+import org.tugraz.sysds.runtime.controlprogram.caching.TensorObject;
 import org.tugraz.sysds.runtime.controlprogram.parfor.stat.InfrastructureAnalyzer;
 import org.tugraz.sysds.runtime.data.SparseBlock;
+import org.tugraz.sysds.runtime.data.TensorBlock;
+import org.tugraz.sysds.runtime.data.TensorIndexes;
 import org.tugraz.sysds.runtime.instructions.cp.Data;
 import org.tugraz.sysds.runtime.instructions.spark.data.BroadcastObject;
 import org.tugraz.sysds.runtime.instructions.spark.data.LineageObject;
@@ -69,10 +65,10 @@ import org.tugraz.sysds.runtime.instructions.spark.functions.CopyBinaryCellFunct
 import org.tugraz.sysds.runtime.instructions.spark.functions.CopyFrameBlockPairFunction;
 import org.tugraz.sysds.runtime.instructions.spark.functions.CopyTextInputFunction;
 import org.tugraz.sysds.runtime.instructions.spark.functions.CreateSparseBlockFunction;
+import org.tugraz.sysds.runtime.instructions.spark.utils.FrameRDDConverterUtils.LongFrameToLongWritableFrameFunction;
 import org.tugraz.sysds.runtime.instructions.spark.utils.RDDAggregateUtils;
 import org.tugraz.sysds.runtime.instructions.spark.utils.SparkUtils;
 import org.tugraz.sysds.runtime.io.IOUtilFunctions;
-import org.tugraz.sysds.runtime.instructions.spark.utils.FrameRDDConverterUtils.LongFrameToLongWritableFrameFunction;
 import org.tugraz.sysds.runtime.matrix.data.FrameBlock;
 import org.tugraz.sysds.runtime.matrix.data.InputInfo;
 import org.tugraz.sysds.runtime.matrix.data.MatrixBlock;
@@ -80,13 +76,23 @@ import org.tugraz.sysds.runtime.matrix.data.MatrixCell;
 import org.tugraz.sysds.runtime.matrix.data.MatrixIndexes;
 import org.tugraz.sysds.runtime.matrix.data.OutputInfo;
 import org.tugraz.sysds.runtime.matrix.mapred.MRJobConfiguration;
+import org.tugraz.sysds.runtime.meta.DataCharacteristics;
 import org.tugraz.sysds.runtime.meta.MatrixCharacteristics;
+import org.tugraz.sysds.runtime.meta.TensorCharacteristics;
 import org.tugraz.sysds.runtime.util.HDFSTool;
 import org.tugraz.sysds.runtime.util.UtilFunctions;
 import org.tugraz.sysds.utils.MLContextProxy;
 import org.tugraz.sysds.utils.Statistics;
-
 import scala.Tuple2;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.Future;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 
 
 public class SparkExecutionContext extends ExecutionContext
@@ -293,17 +299,36 @@ public class SparkExecutionContext extends ExecutionContext
 	 * @return JavaPairRDD of MatrixIndexes-MatrixBlocks
 	 */
 	@SuppressWarnings("unchecked")
-	public JavaPairRDD<MatrixIndexes,MatrixBlock> getBinaryBlockRDDHandleForVariable( String varname ) {
+	public JavaPairRDD<MatrixIndexes,MatrixBlock> getBinaryMatrixBlockRDDHandleForVariable(String varname ) {
 		MatrixObject mo = getMatrixObject(varname);
 		return (JavaPairRDD<MatrixIndexes,MatrixBlock>)
 			getRDDHandleForMatrixObject(mo, InputInfo.BinaryBlockInputInfo, -1, true);
 	}
 	
 	@SuppressWarnings("unchecked")
-	public JavaPairRDD<MatrixIndexes,MatrixBlock> getBinaryBlockRDDHandleForVariable( String varname, int numParts, boolean inclEmpty ) {
+	public JavaPairRDD<MatrixIndexes,MatrixBlock> getBinaryMatrixBlockRDDHandleForVariable(String varname, int numParts, boolean inclEmpty ) {
 		MatrixObject mo = getMatrixObject(varname);
 		return (JavaPairRDD<MatrixIndexes,MatrixBlock>)
 			getRDDHandleForMatrixObject(mo, InputInfo.BinaryBlockInputInfo, numParts, inclEmpty);
+	}
+
+	/**
+	 * Spark instructions should call this for all tensor inputs except broadcast
+	 * variables.
+	 *
+	 * @param varname variable name
+	 * @return JavaPairRDD of TensorIndexes-TensorBlocks
+	 */
+	public JavaPairRDD<TensorIndexes, TensorBlock> getBinaryTensorBlockRDDHandleForVariable(String varname ) {
+		TensorObject to = getTensorObject(varname);
+		return (JavaPairRDD<TensorIndexes, TensorBlock>)
+				getRDDHandleForTensorObject(to, InputInfo.BinaryBlockInputInfo, -1, true);
+	}
+
+	public JavaPairRDD<TensorIndexes, TensorBlock> getBinaryTensorBlockRDDHandleForVariable(String varname, int numParts, boolean inclEmpty ) {
+		TensorObject to = getTensorObject(varname);
+		return (JavaPairRDD<TensorIndexes, TensorBlock>)
+				getRDDHandleForTensorObject(to, InputInfo.BinaryBlockInputInfo, numParts, inclEmpty);
 	}
 
 	/**
@@ -363,10 +388,10 @@ public class SparkExecutionContext extends ExecutionContext
 		{
 			//get in-memory matrix block and parallelize it
 			//w/ guarded parallelize (fallback to export, rdd from file if too large)
-			MatrixCharacteristics mc = mo.getMatrixCharacteristics();
+			DataCharacteristics dc = mo.getDataCharacteristics();
 			boolean fromFile = false;
-			if( !OptimizerUtils.checkSparkCollectMemoryBudget(mc, 0) || !_parRDDs.reserve(
-					OptimizerUtils.estimatePartitionedSizeExactSparsity(mc))) {
+			if( !OptimizerUtils.checkSparkCollectMemoryBudget(dc, 0) || !_parRDDs.reserve(
+					OptimizerUtils.estimatePartitionedSizeExactSparsity(dc))) {
 				if( mo.isDirty() || !mo.isHDFSFileExists() ) //write if necessary
 					mo.exportData();
 				rdd = sc.hadoopFile( mo.getFileName(), inputInfo.inputFormatClass, inputInfo.inputKeyClass, inputInfo.inputValueClass);
@@ -377,7 +402,7 @@ public class SparkExecutionContext extends ExecutionContext
 				MatrixBlock mb = mo.acquireRead(); //pin matrix in memory
 				rdd = toMatrixJavaPairRDD(sc, mb, (int)mo.getNumRowsPerBlock(), (int)mo.getNumColumnsPerBlock(), numParts, inclEmpty);
 				mo.release(); //unpin matrix
-				_parRDDs.registerRDD(rdd.id(), OptimizerUtils.estimatePartitionedSizeExactSparsity(mc), true);
+				_parRDDs.registerRDD(rdd.id(), OptimizerUtils.estimatePartitionedSizeExactSparsity(dc), true);
 			}
 
 			//keep rdd handle for future operations on it
@@ -418,6 +443,77 @@ public class SparkExecutionContext extends ExecutionContext
 		return rdd;
 	}
 
+	public JavaPairRDD<?, ?> getRDDHandleForTensorObject(TensorObject to, InputInfo inputInfo, int numParts, boolean inclEmpty) {
+		//NOTE: MB this logic should be integrated into MatrixObject
+		//However, for now we cannot assume that spark libraries are
+		//always available and hence only store generic references in
+		//matrix object while all the logic is in the SparkExecContext
+
+		JavaSparkContext sc = getSparkContext();
+		JavaPairRDD<?, ?> rdd;
+		//CASE 1: rdd already existing (reuse if checkpoint or trigger
+		//pending rdd operations if not yet cached but prevent to re-evaluate
+		//rdd operations if already executed and cached
+		if (to.getRDDHandle() != null && (to.getRDDHandle().isCheckpointRDD() || !to.isCached(false))) {
+			//return existing rdd handling (w/o input format change)
+			rdd = to.getRDDHandle().getRDD();
+		}
+		//CASE 2: dirty in memory data or cached result of rdd operations
+		else if (to.isDirty() || to.isCached(false)) {
+			//get in-memory matrix block and parallelize it
+			//w/ guarded parallelize (fallback to export, rdd from file if too large)
+			DataCharacteristics dc = to.getDataCharacteristics();
+			boolean fromFile = false;
+			if (!OptimizerUtils.checkSparkCollectMemoryBudget(dc, 0) || !_parRDDs.reserve(
+					OptimizerUtils.estimatePartitionedSizeExactSparsity(dc))) {
+				if (to.isDirty() || !to.isHDFSFileExists()) //write if necessary
+					to.exportData();
+				rdd = sc.hadoopFile(to.getFileName(), inputInfo.inputFormatClass, inputInfo.inputKeyClass, inputInfo.inputValueClass);
+				rdd = SparkUtils.copyBinaryBlockTensor((JavaPairRDD<TensorIndexes, TensorBlock>) rdd); //cp is workaround for read bug
+				fromFile = true;
+			} else { //default case
+				TensorBlock mb = to.acquireRead(); //pin matrix in memory
+				rdd = toTensorJavaPairRDD(sc, mb, to.getDims(), numParts, inclEmpty);
+				to.release(); //unpin matrix
+				_parRDDs.registerRDD(rdd.id(), OptimizerUtils.estimatePartitionedSizeExactSparsity(dc), true);
+			}
+
+			//keep rdd handle for future operations on it
+			RDDObject rddhandle = new RDDObject(rdd);
+			rddhandle.setHDFSFile(fromFile);
+			rddhandle.setParallelizedRDD(!fromFile);
+			to.setRDDHandle(rddhandle);
+		}
+		//CASE 3: non-dirty (file exists on HDFS)
+		else {
+			// parallelize hdfs-resident file
+			// For binary block, these are: SequenceFileInputFormat.class, MatrixIndexes.class, MatrixBlock.class
+			if (inputInfo == InputInfo.BinaryBlockInputInfo) {
+				rdd = sc.hadoopFile(to.getFileName(), inputInfo.inputFormatClass, inputInfo.inputKeyClass, inputInfo.inputValueClass);
+				//note: this copy is still required in Spark 1.4 because spark hands out whatever the inputformat
+				//recordreader returns; the javadoc explicitly recommend to copy all key/value pairs
+				rdd = SparkUtils.copyBinaryBlockTensor((JavaPairRDD<TensorIndexes, TensorBlock>) rdd); //cp is workaround for read bug
+				// TODO: TensorMarket?
+			} else if (inputInfo == InputInfo.TextCellInputInfo || inputInfo == InputInfo.CSVInputInfo || inputInfo == InputInfo.MatrixMarketInputInfo) {
+				rdd = sc.hadoopFile(to.getFileName(), inputInfo.inputFormatClass, inputInfo.inputKeyClass, inputInfo.inputValueClass);
+				rdd = ((JavaPairRDD<LongWritable, Text>) rdd).mapToPair(new CopyTextInputFunction()); //cp is workaround for read bug
+			} else if (inputInfo == InputInfo.BinaryCellInputInfo) {
+				throw new DMLRuntimeException("TensorCell does not yet exist");
+				//rdd = sc.hadoopFile(to.getFileName(), inputInfo.inputFormatClass, inputInfo.inputKeyClass, inputInfo.inputValueClass);
+				//rdd = ((JavaPairRDD<TensorIndexes, TensorCell>) rdd).mapToPair(new CopyBinaryCellFunction()); //cp is workaround for read bug
+			} else {
+				throw new DMLRuntimeException("Incorrect input format in getRDDHandleForVariable");
+			}
+
+			//keep rdd handle for future operations on it
+			RDDObject rddhandle = new RDDObject(rdd);
+			rddhandle.setHDFSFile(true);
+			to.setRDDHandle(rddhandle);
+		}
+
+		return rdd;
+	}
+
 	/**
 	 * FIXME: currently this implementation assumes matrix representations but frame signature
 	 * in order to support the old transform implementation.
@@ -453,10 +549,10 @@ public class SparkExecutionContext extends ExecutionContext
 		{
 			//get in-memory matrix block and parallelize it
 			//w/ guarded parallelize (fallback to export, rdd from file if too large)
-			MatrixCharacteristics mc = fo.getMatrixCharacteristics();
+			DataCharacteristics dc = fo.getDataCharacteristics();
 			boolean fromFile = false;
-			if( !OptimizerUtils.checkSparkCollectMemoryBudget(mc, 0) || !_parRDDs.reserve(
-					OptimizerUtils.estimatePartitionedSizeExactSparsity(mc)) ) {
+			if( !OptimizerUtils.checkSparkCollectMemoryBudget(dc, 0) || !_parRDDs.reserve(
+					OptimizerUtils.estimatePartitionedSizeExactSparsity(dc)) ) {
 				if( fo.isDirty() ) { //write only if necessary
 					fo.exportData();
 				}
@@ -468,7 +564,7 @@ public class SparkExecutionContext extends ExecutionContext
 				FrameBlock fb = fo.acquireRead(); //pin frame in memory
 				rdd = toFrameJavaPairRDD(sc, fb);
 				fo.release(); //unpin frame
-				_parRDDs.registerRDD(rdd.id(), OptimizerUtils.estimatePartitionedSizeExactSparsity(mc), true);
+				_parRDDs.registerRDD(rdd.id(), OptimizerUtils.estimatePartitionedSizeExactSparsity(dc), true);
 			}
 
 			//keep rdd handle for future operations on it
@@ -534,7 +630,7 @@ public class SparkExecutionContext extends ExecutionContext
 					cd.setBroadcastHandle(new BroadcastObject<>());
 				}
 				cd.getBroadcastHandle().setNonPartitionedBroadcast(brBlock,
-					OptimizerUtils.estimateSize(cd.getMatrixCharacteristics()));
+					OptimizerUtils.estimateSize(cd.getDataCharacteristics()));
 				CacheableData.addBroadcastSize(cd.getBroadcastHandle().getNonPartitionedBroadcastSize());
 
 				if (DMLScript.STATISTICS) {
@@ -594,13 +690,13 @@ public class SparkExecutionContext extends ExecutionContext
 					pmb.clearBlocks();
 			}
 			
-			bret = new PartitionedBroadcast<>(ret, mo.getMatrixCharacteristics());
+			bret = new PartitionedBroadcast<>(ret, mo.getDataCharacteristics());
 			// create the broadcast handle if the matrix or frame has never been broadcasted
 			if (mo.getBroadcastHandle() == null) {
 				mo.setBroadcastHandle(new BroadcastObject<MatrixBlock>());
 			}
 			mo.getBroadcastHandle().setPartitionedBroadcast(bret,
-				OptimizerUtils.estimatePartitionedSizeExactSparsity(mo.getMatrixCharacteristics()));
+				OptimizerUtils.estimatePartitionedSizeExactSparsity(mo.getDataCharacteristics()));
 			CacheableData.addBroadcastSize(mo.getBroadcastHandle().getPartitionedBroadcastSize());
 		}
 
@@ -660,12 +756,12 @@ public class SparkExecutionContext extends ExecutionContext
 			}
 			
 			bret = new PartitionedBroadcast<>(ret, new MatrixCharacteristics(
-				fo.getMatrixCharacteristics()).setBlockSize(brlen, bclen));
+				fo.getDataCharacteristics()).setBlockSize(brlen, bclen));
 			if (fo.getBroadcastHandle() == null)
 				fo.setBroadcastHandle(new BroadcastObject<FrameBlock>());
 			
 			fo.getBroadcastHandle().setPartitionedBroadcast(bret,
-				OptimizerUtils.estimatePartitionedSizeExactSparsity(fo.getMatrixCharacteristics()));
+				OptimizerUtils.estimatePartitionedSizeExactSparsity(fo.getDataCharacteristics()));
 			CacheableData.addBroadcastSize(fo.getBroadcastHandle().getPartitionedBroadcastSize());
 		}
 
@@ -717,7 +813,7 @@ public class SparkExecutionContext extends ExecutionContext
 			MatrixCharacteristics mc = new MatrixCharacteristics(
 				src.getNumRows(), src.getNumColumns(), brlen, bclen, src.getNonZeros());
 			list = LongStream.range(0, mc.getNumBlocks()).parallel()
-				.mapToObj(i -> createIndexedBlock(src, mc, i))
+				.mapToObj(i -> createIndexedMatrixBlock(src, mc, i))
 				.filter(kv -> inclEmpty || !kv._2.isEmptyBlock(false))
 				.collect(Collectors.toList());
 		}
@@ -732,8 +828,54 @@ public class SparkExecutionContext extends ExecutionContext
 
 		return result;
 	}
-	
-	private static Tuple2<MatrixIndexes,MatrixBlock> createIndexedBlock(MatrixBlock mb, MatrixCharacteristics mc, long ix) {
+
+	public static JavaPairRDD<TensorIndexes, TensorBlock> toTensorJavaPairRDD(JavaSparkContext sc, TensorBlock src,
+	                                                                          int[] blen) {
+		return toTensorJavaPairRDD(sc, src, blen, -1, true);
+	}
+
+	public static JavaPairRDD<TensorIndexes, TensorBlock> toTensorJavaPairRDD(JavaSparkContext sc, TensorBlock src,
+	                                                                          int[] blen, int numParts,
+	                                                                          boolean inclEmpty) {
+		long t0 = DMLScript.STATISTICS ? System.nanoTime() : 0;
+		List<Tuple2<TensorIndexes, TensorBlock>> list;
+
+		assert blen.length == src.getNumDims();
+		boolean singleBlock = true;
+		for (int i = 0; i < blen.length; i++) {
+			if (blen[i] > src.getDim(i)) {
+				singleBlock = false;
+				break;
+			}
+		}
+		if (singleBlock) {
+			long[] ix = new long[blen.length];
+			Arrays.fill(ix, 1);
+			list = Arrays.asList(new Tuple2<>(new TensorIndexes(ix), src));
+		} else {
+			// TODO rows and columns for matrix characteristics
+			long[] dims = new long[src.getNumDims()];
+			for (int i = 0; i < src.getNumDims(); i++)
+				dims[i] = src.getDim(i);
+			TensorCharacteristics mc = new TensorCharacteristics(dims, src.getNonZeros());
+			list = LongStream.range(0, mc.getNumBlocks()).parallel()
+					.mapToObj(i -> createIndexedTensorBlock(src, mc, i))
+					.filter(kv -> inclEmpty || !kv._2.isEmpty(false))
+					.collect(Collectors.toList());
+		}
+
+		JavaPairRDD<TensorIndexes, TensorBlock> result = (numParts > 1) ?
+				sc.parallelizePairs(list, numParts) : sc.parallelizePairs(list);
+
+		if (DMLScript.STATISTICS) {
+			Statistics.accSparkParallelizeTime(System.nanoTime() - t0);
+			Statistics.incSparkParallelizeCount(1);
+		}
+
+		return result;
+	}
+
+	private static Tuple2<MatrixIndexes,MatrixBlock> createIndexedMatrixBlock(MatrixBlock mb, MatrixCharacteristics mc, long ix) {
 		try {
 			//compute block indexes
 			long blockRow = ix / mc.getNumColBlocks();
@@ -749,6 +891,33 @@ public class SparkExecutionContext extends ExecutionContext
 				col_offset, col_offset+maxCol-1, block );
 			//create key-value pair
 			return new Tuple2<>(new MatrixIndexes(blockRow+1, blockCol+1), block);
+		}
+		catch(DMLRuntimeException ex) {
+			throw new RuntimeException(ex);
+		}
+	}
+
+	private static Tuple2<TensorIndexes,TensorBlock> createIndexedTensorBlock(TensorBlock mb, TensorCharacteristics tc, long ix) {
+		try {
+			//compute block indexes
+			long[] blockIx = new long[tc.getNumDims()];
+			int[] maxDim = new int[tc.getNumDims()];
+			int[] offset = new int[tc.getNumDims()];
+			for (int i = tc.getNumDims() - 1; i >= 0; i--) {
+				blockIx[i] = ix % tc.getNumBlocks(i);
+				maxDim[i] = UtilFunctions.computeBlockSize(tc.getDim(i), blockIx[i] + 1,
+						tc.getBlockSize(i));
+				offset[i] = (int) (blockIx[i] * tc.getBlockSize(i));
+				ix /= tc.getNumBlocks(i);
+			}
+			// TODO: sparse
+			TensorBlock block = new TensorBlock(mb.getValueType(), maxDim, false);
+			block = mb.slice(offset, block);
+			//create key-value pair
+			for (int i = 0; i < blockIx.length; i++) {
+				blockIx[i]++;
+			}
+			return new Tuple2<>(new TensorIndexes(blockIx), block);
 		}
 		catch(DMLRuntimeException ex) {
 			throw new RuntimeException(ex);
@@ -953,6 +1122,47 @@ public class SparkExecutionContext extends ExecutionContext
 			Statistics.incSparkCollectCount(1);
 		}
 
+		return out;
+	}
+
+	public static TensorBlock toTensorBlock(JavaPairRDD<TensorIndexes, TensorBlock> rdd, DataCharacteristics dc) {
+		long t0 = DMLScript.STATISTICS ? System.nanoTime() : 0;
+
+		// TODO special case single block
+		int[] idims = new int[dc.getNumDims()];
+		for (int i = 0; i < idims.length; i++) {
+			idims[i] = (int)dc.getDim(i);
+		}
+		// TODO asynchronous allocation
+		List<Tuple2<TensorIndexes, TensorBlock>> list = rdd.collect();
+		ValueType vt = list.get(0)._2.getValueType();
+		TensorBlock out = new TensorBlock(vt, idims);
+		out.allocateDenseBlock();
+
+		//copy blocks one-at-a-time into output matrix block
+		for( Tuple2<TensorIndexes, TensorBlock> keyval : list )
+		{
+			//unpack index-block pair
+			TensorIndexes ix = keyval._1();
+			TensorBlock block = keyval._2();
+
+			//compute row/column block offsets
+			long[] offsets = new long[ix.getNumDims()];
+			for (int i = 0; i < offsets.length; i++) {
+				offsets[i] = (ix.getIndex(i) - 1) * dc.getBlockSize(i);
+			}
+
+			// TODO sparse copy
+			out.copy(offsets, block);
+			// TODO keep track of nnz
+		}
+
+		// TODO post-processing output matrix (nnz, sparsity)
+
+		if (DMLScript.STATISTICS) {
+			Statistics.accSparkCollectTime(System.nanoTime() - t0);
+			Statistics.incSparkCollectCount(1);
+		}
 		return out;
 	}
 
@@ -1223,11 +1433,11 @@ public class SparkExecutionContext extends ExecutionContext
 	@SuppressWarnings("unchecked")
 	public void repartitionAndCacheMatrixObject( String var ) {
 		MatrixObject mo = getMatrixObject(var);
-		MatrixCharacteristics mcIn = mo.getMatrixCharacteristics();
+		DataCharacteristics dcIn = mo.getDataCharacteristics();
 
 		//double check size to avoid unnecessary spark context creation
 		if( !OptimizerUtils.exceedsCachingThreshold(mo.getNumColumns(), (double)
-				OptimizerUtils.estimateSizeExactSparsity(mcIn)) )
+				OptimizerUtils.estimateSizeExactSparsity(dcIn)) )
 			return;
 
 		//get input rdd and default storage level
@@ -1241,7 +1451,7 @@ public class SparkExecutionContext extends ExecutionContext
 					((RDDObject)mo.getRDDHandle().getLineageChilds().get(0)).getRDD();
 
 			//investigate issue of unnecessarily large number of partitions
-			int numPartitions = SparkUtils.getNumPreferredPartitions(mcIn, in);
+			int numPartitions = SparkUtils.getNumPreferredPartitions(dcIn, in);
 			if( numPartitions < in.getNumPartitions() )
 				in = in.coalesce( numPartitions );
 		}
@@ -1251,7 +1461,7 @@ public class SparkExecutionContext extends ExecutionContext
 		JavaPairRDD<MatrixIndexes,MatrixBlock> out = RDDAggregateUtils.mergeByKey(in, false);
 
 		//convert mcsr into memory-efficient csr if potentially sparse
-		if( OptimizerUtils.checkSparseBlockCSRConversion(mcIn) ) {
+		if( OptimizerUtils.checkSparseBlockCSRConversion(dcIn) ) {
 			out = out.mapValues(new CreateSparseBlockFunction(SparseBlock.Type.CSR));
 		}
 
@@ -1274,7 +1484,7 @@ public class SparkExecutionContext extends ExecutionContext
 
 		//double check size to avoid unnecessary spark context creation
 		if( !OptimizerUtils.exceedsCachingThreshold(mo.getNumColumns(), (double)
-				OptimizerUtils.estimateSizeExactSparsity(mo.getMatrixCharacteristics())) )
+				OptimizerUtils.estimateSizeExactSparsity(mo.getDataCharacteristics())) )
 			return;
 
 		JavaPairRDD<MatrixIndexes,MatrixBlock> in = (JavaPairRDD<MatrixIndexes, MatrixBlock>)

@@ -1,4 +1,6 @@
 /*
+ * Modifications Copyright 2019 Graz University of Technology
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -664,14 +666,6 @@ public class TestUtils
 		assertTrue("" + countErrors + " values are not in equal", countErrors == 0);
 	}
 	
-	/**
-	 * 
-	 * @param expectedMatrix
-	 * @param actualMatrix
-	 * @param rows
-	 * @param cols
-	 * @param epsilon
-	 */
 	public static void compareFrames(String[][] expectedFrame, String[][] actualFrame, int rows, int cols ) {
 		int countErrors = 0;
 		for (int i = 0; i < rows; i++) {
@@ -1673,7 +1667,7 @@ public class TestUtils
 	 * Prints out a DML script.
 	 * </p>
 	 * 
-	 * @param dmlScriptfile
+	 * @param dmlScriptFile
 	 *            filename of DML script
 	 */
 	public static void printDMLScript(String dmlScriptFile) {
@@ -1697,7 +1691,7 @@ public class TestUtils
 	 * Prints out a PYDML script.
 	 * </p>
 	 * 
-	 * @param pydmlScriptfile
+	 * @param pydmlScriptFile
 	 *            filename of PYDML script
 	 */
 	public static void printPYDMLScript(String pydmlScriptFile) {
@@ -1721,7 +1715,7 @@ public class TestUtils
 	 * Prints out an R script.
 	 * </p>
 	 * 
-	 * @param dmlScriptfile
+	 * @param dmlScriptFile
 	 *            filename of RL script
 	 */
 	public static void printRScript(String dmlScriptFile) {
@@ -1836,7 +1830,7 @@ public class TestUtils
 	 * Creates an empty file.
 	 * </p>
 	 * 
-	 * @param file
+	 * @param filename
 	 *            filename
 	 */
 	public static void createFile(String filename) throws IOException {

@@ -1,4 +1,6 @@
 /*
+ * Modifications Copyright 2019 Graz University of Technology
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -21,8 +23,6 @@
 package org.tugraz.sysds.runtime.matrix.data;
 
 
-import java.io.Serializable;
-
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
@@ -32,6 +32,8 @@ import org.apache.hadoop.mapred.TextInputFormat;
 import org.tugraz.sysds.parser.DataExpression;
 import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.meta.MetaData;
+
+import java.io.Serializable;
 
 @SuppressWarnings("rawtypes")
 public class InputInfo implements Serializable 
@@ -98,6 +100,7 @@ public class InputInfo implements Serializable
 		if ( str.equalsIgnoreCase("textcell")) {
 			return TextCellInputInfo;
 		}
+		// TODO: tensormarket?
 		if ( str.equalsIgnoreCase("matrixmarket")) {
 			return MatrixMarketInputInfo;
 		}

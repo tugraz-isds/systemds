@@ -461,21 +461,44 @@ public abstract class DenseBlock implements Serializable
 		// TODO: Performance
 		boolean allColumns = cl == 0 && cu == _odims[0];
 		for (int bi = index(rl); bi <= index(ru - 1); bi++) {
-			double[] other = db.valuesAt(bi);
-			if (allColumns) {
-				int offset = rl * _odims[0] + cl;
-				IntStream.range(0, (int) db.size())
-						.forEach((i) -> setInternal(0, offset + i, other[i]));
-			}
-			else {
-				int len = cu - cl;
-				for(int i=rl, ix1=0, ix2=rl*_odims[0]+cl; i<ru; i++, ix1+=len, ix2+=_odims[0]) {
-					int finalIx1 = ix1;
-					int finalIx2 = ix2;
-					IntStream.range(0, len)
-							.forEach((ix) -> setInternal(0, finalIx2 + ix, other[finalIx1 + ix]));
+			int finalBi = bi;
+			if (db.isNumeric()) {
+				if (allColumns) {
+					int offset = rl * _odims[0] + cl;
+					double[] other = db.valuesAt(bi);
+					IntStream.range(0, db.blockSize(bi) * _odims[0])
+							.forEach((i) -> setInternal(finalBi, offset + i, other[i]));
+				}
+				else {
+					int len = cu - cl;
+					double[] other = db.valuesAt(bi);
+					for (int i = rl, ix1 = 0, ix2 = rl * _odims[0] + cl; i < ru; i++, ix1 += len, ix2 += _odims[0]) {
+						int finalIx1 = ix1;
+						int finalIx2 = ix2;
+						IntStream.range(0, len)
+								.forEach((ix) -> setInternal(finalBi, finalIx2 + ix, other[finalIx1 + ix]));
+					}
 				}
 			}
+			else {
+				// for strings
+				if (allColumns) {
+					int start = finalBi * db.blockSize();
+					IntStream.range(0, db.blockSize(bi) * _odims[0])
+							.forEach((i) -> set(new int[]{start, i}, db.getString(new int[]{start, i})));
+				}
+				else {
+					int len = cu - cl;
+					for (int i = rl, ix1 = 0, ix2 = rl * _odims[0] + cl; i < ru; i++, ix1 += len, ix2 += _odims[0]) {
+						int finalIx1 = ix1;
+						int finalIx2 = ix2;
+						int start = finalBi * db.blockSize();
+						IntStream.range(0, len)
+								.forEach((ix) -> set(new int[]{start, finalIx2 + ix}, db.getString(new int[]{start, finalIx1 + ix})));
+					}
+				}
+			}
+			rl = 0;
 		}
 		return this;
 	}
