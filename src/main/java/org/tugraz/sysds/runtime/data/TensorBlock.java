@@ -309,7 +309,7 @@ public class TensorBlock implements CacheBlock, Externalizable
 			//prevent under-estimation
 			if(safe)
 				//TODO recomputeNonZeros();
-			ret = (_nnz==0);
+			ret = (_nnz == 0);
 		}
 		return ret;
 	}
@@ -425,7 +425,16 @@ public class TensorBlock implements CacheBlock, Externalizable
 			return _denseBlock.get(r, c);
 		}
 	}
-	
+
+	public long getLong(int[] ix) {
+		if (_sparse) {
+			// TODO: Implement sparse
+			throw new NotImplementedException();
+		} else {
+			return _denseBlock.getLong(ix);
+		}
+	}
+
 	public String getString(int[] ix) {
 		if (_sparse) {
 			// TODO: Implement sparse
@@ -449,6 +458,14 @@ public class TensorBlock implements CacheBlock, Externalizable
 			throw new NotImplementedException();
 		} else {
 			_denseBlock.set(r, c, v);
+		}
+	}
+
+	public void set(int[] ix, long v) {
+		if (_sparse) {
+			throw new NotImplementedException();
+		} else {
+			_denseBlock.set(ix, v);
 		}
 	}
 
