@@ -69,6 +69,7 @@ public class TensorBlock implements CacheBlock
 		reset(dims, sp, estnnz, 0);
 	}
 	
+	@SuppressWarnings("CopyConstructorMissesField")
 	public TensorBlock(TensorBlock that) {
 		_vt = that.getValueType();
 		copy(that);
@@ -297,7 +298,7 @@ public class TensorBlock implements CacheBlock
 			//prevent under-estimation
 			if(safe)
 				//TODO recomputeNonZeros();
-			ret = (_nnz==0);
+			ret = true;
 		}
 		return ret;
 	}
@@ -411,7 +412,16 @@ public class TensorBlock implements CacheBlock
 			return _denseBlock.get(r, c);
 		}
 	}
-	
+
+	public long getLong(int[] ix) {
+		if (_sparse) {
+			// TODO: Implement sparse
+			throw new NotImplementedException();
+		} else {
+			return _denseBlock.getLong(ix);
+		}
+	}
+
 	public String getString(int[] ix) {
 		if (_sparse) {
 			// TODO: Implement sparse
@@ -435,6 +445,14 @@ public class TensorBlock implements CacheBlock
 			throw new NotImplementedException();
 		} else {
 			_denseBlock.set(r, c, v);
+		}
+	}
+
+	public void set(int[] ix, long v) {
+		if (_sparse) {
+			throw new NotImplementedException();
+		} else {
+			_denseBlock.set(ix, v);
 		}
 	}
 
