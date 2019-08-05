@@ -25,7 +25,14 @@ import org.tugraz.sysds.api.DMLScript;
 import org.tugraz.sysds.lops.Lop;
 import org.tugraz.sysds.parser.DataIdentifier;
 import org.tugraz.sysds.runtime.controlprogram.context.ExecutionContext;
+import org.tugraz.sysds.runtime.instructions.cp.CPOperand;
+import org.tugraz.sysds.runtime.instructions.cp.ComputationCPInstruction;
+import org.tugraz.sysds.runtime.instructions.cp.Data;
+import org.tugraz.sysds.runtime.instructions.spark.ComputationSPInstruction;
 import org.tugraz.sysds.runtime.lineage.Lineage;
+import org.tugraz.sysds.runtime.lineage.LineageCache;
+import org.tugraz.sysds.runtime.lineage.LineageItem;
+import org.tugraz.sysds.runtime.lineage.LineageTraceable;
 
 
 public abstract class Instruction 
@@ -223,7 +230,6 @@ public abstract class Instruction
 		//return instruction ifself
 		return this;
 	}
-	
 	/**
 	 * This method should be used to execute the instruction. 
 	 * 
