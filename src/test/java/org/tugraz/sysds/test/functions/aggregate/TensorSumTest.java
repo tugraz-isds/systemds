@@ -36,25 +36,25 @@ public class TensorSumTest extends AutomatedTestBase
 	private final static String TEST_NAME = "TensorSum";
 	private final static String TEST_CLASS_DIR = TEST_DIR + TensorSumTest.class.getSimpleName() + "/";
 
-	private double value;
+	private String value;
 	private int[] dimensions;
 
-	public TensorSumTest(int[] dims, double v) {
+	public TensorSumTest(int[] dims, String v) {
 		dimensions = dims;
 		value = v;
 	}
 	
 	@Parameters
 	public static Collection<Object[]> data() {
-		Object[][] data = new Object[][] { 
-				{new int[]{3, 4, 5}, 3},
-				/*{new int[]{1, 1}, 8},
-				{new int[]{7, 1, 1}, 0.5},
-				{new int[]{10, 2, 4}, 1},
-				{new int[]{1000, 100, 100, 10}, 3},
-				{new int[]{10000000, 2}, 8},
-				{new int[]{100000, 1, 1000}, 0.5},
-				{new int[]{1, 1, 1, 2, 1, 1, 1000}, 1},*/
+		Object[][] data = new Object[][] {
+				{new int[]{3, 4, 5}, "3"},
+				{new int[]{1, 1}, "8"},
+				{new int[]{7, 1, 1}, "0.5"},
+				{new int[]{10, 2, 4}, "1"},
+				{new int[]{1000, 100, 100, 10}, "3"},
+				{new int[]{10000000, 2}, "8"},
+				{new int[]{100000, 1, 1000}, "0.5"},
+				{new int[]{1, 1, 1, 2, 1, 1, 1000}, "1"},
 				};
 		return Arrays.asList(data);
 	}
@@ -76,13 +76,11 @@ public class TensorSumTest extends AutomatedTestBase
 
 	private void testTensorSum(String testName, LopProperties.ExecType platform) {
 		ExecMode platformOld = rtplatform;
-		switch (platform) {
-			case SPARK:
-				rtplatform = ExecMode.SPARK;
-				break;
-			default:
-				rtplatform = ExecMode.SINGLE_NODE;
-				break;
+		if (platform == LopProperties.ExecType.SPARK) {
+			rtplatform = ExecMode.SPARK;
+		}
+		else {
+			rtplatform = ExecMode.SINGLE_NODE;
 		}
 
 		boolean sparkConfigOld = DMLScript.USE_LOCAL_SPARK_CONFIG;
@@ -98,9 +96,14 @@ public class TensorSumTest extends AutomatedTestBase
 			String dimensionsString = Arrays.toString(dimensions).replace("[", "")
 					.replace(",", "").replace("]", "");
 			programArgs = new String[]{"-explain", "-args",
-				Double.toString(value), dimensionsString, output("A") };
+					value, dimensionsString, output("A")};
 
-			writeExpectedScalar("A", Arrays.stream(dimensions).reduce(1, (a, b) -> a*b) * value);
+			try {
+				writeExpectedScalar("A", Arrays.stream(dimensions).reduce(1, (a, b) -> a * b) * Long.parseLong(value));
+			}
+			catch (NumberFormatException e) {
+				writeExpectedScalar("A", Arrays.stream(dimensions).reduce(1, (a, b) -> a * b) * Double.parseDouble(value));
+			}
 
 			runTest(true, false, null, -1);
 

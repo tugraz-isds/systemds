@@ -28,6 +28,7 @@ import org.apache.spark.api.java.function.PairFunction;
 import org.tugraz.sysds.common.Types;
 import org.tugraz.sysds.hops.AggBinaryOp.SparkAggType;
 import org.tugraz.sysds.lops.PartialAggregate.CorrectionLocationType;
+import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.controlprogram.context.ExecutionContext;
 import org.tugraz.sysds.runtime.controlprogram.context.SparkExecutionContext;
 import org.tugraz.sysds.runtime.data.TensorBlock;
@@ -144,58 +145,58 @@ public class AggregateUnarySPInstruction extends UnarySPInstruction {
 
 	private void processTensorAggregate(ExecutionContext ec) {
 		SparkExecutionContext sec = (SparkExecutionContext)ec;
-		DataCharacteristics dc = sec.getDataCharacteristics(input1.getName());
 
 		//get input
 		JavaPairRDD<TensorIndexes, TensorBlock> in = sec.getBinaryTensorBlockRDDHandleForVariable( input1.getName() );
 		JavaPairRDD<TensorIndexes, TensorBlock> out = in;
 
 		// TODO: filter input blocks for trace
-
 		//execute unary aggregate operation
 		AggregateUnaryOperator auop = (AggregateUnaryOperator)_optr;
 		AggregateOperator aggop = _aop;
 
 		// TODO: aggregate
-		/*
 		//perform aggregation if necessary and put output into symbol table
 		if( _aggtype == SparkAggType.SINGLE_BLOCK )
 		{
 			// TODO filter non empty blocks if sparse safe
-			JavaRDD<TensorBlock> out2 = out.map(
-					new RDDUAggFunction2(auop, sc.getRowsPerBlock(), sc.getColsPerBlock()));
-			TensorBlock out3 = RDDAggregateUtils.aggStable(out2, aggop);
-
-			//drop correction after aggregation
-			out3.dropLastRowsOrColumns(aggop.correctionLocation);
+			JavaRDD<TensorBlock> out2 = out.map(new RDDUTensorAggFunction2(auop));
+			TensorBlock out3 = RDDAggregateUtils.aggStableTensor(out2, aggop);
 
 			//put output block into symbol table (no lineage because single block)
-			//this also includes implicit maintenance of matrix characteristics
-			sec.setTensorOutput(output.getName(), out3);
+			//this also includes implicit maintenance of data characteristics
+			// TODO generalize to drop depending on location of correction
+			TensorBlock out4 = new TensorBlock(out3.getValueType(), new int[]{1, 1}, false);
+			out4.set(0, 0, out3.get(0, 0));
+			sec.setTensorOutput(output.getName(), out4);
 		}
 		else //MULTI_BLOCK or NONE
 		{
 			if( _aggtype == SparkAggType.NONE ) {
 				//in case of no block aggregation, we always drop the correction as well as
 				//use a partitioning-preserving mapvalues
-				out = out.mapValues(new RDDUAggValueFunction(auop, mc.getRowsPerBlock(), mc.getColsPerBlock()));
+				out = out.mapValues(new RDDUTensorAggValueFunction(auop));
 			}
 			else if( _aggtype == SparkAggType.MULTI_BLOCK ) {
+				// TODO MULTI_BLOCK
+				throw new DMLRuntimeException("Multi block spark aggregations are not supported for tensors yet.");
+				/*
 				//in case of multi-block aggregation, we always keep the correction
-				out = out.mapToPair(new RDDUAggFunction(auop, mc.getRowsPerBlock(), mc.getColsPerBlock()));
+				out = out.mapToPair(new RDDUTensorAggFunction(auop, dc.getRowsPerBlock(), dc.getColsPerBlock()));
 				out = RDDAggregateUtils.aggByKeyStable(out, aggop, false);
 
 				//drop correction after aggregation if required (aggbykey creates
 				//partitioning, drop correction via partitioning-preserving mapvalues)
 				if( auop.aggOp.correctionExists )
 					out = out.mapValues( new AggregateDropCorrectionFunction(aggop) );
+				 */
 			}
 
 			//put output RDD handle into symbol table
 			updateUnaryAggOutputDataCharacteristics(sec, auop.indexFn);
 			sec.setRDDHandleForVariable(output.getName(), out);
 			sec.addLineageRDD(output.getName(), input1.getName());
-		}*/
+		}
 	}
 
 	private static class RDDUAggFunction implements PairFunction<Tuple2<MatrixIndexes, MatrixBlock>, MatrixIndexes, MatrixBlock>
@@ -259,6 +260,28 @@ public class AggregateUnarySPInstruction extends UnarySPInstruction {
 		}
 	}
 
+	/**
+	 * Similar to RDDUAggFunction but single output block.
+	 */
+	public static class RDDUTensorAggFunction2 implements Function<Tuple2<TensorIndexes, TensorBlock>, TensorBlock>
+	{
+		private static final long serialVersionUID = -6258769067791011763L;
+
+		private AggregateUnaryOperator _op = null;
+
+		public RDDUTensorAggFunction2( AggregateUnaryOperator op ) {
+			_op = op;
+		}
+
+		@Override
+		public TensorBlock call( Tuple2<TensorIndexes, TensorBlock> arg0 )
+				throws Exception
+		{
+			//unary aggregate operation (always keep the correction)
+			return arg0._2.aggregateUnaryOperations(_op, new TensorBlock());
+		}
+	}
+
 	private static class RDDUAggValueFunction implements Function<MatrixBlock, MatrixBlock>
 	{
 		private static final long serialVersionUID = 5352374590399929673L;
@@ -291,6 +314,36 @@ public class AggregateUnarySPInstruction extends UnarySPInstruction {
 			
 			//output new tuple
 			return blkOut;
+		}
+	}
+
+	private static class RDDUTensorAggValueFunction implements Function<TensorBlock, TensorBlock>
+	{
+		private static final long serialVersionUID = -968274963539513423L;
+
+		private AggregateUnaryOperator _op = null;
+
+		public RDDUTensorAggValueFunction(AggregateUnaryOperator op)
+		{
+			_op = op;
+		}
+
+		@Override
+		public TensorBlock call( TensorBlock arg0 )
+				throws Exception
+		{
+			TensorBlock blkOut = new TensorBlock();
+
+			//unary aggregate operation
+			arg0.aggregateUnaryOperations(_op, blkOut);
+
+			//always drop correction since no aggregation
+			// TODO generalize to drop depending on location of correction
+			TensorBlock out = new TensorBlock(blkOut.getValueType(), new int[]{1, 1}, false);
+			out.set(0, 0, blkOut.get(0, 0));
+
+			//output new tuple
+			return out;
 		}
 	}
 }

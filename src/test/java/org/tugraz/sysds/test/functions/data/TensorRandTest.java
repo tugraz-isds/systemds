@@ -55,6 +55,7 @@ public class TensorRandTest extends AutomatedTestBase {
 				{new long[]{1, 1}, "8", "100", 10},
 				{new long[]{7, 1, 1}, "0.5", "1", 43},
 				{new long[]{7, 8, 8}, "0.5", "0.6", 42},
+				{new long[]{1030, 600, 2}, "0.5", "0.6", 4},
 		};
 		return Arrays.asList(data);
 	}

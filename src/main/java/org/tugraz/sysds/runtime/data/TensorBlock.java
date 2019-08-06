@@ -256,7 +256,7 @@ public class TensorBlock implements CacheBlock, Externalizable
 
 	/**
 	 * Calculates the next index array. Note that if the given index array was the last element, the next index will
-	 * be the first one.
+	 * be outside of range.
 	 *
 	 * @param ix the index array which will be incremented to the next index array
 	 */
@@ -266,12 +266,12 @@ public class TensorBlock implements CacheBlock, Externalizable
 		//calculating next index
 		if (ix[i] == getDim(i)) {
 			while (ix[i] == getDim(i)) {
-				ix[i] = 0;
-				i--;
-				if (i < 0) {
+				if (i - 1 < 0) {
 					//we are finished
 					break;
 				}
+				ix[i] = 0;
+				i--;
 				ix[i]++;
 			}
 		}
@@ -562,20 +562,29 @@ public class TensorBlock implements CacheBlock, Externalizable
 		_denseBlock.set(that._denseBlock);
 	}
 
-	public void copy(long[] offsets, TensorBlock src) {
+	/**
+	 * Copy a part of another tensor
+	 * @param lower lower index of elements to copy (inclusive)
+	 * @param upper upper index of elements to copy (exclusive)
+	 * @param src source tensor
+	 */
+	public void copy(int[] lower, int[] upper, TensorBlock src) {
 		// TODO consider sparse
 		if (src.isEmpty(false)) {
 			return;
 		}
-		int rowLower = (int)offsets[0];
-		int rowUpper = (int)offsets[0] + src.getDim(0);
-		int columnLower = (int) offsets[offsets.length - 1];
-		int columnUpper = src.getDim(offsets.length - 1);
-		for (int i = 1; i < offsets.length - 1; i++) {
-			columnLower += offsets[i] * _denseBlock.getCumODims(i);
-			columnUpper *= src.getDim(i);
+		int rowLower = lower[0];
+		int rowUpper = upper[0] + 1;
+		int columnLower = lower[lower.length - 1];
+		int columnUpper = upper[upper.length - 1];
+		for (int i = 1; i < lower.length - 1; i++) {
+			columnLower += lower[i] * _denseBlock.getCumODims(i);
+			columnUpper += upper[i] * _denseBlock.getCumODims(i);
 		}
-		columnUpper += columnLower;
+		if (columnLower == columnUpper || columnUpper == 0) {
+			rowUpper--;
+			columnUpper = _denseBlock.getCumODims(0);
+		}
 		_denseBlock.set(rowLower, rowUpper, columnLower, columnUpper, src.getDenseBlock());
 	}
 
@@ -590,6 +599,13 @@ public class TensorBlock implements CacheBlock, Externalizable
 
 	///////
 	// Aggregations
+
+	/**
+	 * Aggregate a unary operation on this tensor.
+	 * @param op the operation to apply
+	 * @param result the result tensor
+	 * @return the result tensor
+	 */
 	public TensorBlock aggregateUnaryOperations(AggregateUnaryOperator op, TensorBlock result) {
 		// TODO allow to aggregate along a dimension?
 		// TODO performance
@@ -599,7 +615,7 @@ public class TensorBlock implements CacheBlock, Externalizable
 			dim1 = 2;
 		}
 		//prepare result matrix block
-		if(result==null)
+		if(result==null || result.getValueType() != _vt)
 			result=new TensorBlock(_vt, new int[]{dim0, dim1}, false);
 		else
 			result.reset(new int[]{dim0, dim1}, false);
@@ -614,6 +630,11 @@ public class TensorBlock implements CacheBlock, Externalizable
 		return result;
 	}
 
+	/**
+	 * Aggregate a partial result to this tensor, which contains a partial result.
+	 * @param aggOp the aggregation operation to apply
+	 * @param newWithCorrection a partial result tensor
+	 */
 	public void incrementalAggregate(AggregateOperator aggOp, TensorBlock newWithCorrection) {
 		if(aggOp.correctionLocation == PartialAggregate.CorrectionLocationType.LASTROW ||
 			aggOp.correctionLocation == PartialAggregate.CorrectionLocationType.LASTCOLUMN)
@@ -690,31 +711,36 @@ public class TensorBlock implements CacheBlock, Externalizable
 		return null;
 	}
 
-	public TensorBlock slice(int[] offsets, TensorBlock block) {
-		assert offsets.length == block.getNumDims();
+	/**
+	 * Slice the current block and write into the outBlock. The offsets determines where the slice starts,
+	 * the length of the blocks is given by the outBlock dimensions.
+	 * @param offsets offsets where the slice starts
+	 * @param outBlock sliced result block
+	 * @return the sliced result block
+	 */
+	public TensorBlock slice(int[] offsets, TensorBlock outBlock) {
+		// TODO perf
 		int[] srcIx = new int[offsets.length];
 		Array.copy(offsets, 0, srcIx, 0, offsets.length);
 		int[] destIx = new int[offsets.length];
-		for (int l = 0; l < block.getLength(); l++) {
-			block.set(destIx, get(srcIx));
-			int i = block.getNumDims() - 1;
+		for (int l = 0; l < outBlock.getLength(); l++) {
+			outBlock.set(destIx, get(srcIx));
+			int i = outBlock.getNumDims() - 1;
 			destIx[i]++;
 			//calculating next index
-			if (destIx[i] == block.getDim(i)) {
-				while (destIx[i] == block.getDim(i)) {
-					destIx[i] = 0;
-					srcIx[i] = offsets[i];
-					i--;
-					if (i < 0) {
-						//we are finished
-						return block;
-					}
-					destIx[i]++;
-					srcIx[i]++;
+			while (destIx[i] == outBlock.getDim(i)) {
+				destIx[i] = 0;
+				srcIx[i] = offsets[i];
+				i--;
+				if (i < 0) {
+					//we are finished
+					return outBlock;
 				}
+				destIx[i]++;
+				srcIx[i]++;
 			}
 		}
-		return block;
+		return outBlock;
 	}
 
 	@Override

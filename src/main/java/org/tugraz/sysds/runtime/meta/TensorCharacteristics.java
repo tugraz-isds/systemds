@@ -26,6 +26,7 @@ public class TensorCharacteristics extends DataCharacteristics
 {
 	private static final long serialVersionUID = 8300479822915546000L;
 
+	public static final int[] DEFAULT_BLOCK_SIZE = {1024, 128, 32, 16, 8, 8};
 	private long[] _dims;
 	private int[] _blkSizes;
 	private long _nnz = -1;
@@ -34,7 +35,7 @@ public class TensorCharacteristics extends DataCharacteristics
 	
 	public TensorCharacteristics(long[] dims, long nnz) {
 		int[] blkSizes = new int[dims.length];
-		Arrays.fill(blkSizes, -1);
+		Arrays.fill(blkSizes, DEFAULT_BLOCK_SIZE[dims.length - 2]);
 		set(dims, blkSizes, nnz);
 	}
 	

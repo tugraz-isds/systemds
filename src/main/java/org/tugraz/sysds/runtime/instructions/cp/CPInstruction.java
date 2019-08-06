@@ -22,7 +22,6 @@
 package org.tugraz.sysds.runtime.instructions.cp;
 
 import org.tugraz.sysds.api.DMLScript;
-import org.tugraz.sysds.common.Types;
 import org.tugraz.sysds.common.Types.DataType;
 import org.tugraz.sysds.lops.Lop;
 import org.tugraz.sysds.runtime.DMLRuntimeException;
@@ -32,7 +31,6 @@ import org.tugraz.sysds.runtime.controlprogram.context.ExecutionContext;
 import org.tugraz.sysds.runtime.instructions.CPInstructionParser;
 import org.tugraz.sysds.runtime.instructions.Instruction;
 import org.tugraz.sysds.runtime.lineage.Lineage;
-import org.tugraz.sysds.runtime.matrix.data.MatrixBlock;
 import org.tugraz.sysds.runtime.matrix.operators.Operator;
 
 public abstract class CPInstruction extends Instruction 

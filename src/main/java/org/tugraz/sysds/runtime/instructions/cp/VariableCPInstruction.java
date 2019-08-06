@@ -41,6 +41,7 @@ import org.tugraz.sysds.runtime.controlprogram.caching.MatrixObject.UpdateType;
 import org.tugraz.sysds.runtime.controlprogram.caching.TensorObject;
 import org.tugraz.sysds.runtime.controlprogram.context.ExecutionContext;
 import org.tugraz.sysds.runtime.controlprogram.parfor.util.IDSequence;
+import org.tugraz.sysds.runtime.data.TensorBlock;
 import org.tugraz.sysds.runtime.instructions.Instruction;
 import org.tugraz.sysds.runtime.instructions.InstructionUtils;
 import org.tugraz.sysds.runtime.io.FileFormatProperties;
@@ -635,6 +636,28 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 				double value = mBlock.getValue(0,0);
 				ec.releaseMatrixInput(getInput1().getName());
 				ec.setScalarOutput(output.getName(), new DoubleObject(value));
+			}
+			else if( getInput1().getDataType().isTensor() ) {
+				TensorBlock tBlock = ec.getTensorInput(getInput1().getName());
+				if( tBlock.getNumDims() != 2 || tBlock.getNumRows() != 1 || tBlock.getNumColumns() != 1 )
+					throw new DMLRuntimeException("Dimension mismatch - unable to cast tensor '"+getInput1().getName()+"' to scalar.");
+				switch (tBlock.getValueType()) {
+					case STRING:
+						String str = tBlock.getString(new int[] {0, 0});
+						ec.setScalarOutput(output.getName(), new StringObject(str));
+						break;
+					case INT64:
+					case INT32:
+					case BOOLEAN:
+						long lvalue = UtilFunctions.toLong(tBlock.get(0, 0));
+						ec.setScalarOutput(output.getName(), new IntObject(lvalue));
+						break;
+					default:
+						double value = tBlock.get(0,0);
+						ec.setScalarOutput(output.getName(), new DoubleObject(value));
+						break;
+				}
+				ec.releaseTensorInput(getInput1().getName());
 			}
 			else if( getInput1().getDataType().isList() ) {
 				//TODO handling of cleanup status, potentially new object

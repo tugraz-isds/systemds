@@ -337,10 +337,10 @@ public class MatrixMetadata extends Metadata {
 
 	/**
 	 * Constructor to create a MatrixMetadata object based on a
-	 * SpaceCharacteristics object.
+	 * DataCharacteristics object.
 	 *
 	 * @param dataCharacteristics
-	 *            the matrix metadata as a SpaceCharacteristics object
+	 *            the matrix metadata as a DataCharacteristics object
 	 */
 	public MatrixMetadata(DataCharacteristics dataCharacteristics) {
 		this.numRows = dataCharacteristics.getRows();

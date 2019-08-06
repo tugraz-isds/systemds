@@ -707,6 +707,14 @@ public abstract class AutomatedTestBase
 		expectedFiles.add(baseDirectory + EXPECTED_DIR + cacheDir + name);
 	}
 
+	protected void writeExpectedScalar(String name, long value) {
+		File path = new File(baseDirectory, EXPECTED_DIR + cacheDir);
+		path.mkdirs();
+
+		TestUtils.writeTestScalar(baseDirectory + EXPECTED_DIR + cacheDir + name, value);
+		expectedFiles.add(baseDirectory + EXPECTED_DIR + cacheDir + name);
+	}
+
 	protected static HashMap<CellIndex, Double> readDMLMatrixFromHDFS(String fileName) {
 		return TestUtils.readDMLMatrixFromHDFS(baseDirectory + OUTPUT_DIR + fileName);
 	}

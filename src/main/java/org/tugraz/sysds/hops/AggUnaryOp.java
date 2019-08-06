@@ -202,7 +202,7 @@ public class AggUnaryOp extends MultiThreadedHop
 					SparkAggType aggtype = getSparkUnaryAggregationType(needAgg);
 					
 					PartialAggregate aggregate = new PartialAggregate(input.constructLops(), 
-							HopsAgg2Lops.get(_op), HopsDirection2Lops.get(_direction), DataType.MATRIX, getValueType(), aggtype, et);
+							HopsAgg2Lops.get(_op), HopsDirection2Lops.get(_direction), input._dataType, getValueType(), aggtype, et);
 					aggregate.setDimensionsBasedOnDirection(getDim1(), getDim2(), input.getRowsInBlock(), input.getColsInBlock());
 					setLineNumbers(aggregate);
 					setLops(aggregate);

@@ -34,6 +34,6 @@ print(toString(A))
 #C = tensor(d, list(1, $2)); # values given by matrix, dimensions given by list
 #print(toString(C, decimal=1))
 
-print("Tensor D: Values=tst, dims=Tensor C");
-D = tensor("tst", d); # fill with string, dimensions given by tensor
+print("Tensor D: Values=tst, dims=" + dimStr);
+D = tensor("tst", d); # fill with string, dimensions given by tensor/ for now given by matrix
 print(toString(D))

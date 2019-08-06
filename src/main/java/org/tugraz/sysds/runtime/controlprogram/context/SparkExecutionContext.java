@@ -319,16 +319,18 @@ public class SparkExecutionContext extends ExecutionContext
 	 * @param varname variable name
 	 * @return JavaPairRDD of TensorIndexes-TensorBlocks
 	 */
+	@SuppressWarnings("unchecked")
 	public JavaPairRDD<TensorIndexes, TensorBlock> getBinaryTensorBlockRDDHandleForVariable(String varname ) {
 		TensorObject to = getTensorObject(varname);
 		return (JavaPairRDD<TensorIndexes, TensorBlock>)
-				getRDDHandleForTensorObject(to, InputInfo.BinaryBlockInputInfo, -1, true);
+				getRDDHandleForTensorObject(to, InputInfo.BinaryTensorBlockInputInfo, -1, true);
 	}
 
+	@SuppressWarnings("unchecked")
 	public JavaPairRDD<TensorIndexes, TensorBlock> getBinaryTensorBlockRDDHandleForVariable(String varname, int numParts, boolean inclEmpty ) {
 		TensorObject to = getTensorObject(varname);
 		return (JavaPairRDD<TensorIndexes, TensorBlock>)
-				getRDDHandleForTensorObject(to, InputInfo.BinaryBlockInputInfo, numParts, inclEmpty);
+				getRDDHandleForTensorObject(to, InputInfo.BinaryTensorBlockInputInfo, numParts, inclEmpty);
 	}
 
 	/**
@@ -443,6 +445,7 @@ public class SparkExecutionContext extends ExecutionContext
 		return rdd;
 	}
 
+	@SuppressWarnings("unchecked")
 	public JavaPairRDD<?, ?> getRDDHandleForTensorObject(TensorObject to, InputInfo inputInfo, int numParts, boolean inclEmpty) {
 		//NOTE: MB this logic should be integrated into MatrixObject
 		//However, for now we cannot assume that spark libraries are
@@ -463,52 +466,55 @@ public class SparkExecutionContext extends ExecutionContext
 			//get in-memory matrix block and parallelize it
 			//w/ guarded parallelize (fallback to export, rdd from file if too large)
 			DataCharacteristics dc = to.getDataCharacteristics();
-			boolean fromFile = false;
+			//boolean fromFile = false;
 			if (!OptimizerUtils.checkSparkCollectMemoryBudget(dc, 0) || !_parRDDs.reserve(
 					OptimizerUtils.estimatePartitionedSizeExactSparsity(dc))) {
 				if (to.isDirty() || !to.isHDFSFileExists()) //write if necessary
 					to.exportData();
-				rdd = sc.hadoopFile(to.getFileName(), inputInfo.inputFormatClass, inputInfo.inputKeyClass, inputInfo.inputValueClass);
+				// TODO implement hadoop read write for tensor
+				throw new DMLRuntimeException("Tensor can not yet be written or read to hadoopFile");
+				/*rdd = sc.hadoopFile(to.getFileName(), inputInfo.inputFormatClass, inputInfo.inputKeyClass, inputInfo.inputValueClass);
 				rdd = SparkUtils.copyBinaryBlockTensor((JavaPairRDD<TensorIndexes, TensorBlock>) rdd); //cp is workaround for read bug
-				fromFile = true;
+				fromFile = true;*/
 			} else { //default case
 				TensorBlock mb = to.acquireRead(); //pin matrix in memory
-				rdd = toTensorJavaPairRDD(sc, mb, to.getDims(), numParts, inclEmpty);
+				int[] blen = new int[dc.getNumDims()];
+				for (int i = 0; i < blen.length; i++) {
+					blen[i] = (int) dc.getBlockSize(i);
+				}
+				rdd = toTensorJavaPairRDD(sc, mb, blen, numParts, inclEmpty);
 				to.release(); //unpin matrix
 				_parRDDs.registerRDD(rdd.id(), OptimizerUtils.estimatePartitionedSizeExactSparsity(dc), true);
 			}
 
 			//keep rdd handle for future operations on it
 			RDDObject rddhandle = new RDDObject(rdd);
-			rddhandle.setHDFSFile(fromFile);
-			rddhandle.setParallelizedRDD(!fromFile);
+			// TODO use fromFile instead of false and true
+			rddhandle.setHDFSFile(false);
+			rddhandle.setParallelizedRDD(true);
 			to.setRDDHandle(rddhandle);
 		}
 		//CASE 3: non-dirty (file exists on HDFS)
 		else {
 			// parallelize hdfs-resident file
 			// For binary block, these are: SequenceFileInputFormat.class, MatrixIndexes.class, MatrixBlock.class
-			if (inputInfo == InputInfo.BinaryBlockInputInfo) {
-				rdd = sc.hadoopFile(to.getFileName(), inputInfo.inputFormatClass, inputInfo.inputKeyClass, inputInfo.inputValueClass);
+			if (inputInfo == InputInfo.BinaryTensorBlockInputInfo) {
+				// TODO implement hadoop read write for tensor
+				throw new DMLRuntimeException("Tensor can not yet be written or read to hadoopFile");
+				//rdd = sc.hadoopFile(to.getFileName(), inputInfo.inputFormatClass, inputInfo.inputKeyClass, inputInfo.inputValueClass);
 				//note: this copy is still required in Spark 1.4 because spark hands out whatever the inputformat
 				//recordreader returns; the javadoc explicitly recommend to copy all key/value pairs
-				rdd = SparkUtils.copyBinaryBlockTensor((JavaPairRDD<TensorIndexes, TensorBlock>) rdd); //cp is workaround for read bug
+				//rdd = SparkUtils.copyBinaryBlockTensor((JavaPairRDD<TensorIndexes, TensorBlock>) rdd); //cp is workaround for read bug
 				// TODO: TensorMarket?
-			} else if (inputInfo == InputInfo.TextCellInputInfo || inputInfo == InputInfo.CSVInputInfo || inputInfo == InputInfo.MatrixMarketInputInfo) {
-				rdd = sc.hadoopFile(to.getFileName(), inputInfo.inputFormatClass, inputInfo.inputKeyClass, inputInfo.inputValueClass);
-				rdd = ((JavaPairRDD<LongWritable, Text>) rdd).mapToPair(new CopyTextInputFunction()); //cp is workaround for read bug
-			} else if (inputInfo == InputInfo.BinaryCellInputInfo) {
-				throw new DMLRuntimeException("TensorCell does not yet exist");
-				//rdd = sc.hadoopFile(to.getFileName(), inputInfo.inputFormatClass, inputInfo.inputKeyClass, inputInfo.inputValueClass);
-				//rdd = ((JavaPairRDD<TensorIndexes, TensorCell>) rdd).mapToPair(new CopyBinaryCellFunction()); //cp is workaround for read bug
 			} else {
+				// TODO support other Input formats
 				throw new DMLRuntimeException("Incorrect input format in getRDDHandleForVariable");
 			}
 
 			//keep rdd handle for future operations on it
-			RDDObject rddhandle = new RDDObject(rdd);
-			rddhandle.setHDFSFile(true);
-			to.setRDDHandle(rddhandle);
+			//RDDObject rddhandle = new RDDObject(rdd);
+			//rddhandle.setHDFSFile(true);
+			//to.setRDDHandle(rddhandle);
 		}
 
 		return rdd;
@@ -829,18 +835,15 @@ public class SparkExecutionContext extends ExecutionContext
 		return result;
 	}
 
-	public static JavaPairRDD<TensorIndexes, TensorBlock> toTensorJavaPairRDD(JavaSparkContext sc, TensorBlock src,
-	                                                                          int[] blen) {
+	public static JavaPairRDD<TensorIndexes, TensorBlock> toTensorJavaPairRDD(JavaSparkContext sc, TensorBlock src, int[] blen) {
 		return toTensorJavaPairRDD(sc, src, blen, -1, true);
 	}
 
 	public static JavaPairRDD<TensorIndexes, TensorBlock> toTensorJavaPairRDD(JavaSparkContext sc, TensorBlock src,
-	                                                                          int[] blen, int numParts,
-	                                                                          boolean inclEmpty) {
+			int[] blen, int numParts, boolean inclEmpty) {
 		long t0 = DMLScript.STATISTICS ? System.nanoTime() : 0;
 		List<Tuple2<TensorIndexes, TensorBlock>> list;
 
-		assert blen.length == src.getNumDims();
 		boolean singleBlock = true;
 		for (int i = 0; i < blen.length; i++) {
 			if (blen[i] > src.getDim(i)) {
@@ -901,23 +904,23 @@ public class SparkExecutionContext extends ExecutionContext
 		try {
 			//compute block indexes
 			long[] blockIx = new long[tc.getNumDims()];
-			int[] maxDim = new int[tc.getNumDims()];
+			int[] outDims = new int[tc.getNumDims()];
 			int[] offset = new int[tc.getNumDims()];
 			for (int i = tc.getNumDims() - 1; i >= 0; i--) {
 				blockIx[i] = ix % tc.getNumBlocks(i);
-				maxDim[i] = UtilFunctions.computeBlockSize(tc.getDim(i), blockIx[i] + 1,
+				outDims[i] = UtilFunctions.computeBlockSize(tc.getDim(i), blockIx[i] + 1,
 						tc.getBlockSize(i));
 				offset[i] = (int) (blockIx[i] * tc.getBlockSize(i));
 				ix /= tc.getNumBlocks(i);
 			}
 			// TODO: sparse
-			TensorBlock block = new TensorBlock(mb.getValueType(), maxDim, false);
-			block = mb.slice(offset, block);
+			TensorBlock outBlock = new TensorBlock(mb.getValueType(), outDims, false);
+			outBlock = mb.slice(offset, outBlock);
 			//create key-value pair
 			for (int i = 0; i < blockIx.length; i++) {
 				blockIx[i]++;
 			}
-			return new Tuple2<>(new TensorIndexes(blockIx), block);
+			return new Tuple2<>(new TensorIndexes(blockIx), outBlock);
 		}
 		catch(DMLRuntimeException ex) {
 			throw new RuntimeException(ex);
@@ -1147,13 +1150,16 @@ public class SparkExecutionContext extends ExecutionContext
 			TensorBlock block = keyval._2();
 
 			//compute row/column block offsets
-			long[] offsets = new long[ix.getNumDims()];
-			for (int i = 0; i < offsets.length; i++) {
-				offsets[i] = (ix.getIndex(i) - 1) * dc.getBlockSize(i);
+			int[] lower = new int[ix.getNumDims()];
+			int[] upper = new int[ix.getNumDims()];
+			for (int i = 0; i < lower.length; i++) {
+				lower[i] = (int) ((ix.getIndex(i) - 1) * dc.getBlockSize(i));
+				upper[i] = lower[i] + block.getDim(i) - 1;
 			}
+			out.getNextIndexes(upper);
 
 			// TODO sparse copy
-			out.copy(offsets, block);
+			out.copy(lower, upper, block);
 			// TODO keep track of nnz
 		}
 

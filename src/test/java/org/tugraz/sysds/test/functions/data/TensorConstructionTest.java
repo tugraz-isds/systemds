@@ -48,7 +48,7 @@ public class TensorConstructionTest extends AutomatedTestBase {
 	@Parameters
 	public static Collection<Object[]> data() {
 		Object[][] data = new Object[][]{
-				{new long[]{3, 4, 5}, "3"},
+				{new long[]{1024, 600, 2}, "3"},
 				{new long[]{1, 1}, "8"},
 				{new long[]{7, 1, 1}, "0.5"},
 				{new long[]{10, 2, 4}, "TRUE"},
@@ -77,13 +77,11 @@ public class TensorConstructionTest extends AutomatedTestBase {
 
 	private void testTensorConstruction(String testName, LopProperties.ExecType platform) {
 		ExecMode platformOld = rtplatform;
-		switch (platform) {
-			case SPARK:
-				rtplatform = ExecMode.SPARK;
-				break;
-			default:
-				rtplatform = ExecMode.SINGLE_NODE;
-				break;
+		if (platform == LopProperties.ExecType.SPARK) {
+			rtplatform = ExecMode.SPARK;
+		}
+		else {
+			rtplatform = ExecMode.SINGLE_NODE;
 		}
 
 		boolean sparkConfigOld = DMLScript.USE_LOCAL_SPARK_CONFIG;
@@ -102,16 +100,17 @@ public class TensorConstructionTest extends AutomatedTestBase {
 			}
 			fullDMLScriptName = HOME + testName + ".dml";
 			StringBuilder dimensionsStringBuilder = new StringBuilder();
-			Arrays.stream(dimensions).forEach((dim) -> dimensionsStringBuilder.append(dim).append(" "));
+			long[] dims = Arrays.copyOf(dimensions, dimensions.length);
+			Arrays.stream(dims).forEach((dim) -> dimensionsStringBuilder.append(dim).append(" "));
 			String dimensionsString = dimensionsStringBuilder.toString();
 
 			StringBuilder reverseDimsStrBuilder = new StringBuilder();
-			ArrayUtils.reverse(dimensions);
-			Arrays.stream(dimensions).forEach((dim) -> reverseDimsStrBuilder.append(dim).append(" "));
+			ArrayUtils.reverse(dims);
+			Arrays.stream(dims).forEach((dim) -> reverseDimsStrBuilder.append(dim).append(" "));
 			String reversedDimStr = reverseDimsStrBuilder.toString();
 
 			programArgs = new String[]{"-explain", "-args",
-					dimensionsString, Integer.toString(dimensions.length), value, values.toString(),
+					dimensionsString, Integer.toString(dims.length), value, values.toString(),
 					reversedDimStr};
 
 			// TODO check tensors (write not implemented yet, so not possible)

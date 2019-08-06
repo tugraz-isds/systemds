@@ -474,10 +474,10 @@ public class FrameMetadata extends Metadata {
 
 	/**
 	 * Constructor to create a FrameMetadata object based on a
-	 * SpaceCharacteristics object.
+	 * DataCharacteristics object.
 	 *
 	 * @param dataCharacteristics
-	 *            the frame metadata as a SpaceCharacteristics object
+	 *            the frame metadata as a DataCharacteristics object
 	 */
 	public FrameMetadata(DataCharacteristics dataCharacteristics) {
 		this.numRows = dataCharacteristics.getRows();
@@ -489,12 +489,12 @@ public class FrameMetadata extends Metadata {
 
 	/**
 	 * Constructor to create a FrameMetadata object based on the frame schema
-	 * and a SpaceCharacteristics object.
+	 * and a DataCharacteristics object.
 	 *
 	 * @param frameSchema
 	 *            The frame schema.
 	 * @param matrixCharacteristics
-	 *            the frame metadata as a SpaceCharacteristics object
+	 *            the frame metadata as a DataCharacteristics object
 	 */
 	public FrameMetadata(FrameSchema frameSchema, MatrixCharacteristics matrixCharacteristics) {
 		this.frameSchema = frameSchema;
@@ -506,10 +506,10 @@ public class FrameMetadata extends Metadata {
 	}
 
 	/**
-	 * Set the FrameMetadata fields based on a SpaceCharacteristics object.
+	 * Set the FrameMetadata fields based on a DataCharacteristics object.
 	 *
 	 * @param matrixCharacteristics
-	 *            the frame metadata as a SpaceCharacteristics object
+	 *            the frame metadata as a DataCharacteristics object
 	 */
 	@Override
 	public void setMatrixCharacteristics(MatrixCharacteristics matrixCharacteristics) {

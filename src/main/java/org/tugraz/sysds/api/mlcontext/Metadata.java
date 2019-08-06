@@ -39,10 +39,10 @@ public abstract class Metadata {
 	protected Integer numRowsPerBlock = null;
 
 	/**
-	 * Convert the metadata to a SpaceCharacteristics object. If all field
+	 * Convert the metadata to a DataCharacteristics object. If all field
 	 * values are {@code null}, {@code null} is returned.
 	 *
-	 * @return the metadata as a SpaceCharacteristics object, or {@code null}
+	 * @return the metadata as a DataCharacteristics object, or {@code null}
 	 *         if all field values are null
 	 */
 	public MatrixCharacteristics asMatrixCharacteristics() {
@@ -114,10 +114,10 @@ public abstract class Metadata {
 	}
 
 	/**
-	 * Set the metadata fields based on a SpaceCharacteristics object.
+	 * Set the metadata fields based on a DataCharacteristics object.
 	 *
 	 * @param matrixCharacteristics
-	 *            the matrix metadata as a SpaceCharacteristics object
+	 *            the matrix metadata as a DataCharacteristics object
 	 */
 	public void setMatrixCharacteristics(MatrixCharacteristics matrixCharacteristics) {
 		this.numRows = matrixCharacteristics.getRows();

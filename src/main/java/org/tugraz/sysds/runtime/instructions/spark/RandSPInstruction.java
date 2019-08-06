@@ -21,7 +21,6 @@
 
 package org.tugraz.sysds.runtime.instructions.spark;
 
-import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.math3.distribution.PoissonDistribution;
 import org.apache.commons.math3.random.Well1024a;
 import org.apache.hadoop.fs.FileSystem;
@@ -41,8 +40,6 @@ import org.tugraz.sysds.hops.Hop.DataGenMethod;
 import org.tugraz.sysds.hops.OptimizerUtils;
 import org.tugraz.sysds.lops.DataGen;
 import org.tugraz.sysds.lops.Lop;
-import org.tugraz.sysds.common.Types.DataType;
-import org.tugraz.sysds.common.Types.ValueType;
 import org.tugraz.sysds.conf.ConfigurationManager;
 import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.controlprogram.context.ExecutionContext;
@@ -411,8 +408,7 @@ public class RandSPInstruction extends UnarySPInstruction {
 		long[] longDims = new long[tDims.length];
 		int[] blockSizes = new int[tDims.length];
 		// TODO get blockSize from somewhere different, like a settings class or as a constant;
-		int[] dimToBlockSizes = {1024, 128, 32, 16, 8, 8};
-		int blockSize = dimToBlockSizes[tDims.length - 2];
+		int blockSize = TensorCharacteristics.DEFAULT_BLOCK_SIZE[tDims.length - 2];
 		long totalSize = 1;
 		long hdfsBlkSize = blockSize * tDims.length;
 		for (int i = 0; i < tDims.length; i++) {
@@ -894,11 +890,10 @@ public class RandSPInstruction extends UnarySPInstruction {
 			// TODO: accurate block size computation
 			int[] blockDims = new int[_dims.length];
 			blockDims[0] = UtilFunctions.computeBlockSize(_dims[0], ix.getIndex(0), _blen[0]);
-			int clen = 1;
 			for (int i = 1; i < _dims.length; i++) {
 				blockDims[i] = UtilFunctions.computeBlockSize(_dims[i], ix.getIndex(i), _blen[i]);
-				clen *= blockDims[i];
 			}
+			int clen = (int) UtilFunctions.prod(blockDims, 1);
 			long seed = kv._2;
 
 			TensorBlock tb = new TensorBlock(_vt, blockDims);
@@ -909,9 +904,8 @@ public class RandSPInstruction extends UnarySPInstruction {
 					throw new DMLRuntimeException("Random string data can not be generated for tensors.");
 				}
 				MatrixBlock blk = new MatrixBlock();
-				RandomMatrixGenerator rgen = LibMatrixDatagen
-						.createRandomMatrixGenerator(_pdf, blockDims[0], clen, blockDims[0], clen, _sparsity,
-								Double.parseDouble(_min), Double.parseDouble(_max), _pdfParams);
+				RandomMatrixGenerator rgen = LibMatrixDatagen.createRandomMatrixGenerator(_pdf, blockDims[0], clen,
+						blockDims[0], clen, _sparsity, Double.parseDouble(_min), Double.parseDouble(_max), _pdfParams);
 				blk.randOperationsInPlace(rgen, null, seed);
 				blk.examSparsity();
 				tb.set(blk);

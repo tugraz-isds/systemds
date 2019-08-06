@@ -678,6 +678,7 @@ public class DataExpression extends DataIdentifier
 			
 			// replace DataOp MATRIX with RAND -- Rand handles matrix generation for Scalar values
 			// replace data parameter with min / max within Rand case below
+			// TODO either use dims or rows, cols depending on datatype
 			BooleanIdentifier id = new BooleanIdentifier(_opcode == DataOp.TENSOR, this);
 			addVarParam(RAND_TENSOR, id);
 			this.setOpCode(DataOp.RAND);
@@ -1181,10 +1182,8 @@ public class DataExpression extends DataIdentifier
 				}
 				// handle integer constant 
 				else if (dataParam instanceof IntIdentifier) {
-					long roundedValue = ((IntIdentifier)dataParam).getValue();
-					Expression minExpr = new DoubleIdentifier(roundedValue, this);
-					addVarParam(RAND_MIN, minExpr);
-					addVarParam(RAND_MAX, minExpr);
+					addVarParam(RAND_MIN, dataParam);
+					addVarParam(RAND_MAX, dataParam);
 				}
 				// handle double constant 
 				else if (dataParam instanceof DoubleIdentifier) {

@@ -16,9 +16,7 @@
 
 package org.tugraz.sysds.runtime.data;
 
-import org.apache.hadoop.io.RawComparator;
 import org.apache.hadoop.io.WritableComparable;
-import org.apache.hadoop.io.WritableComparator;
 import scala.Array;
 
 import java.io.DataInput;
@@ -33,7 +31,7 @@ import java.util.Arrays;
  * This represent the indexes to the blocks of the tensor.
  * Please note that these indexes are 1-based, whereas the data in the block are zero-based (as they are double arrays).
  */
-public class TensorIndexes implements WritableComparable<TensorIndexes>, RawComparator<TensorIndexes>, Externalizable {
+public class TensorIndexes implements WritableComparable<TensorIndexes>, Externalizable {
 	private static final long serialVersionUID = -8596795142899904117L;
 
 	private long[] _ix;
@@ -78,7 +76,6 @@ public class TensorIndexes implements WritableComparable<TensorIndexes>, RawComp
 
 	@Override
 	public int compareTo(TensorIndexes other) {
-		assert _ix.length == other._ix.length;
 		for (int i = 0; i < _ix.length; i++) {
 			if (_ix[i] != other._ix[i])
 				return _ix[i] < other._ix[i] ? -1 : 1;
@@ -115,7 +112,6 @@ public class TensorIndexes implements WritableComparable<TensorIndexes>, RawComp
 	@Override
 	public void readFields(DataInput in)
 			throws IOException {
-		// TODO readFields
 		_ix = new long[in.readInt()];
 		for (int i = 0; i < _ix.length; i++) {
 			_ix[i] = in.readLong();
@@ -125,7 +121,6 @@ public class TensorIndexes implements WritableComparable<TensorIndexes>, RawComp
 	@Override
 	public void write(DataOutput out)
 			throws IOException {
-		// TODO write
 		out.writeInt(_ix.length);
 		for (long ix : _ix) {
 			out.writeLong(ix);
@@ -160,26 +155,5 @@ public class TensorIndexes implements WritableComparable<TensorIndexes>, RawComp
 			throws IOException {
 		//default serialize (general case)
 		write(os);
-	}
-
-	////////////////////////////////////////////////////
-	// implementation of RawComparator<MatrixIndexes>
-
-	@Override
-	public int compare(byte[] b1, int s1, int l1, byte[] b2, int s2, int l2) {
-		assert l1 == l2;
-		//compare row
-		for (int i = 0; i < l1; i += Long.SIZE / 8) {
-			long v1 = WritableComparator.readLong(b1, s1 + i);
-			long v2 = WritableComparator.readLong(b2, s2 + i);
-			if (v1 != v2)
-				return v1 < v2 ? -1 : 1;
-		}
-		return 0;
-	}
-
-	@Override
-	public int compare(TensorIndexes m1, TensorIndexes m2) {
-		return m1.compareTo(m2);
 	}
 }

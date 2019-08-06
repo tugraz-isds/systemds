@@ -287,7 +287,7 @@ public class RDDConverterUtilsExt
 
 		public IJVToBinaryBlockFunctionHelper(DataCharacteristics mc) {
 			if(!mc.dimsKnown())
-				throw new DMLRuntimeException("The dimensions need to be known in given SpaceCharacteristics for given input RDD");
+				throw new DMLRuntimeException("The dimensions need to be known in given DataCharacteristics for given input RDD");
 			_rlen = mc.getRows();
 			_clen = mc.getCols();
 			_brlen = mc.getRowsPerBlock();

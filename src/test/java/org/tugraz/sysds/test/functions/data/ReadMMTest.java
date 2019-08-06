@@ -316,7 +316,7 @@ public class ReadMMTest extends AutomatedTestBase
 		
 		MatrixCharacteristics mc = new MatrixCharacteristics(rows, cols, -1, -1);
 		writeInputMatrixWithMTD("a", a, false, mc);
-		//protected double[][] writeInputMatrixWithMTD(String name, double[][] matrix, boolean bIncludeR, SpaceCharacteristics mc) throws IOException {
+		//protected double[][] writeInputMatrixWithMTD(String name, double[][] matrix, boolean bIncludeR, DataCharacteristics mc) throws IOException {
 
 		runTest(true, DMLException.class);
 	}

@@ -122,12 +122,10 @@ public class TensorObject extends CacheableData<TensorBlock>
 		throws IOException 
 	{
 		status.setValue(false);
-		TensorBlock tb;
 		TensorCharacteristics tc = (TensorCharacteristics) _metaData.getDataCharacteristics();
 		// TODO correct blocksize;
-		tb = SparkExecutionContext.toTensorBlock((JavaPairRDD<TensorIndexes, TensorBlock>)rdd.getRDD(), tc);
-		//TODO read from RDD
-		return tb;
+		// TODO read from RDD
+		return SparkExecutionContext.toTensorBlock((JavaPairRDD<TensorIndexes, TensorBlock>)rdd.getRDD(), tc);
 	}
 
 	@Override

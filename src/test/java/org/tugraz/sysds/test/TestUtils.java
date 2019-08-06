@@ -1567,6 +1567,17 @@ public class TestUtils
 			fail("unable to write test scalar (" + file + "): " + e.getMessage());
 		}
 	}
+
+	public static void writeTestScalar(String file, long value) {
+		try {
+			DataOutputStream out = new DataOutputStream(new FileOutputStream(file));
+			try( PrintWriter pw = new PrintWriter(out) ) {
+				pw.println(value);
+			}
+		} catch (IOException e) {
+			fail("unable to write test scalar (" + file + "): " + e.getMessage());
+		}
+	}
 	
 	/**
 	 * <p>
