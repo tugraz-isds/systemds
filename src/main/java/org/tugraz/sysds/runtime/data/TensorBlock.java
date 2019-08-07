@@ -23,10 +23,10 @@ import java.io.IOException;
 import org.apache.commons.lang.NotImplementedException;
 import org.tugraz.sysds.common.Types.BlockType;
 import org.tugraz.sysds.common.Types.ValueType;
-import org.tugraz.sysds.lops.PartialAggregate;
 import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.controlprogram.caching.CacheBlock;
 import org.tugraz.sysds.runtime.functionobjects.KahanPlus;
+import org.tugraz.sysds.runtime.functionobjects.Plus;
 import org.tugraz.sysds.runtime.functionobjects.ReduceAll;
 import org.tugraz.sysds.runtime.matrix.data.MatrixBlock;
 import org.tugraz.sysds.runtime.matrix.operators.AggregateOperator;
@@ -556,13 +556,16 @@ public class TensorBlock implements CacheBlock
 	public TensorBlock aggregateUnaryOperations(AggregateUnaryOperator op, TensorBlock result) {
 		// TODO allow to aggregate along a dimension?
 		// TODO performance
+		if (op.aggOp.increOp.fn instanceof KahanPlus) {
+			op = new AggregateUnaryOperator(new AggregateOperator(0, Plus.getPlusFnObject()), op.indexFn, op.getNumThreads());
+		}
 		int dim0 = 1;
 		int dim1 = 1;
 		if (op.aggOp.correctionExists) {
 			dim1 = 2;
 		}
 		//prepare result matrix block
-		if(result==null)
+		if(result==null || result._vt != _vt)
 			result=new TensorBlock(_vt, new int[]{dim0, dim1}, false);
 		else
 			result.reset(new int[]{dim0, dim1}, false);
@@ -577,17 +580,16 @@ public class TensorBlock implements CacheBlock
 		return result;
 	}
 
-	public void incrementalAggregate(AggregateOperator aggOp, TensorBlock newWithCorrection) {
-		if(aggOp.correctionLocation == PartialAggregate.CorrectionLocationType.LASTROW ||
-			aggOp.correctionLocation == PartialAggregate.CorrectionLocationType.LASTCOLUMN)
+	public void incrementalAggregate(AggregateOperator aggOp, TensorBlock partialResult) {
+		if(!aggOp.correctionExists)
 		{
-			if(aggOp.increOp.fn instanceof KahanPlus)
+			if(aggOp.increOp.fn instanceof Plus)
 			{
-				LibTensorAgg.aggregateBinaryTensor(newWithCorrection, this, aggOp);
+				LibTensorAgg.aggregateBinaryTensor(partialResult, this, aggOp);
 			}
 		}
 		else
-			throw new DMLRuntimeException("unrecognized correctionLocation: "+aggOp.correctionLocation);
+			throw new DMLRuntimeException("Correction not supported. correctionLocation: "+aggOp.correctionLocation);
 	}
 
 	@Override
