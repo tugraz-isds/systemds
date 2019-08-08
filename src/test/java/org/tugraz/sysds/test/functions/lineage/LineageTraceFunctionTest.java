@@ -33,17 +33,18 @@ import org.tugraz.sysds.test.AutomatedTestBase;
 import org.tugraz.sysds.test.TestConfiguration;
 import org.tugraz.sysds.test.TestUtils;
 
-public class LineageTraceBuiltinTest extends AutomatedTestBase {
-	
+public class LineageTraceFunctionTest extends AutomatedTestBase
+{
 	protected static final String TEST_DIR = "functions/lineage/";
-	protected static final String TEST_NAME1 = "LineageTraceBuiltin"; //rand - matrix result
+	protected static final String TEST_NAME1 = "LineageTraceFun1"; //rand - matrix result
+	protected static final String TEST_NAME2 = "LineageTraceFun2"; //rand - matrix result
 	
-	protected String TEST_CLASS_DIR = TEST_DIR + LineageTraceBuiltinTest.class.getSimpleName() + "/";
+	protected String TEST_CLASS_DIR = TEST_DIR + LineageTraceFunctionTest.class.getSimpleName() + "/";
 	
-	protected static final int numRecords = 10;
-	protected static final int numFeatures = 5;
+	protected static final int numRecords = 50;
+	protected static final int numFeatures = 10;
 	
-	public LineageTraceBuiltinTest() {
+	public LineageTraceFunctionTest() {
 		
 	}
 	
@@ -51,20 +52,27 @@ public class LineageTraceBuiltinTest extends AutomatedTestBase {
 	public void setUp() {
 		TestUtils.clearAssertionInformation();
 		addTestConfiguration( TEST_NAME1, new TestConfiguration(TEST_CLASS_DIR, TEST_NAME1, new String[] {"R"}) );
+		addTestConfiguration( TEST_NAME2, new TestConfiguration(TEST_CLASS_DIR, TEST_NAME2, new String[] {"R"}) );
 	}
 	
 	@Test
-	public void testLineageTraceBuiltin1() {
-		testLineageTraceBuiltin(TEST_NAME1);
+	public void testLineageTraceFunction1() {
+		testLineageTraceFunction(TEST_NAME1);
 	}
 	
-	private void testLineageTraceBuiltin(String testname) {
+	@Test
+	public void testLineageTraceFunction2() {
+		testLineageTraceFunction(TEST_NAME2);
+	}
+	
+	private void testLineageTraceFunction(String testname) {
 		System.out.println("------------ BEGIN " + testname + "------------");
 		
 		getAndLoadTestConfiguration(testname);
 		List<String> proArgs = new ArrayList<String>();
 		
 		proArgs.add("-explain");
+		proArgs.add("-lineage");
 		proArgs.add("-args");
 		proArgs.add(input("X"));
 		proArgs.add(output("R"));

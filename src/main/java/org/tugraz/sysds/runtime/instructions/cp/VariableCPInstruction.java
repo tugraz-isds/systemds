@@ -49,8 +49,8 @@ import org.tugraz.sysds.runtime.io.FileFormatPropertiesCSV;
 import org.tugraz.sysds.runtime.io.IOUtilFunctions;
 import org.tugraz.sysds.runtime.io.WriterMatrixMarket;
 import org.tugraz.sysds.runtime.io.WriterTextCSV;
-import org.tugraz.sysds.runtime.lineage.Lineage;
 import org.tugraz.sysds.runtime.lineage.LineageItem;
+import org.tugraz.sysds.runtime.lineage.LineageItemUtils;
 import org.tugraz.sysds.runtime.lineage.LineageTraceable;
 import org.tugraz.sysds.runtime.matrix.data.FrameBlock;
 import org.tugraz.sysds.runtime.matrix.data.InputInfo;
@@ -1201,7 +1201,7 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 	}
 	
 	@Override
-	public LineageItem[] getLineageItems() {
+	public LineageItem[] getLineageItems(ExecutionContext ec) {
 		LineageItem li = null;
 		switch (getVariableOpcode()) {
 			case CreateVariable:
@@ -1214,21 +1214,21 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 			}
 			case AssignVariable: {
 				li = new LineageItem(getInput2().getName(), getOpcode(),
-						new LineageItem[]{Lineage.getOrCreate(getInput1())});
+						new LineageItem[]{ec.getLineage().getOrCreate(getInput1())});
 				break;
 			}
 			case CopyVariable: {
-				if (!Lineage.contains(getInput1()))
+				if (!ec.getLineage().contains(getInput1()))
 					throw new DMLRuntimeException("Could not find LineageItem for " + getInput1().getName());
 				li = new LineageItem(getInput2().getName(), getOpcode(),
-						new LineageItem[]{Lineage.get(getInput1())});
+						new LineageItem[]{ec.getLineage().get(getInput1())});
 				break;
 			}
 			case Write: {
 				ArrayList<LineageItem> lineages = new ArrayList<>();
 				for (CPOperand input : getInputs())
 					if (!input.getName().isEmpty())
-						lineages.add(Lineage.getOrCreate(input));
+						lineages.add(ec.getLineage().getOrCreate(input));
 				if (_formatProperties != null && _formatProperties.getDescription() != null && !_formatProperties.getDescription().isEmpty())
 					lineages.add(new LineageItem(_formatProperties.getDescription()));
 				li = new LineageItem(getInput1().getName(),
@@ -1237,15 +1237,25 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 			}
 			case MoveVariable: {
 				ArrayList<LineageItem> lineages = new ArrayList<>();
-				if (Lineage.contains(getInput1()))
-					lineages.add(Lineage.get(getInput1()));
+				if (ec.getLineage().contains(getInput1()))
+					lineages.add(ec.getLineageItem(getInput1()));
 				else {
-					lineages.add(Lineage.getOrCreate(getInput1()));
+					lineages.add(ec.getLineage().getOrCreate(getInput1()));
 					if (getInput3() != null)
-						lineages.add(Lineage.getOrCreate(getInput3()));
+						lineages.add(ec.getLineage().getOrCreate(getInput3()));
 				}
 				li = new LineageItem(getInput2().getName(),
-						getOpcode(), lineages.toArray(new LineageItem[0]));
+					getOpcode(), lineages.toArray(new LineageItem[0]));
+				break;
+			}
+			case CastAsBooleanVariable:
+			case CastAsDoubleVariable:
+			case CastAsIntegerVariable:
+			case CastAsScalarVariable:
+			case CastAsMatrixVariable:
+			case CastAsFrameVariable:{
+				li = new LineageItem(getOutputVariableName(), 
+					getOpcode(), LineageItemUtils.getLineage(ec, getInput1()));
 				break;
 			}
 			case RemoveVariable:

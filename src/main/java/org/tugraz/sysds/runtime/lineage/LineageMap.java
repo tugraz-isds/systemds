@@ -6,7 +6,9 @@ import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.controlprogram.context.ExecutionContext;
 import org.tugraz.sysds.runtime.instructions.Instruction;
 import org.tugraz.sysds.runtime.instructions.cp.CPOperand;
+import org.tugraz.sysds.runtime.instructions.cp.FunctionCallCPInstruction;
 import org.tugraz.sysds.runtime.instructions.cp.VariableCPInstruction;
+import org.tugraz.sysds.runtime.lineage.LineageItem.LineageItemType;
 import org.tugraz.sysds.utils.Explain;
 
 import java.util.HashMap;
@@ -18,24 +20,27 @@ public class LineageMap {
 	private Map<String, LineageItem> _literals = new HashMap<>();
 	
 	public LineageMap() {
+	
 	}
 	
-	public LineageMap(LineageMap other) {
-		for (Map.Entry<String, LineageItem> entry : other._traces.entrySet()) {
-			this._traces.put(entry.getKey(), new LineageItem(entry.getValue()));
-		}
+	public LineageMap(LineageMap that) {
+		_traces.putAll(that._traces);
+		_literals.putAll(that._literals);
 	}
 	
 	public void trace(Instruction inst, ExecutionContext ec) {
+		if( inst instanceof FunctionCallCPInstruction )
+			return; // no need for lineage tracing
 		if (!(inst instanceof LineageTraceable))
 			throw new DMLRuntimeException("Unknown Instruction (" + inst.getOpcode() + ") traced.");
 		
-		LineageItem[] items = ((LineageTraceable) inst).getLineageItems();
+		LineageItem[] items = ((LineageTraceable) inst).getLineageItems(ec);
 		if (items == null || items.length < 1)
 			trace(inst, ec, null);
-		else
+		else {
 			for (LineageItem li : items)
-				trace(inst, ec, li);
+				trace(inst, ec, cleanupInputLiterals(li, ec));
+		}
 	}
 	
 	public void processDedupItem(LineageMap lm, Long path) {
@@ -64,6 +69,14 @@ public class LineageMap {
 		LineageItem ret = _traces.get(variable.getName());
 		return (ret != null) ? ret :
 			new LineageItem(varname, variable.getLineageLiteral());
+	}
+	
+	public LineageItem get(String varName) {
+		return _traces.get(varName);
+	}
+	
+	public LineageItem set(String varName, LineageItem li) {
+		return _traces.put(varName, li);
 	}
 	
 	public LineageItem get(CPOperand variable) {
@@ -114,6 +127,15 @@ public class LineageMap {
 					processMoveLI(li);
 					break;
 				}
+				case CastAsBooleanVariable:
+				case CastAsDoubleVariable:
+				case CastAsIntegerVariable:
+				case CastAsScalarVariable:
+				case CastAsMatrixVariable:
+				case CastAsFrameVariable: {
+					addLineageItem(li);
+					break;
+				}
 				default:
 					throw new DMLRuntimeException("Unknown VariableCPInstruction (" + inst.getOpcode() + ") traced.");
 			}
@@ -122,6 +144,25 @@ public class LineageMap {
 		
 	}
 	
+	private LineageItem cleanupInputLiterals(LineageItem li, ExecutionContext ec) {
+		if( li.getInputs() == null )
+			return li;
+		// fix literals referring to variables (e.g., for/parfor loop variable)
+		for(int i=0; i<li.getInputs().length; i++) {
+			LineageItem tmp = li.getInputs()[i];
+			if( tmp.getType() != LineageItemType.Literal) 
+				continue;
+			//check if CPOperand is not a literal, w/o parsing
+			if( tmp.getData().endsWith("false") ) {
+				CPOperand cp = new CPOperand(tmp.getData());
+				if( cp.getDataType().isScalar() ) {
+					cp.setLiteral(ec.getScalarInput(cp));
+					li.getInputs()[i] = getOrCreate(cp);
+				}
+			}
+		}
+		return li;
+	}
 	
 	private void processCopyLI(LineageItem li) {
 		if (li.getInputs().length != 1)

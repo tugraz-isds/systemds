@@ -25,15 +25,11 @@ import org.tugraz.sysds.api.DMLScript;
 import org.tugraz.sysds.lops.Lop;
 import org.tugraz.sysds.parser.DataIdentifier;
 import org.tugraz.sysds.runtime.controlprogram.context.ExecutionContext;
-import org.tugraz.sysds.runtime.lineage.Lineage;
-
 
 public abstract class Instruction 
 {
 	public enum IType { 
 		CONTROL_PROGRAM,
-		MAPREDUCE,
-		MAPREDUCE_JOB,
 		BREAKPOINT,
 		SPARK,
 		GPU
@@ -191,10 +187,9 @@ public abstract class Instruction
 		return extendedOpcode;
 	}
 
-	public boolean requiresLabelUpdate()
-	{
+	public boolean requiresLabelUpdate() {
 		return instString.contains( Lop.VARIABLE_NAME_PLACEHOLDER );
-	}	
+	}
 	
 	/**
 	 * All instructions that have thread-specific filenames or names encoded in it
@@ -219,7 +214,7 @@ public abstract class Instruction
 	public Instruction preprocessInstruction(ExecutionContext ec){
 		// Lineage tracing
 		if (DMLScript.LINEAGE)
-			Lineage.trace(this, ec);
+			ec.traceLineage(this);
 		//return instruction ifself
 		return this;
 	}

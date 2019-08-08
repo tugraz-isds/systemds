@@ -31,6 +31,7 @@ import org.tugraz.sysds.runtime.controlprogram.context.ExecutionContext;
 import org.tugraz.sysds.runtime.instructions.CPInstructionParser;
 import org.tugraz.sysds.runtime.instructions.Instruction;
 import org.tugraz.sysds.runtime.lineage.Lineage;
+import org.tugraz.sysds.runtime.matrix.data.MatrixBlock;
 import org.tugraz.sysds.runtime.matrix.operators.Operator;
 
 public abstract class CPInstruction extends Instruction 
@@ -110,7 +111,7 @@ public abstract class CPInstruction extends Instruction
 			tmp = CPInstructionParser.parseSingleInstruction(updInst);
 			// Corrected lineage trace for patched instructions
 			if (DMLScript.LINEAGE)
-				Lineage.trace(tmp, ec);
+				ec.traceLineage(tmp);
 		}
 		return tmp;
 	}

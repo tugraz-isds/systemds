@@ -124,7 +124,7 @@ public class LineageItemUtils {
 	
 	public static Data computeByLineage(LineageItem root) {
 		long rootId = root.getOpcode().equals("write") ?
-				root.getInputs()[0].getId() : root.getId();
+			root.getInputs()[0].getId() : root.getId();
 		String varname = LVARPREFIX + rootId;
 		
 		//recursively construct hops 
@@ -132,7 +132,7 @@ public class LineageItemUtils {
 		HashMap<Long, Hop> operands = new HashMap<>();
 		rConstructHops(root, operands);
 		Hop out = HopRewriteUtils.createTransientWrite(
-				varname, operands.get(rootId));
+			varname, operands.get(rootId));
 		
 		//generate instructions for temporary hops
 		ExecutionContext ec = ExecutionContextFactory.createContext();
@@ -141,13 +141,18 @@ public class LineageItemUtils {
 		Lop lops = out.constructLops();
 		lops.addToDag(dag);
 		pb.setInstructions(dag.getJobs(null,
-				ConfigurationManager.getDMLConfig()));
+			ConfigurationManager.getDMLConfig()));
 		
 		// reset cache due to cleaned data objects
 		LineageCache.resetCache();
 		//execute instructions and get result
 		pb.execute(ec);
 		return ec.getVariable(varname);
+	}
+	
+	public static LineageItem[] getLineage(ExecutionContext ec, CPOperand... operands) {
+		return Arrays.stream(operands).filter(c -> c!=null)
+			.map(c -> ec.getLineage().getOrCreate(c)).toArray(LineageItem[]::new);
 	}
 	
 	private static void rConstructHops(LineageItem item, HashMap<Long, Hop> operands) {
@@ -217,10 +222,39 @@ public class LineageItemUtils {
 							break;
 						}
 						case Binary: {
+							//handle special cases of binary operations 
+							String opcode = ("^2".equals(item.getOpcode()) 
+								|| "*2".equals(item.getOpcode())) ? 
+								item.getOpcode().substring(0, 1) : item.getOpcode();
 							Hop input1 = operands.get(item.getInputs()[0].getId());
 							Hop input2 = operands.get(item.getInputs()[1].getId());
-							Hop binary = HopRewriteUtils.createBinary(input1, input2, item.getOpcode());
+							Hop binary = HopRewriteUtils.createBinary(input1, input2, opcode);
 							operands.put(item.getId(), binary);
+							break;
+						}
+						case Ternary: {
+							operands.put(item.getId(), HopRewriteUtils.createTernaryOp(
+								operands.get(item.getInputs()[0].getId()), 
+								operands.get(item.getInputs()[1].getId()), 
+								operands.get(item.getInputs()[2].getId()), item.getOpcode()));
+							break;
+						}
+						case MatrixIndexing: {
+							if( "rightIndex".equals(item.getOpcode()) )
+								operands.put(item.getId(), HopRewriteUtils.createIndexingOp(
+									operands.get(item.getInputs()[0].getId()), //input
+									operands.get(item.getInputs()[1].getId()), //rl
+									operands.get(item.getInputs()[2].getId()), //ru
+									operands.get(item.getInputs()[3].getId()), //cl
+									operands.get(item.getInputs()[4].getId()))); //cu
+							else if( "leftIndex".equals(item.getOpcode()) )
+								operands.put(item.getId(), HopRewriteUtils.createLeftIndexingOp(
+									operands.get(item.getInputs()[0].getId()), //input
+									operands.get(item.getInputs()[1].getId()), //rhs
+									operands.get(item.getInputs()[2].getId()), //rl
+									operands.get(item.getInputs()[3].getId()), //ru
+									operands.get(item.getInputs()[4].getId()), //cl
+									operands.get(item.getInputs()[5].getId()))); //cu
 							break;
 						}
 						case Variable: { //cpvar, write
@@ -243,7 +277,7 @@ public class LineageItemUtils {
 			case Literal: {
 				CPOperand op = new CPOperand(item.getData());
 				operands.put(item.getId(), ScalarObjectFactory
-						.createLiteralOp(op.getValueType(), op.getName()));
+					.createLiteralOp(op.getValueType(), op.getName()));
 				break;
 			}
 			case Dedup: {
@@ -310,5 +344,26 @@ public class LineageItemUtils {
 			}
 		
 		item.setVisited();
+	}
+	
+	public static LineageItem replace(LineageItem root, LineageItem liOld, LineageItem liNew) {
+		root.resetVisitStatus();
+		rReplace(root, liOld, liNew);
+		root.resetVisitStatus();
+		return root;
+	}
+	
+	private static void rReplace(LineageItem current, LineageItem liOld, LineageItem liNew) {
+		if( current.isVisited() || current.getInputs() == null )
+			return;
+		//process children until old item found, then replace
+		for(int i=0; i<current.getInputs().length; i++) {
+			LineageItem tmp = current.getInputs()[i];
+			if( tmp == liOld )
+				current.getInputs()[i] = liNew;
+			else
+				rReplace(tmp, liOld, liNew);
+		}
+		current.setVisited();
 	}
 }

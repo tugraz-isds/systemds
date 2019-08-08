@@ -81,6 +81,8 @@ import org.tugraz.sysds.runtime.instructions.cp.IntObject;
 import org.tugraz.sysds.runtime.instructions.cp.ListObject;
 import org.tugraz.sysds.runtime.instructions.cp.StringObject;
 import org.tugraz.sysds.runtime.instructions.cp.VariableCPInstruction;
+import org.tugraz.sysds.runtime.lineage.LineageItem;
+import org.tugraz.sysds.runtime.lineage.LineageItemUtils;
 import org.tugraz.sysds.runtime.matrix.data.OutputInfo;
 import org.tugraz.sysds.runtime.meta.DataCharacteristics;
 import org.tugraz.sysds.runtime.util.ProgramConverter;
@@ -787,6 +789,9 @@ public class ParForProgramBlock extends ForProgramBlock
 				numExecutedTasks += workers[i].getExecutedTasks();
 				numExecutedIterations += workers[i].getExecutedIterations();
 			}
+			//lineage maintenance
+			mergeWorkerLineage(ec, workers);
+
 			//consolidate results into global symbol table
 			consolidateAndCheckResults( ec, numIterations, numCreatedTasks,
 				numExecutedIterations, numExecutedTasks, localVariables );
@@ -1350,6 +1355,21 @@ public class ParForProgramBlock extends ForProgramBlock
 		Recompiler.recompileProgramBlockHierarchy2Forced(
 			_childBlocks, tid, new HashSet<String>(), null);
 	}
+	
+	private void mergeWorkerLineage(ExecutionContext ec, LocalParWorker[] workers) {
+		if( !DMLScript.LINEAGE )
+			return;
+		//stack lineage traces on top of each other (e.g., indexing)
+		for( ResultVar var : _resultVars ) {
+			LineageItem retIn = ec.getLineage().get(var._name);
+			LineageItem current = workers[0].getExecutionContext().getLineage().get(var._name);
+			for( int i=1; i<workers.length; i++ ) {
+				LineageItem next = workers[i].getExecutionContext().getLineage().get(var._name);
+				current = LineageItemUtils.replace(next, retIn, current);
+			}
+			ec.getLineage().set(var._name, current);
+		}
+	}
 
 	private void consolidateAndCheckResults(ExecutionContext ec, long expIters, long expTasks, long numIters, long numTasks, LocalVariableMap [] results) 
 	{
@@ -1419,7 +1439,7 @@ public class ParForProgramBlock extends ForProgramBlock
 					
 					//cleanup of intermediate result variables
 					cleanWorkerResultVariables( ec, out, in );
-
+					
 					//set merged result variable
 					ec.setVariable(var._name, outNew);
 				}
