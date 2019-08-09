@@ -1,0 +1,8 @@
+{
+    "data_type": "frame",
+    "format": "csv",
+    "header": false,
+    "sep": ";",
+    "author": "SystemML",
+    "created": "2019-08-06 10:57:40 PST"
+}

@@ -159,7 +159,7 @@ public class Transform extends Lop
 	}
 
 	@Override
-	public String getInstructions(String input1, String input2, String input3, String input4, String input5, String output) {
+	public String getInstructions(String input1, String input2, String input3, String input4, String output) {
 		//only used for reshape
 		
 		StringBuilder sb = new StringBuilder();
@@ -171,7 +171,7 @@ public class Transform extends Lop
 		sb.append( getInputs().get(0).prepInputOperand(input1));
 		
 		//rows, cols, byrow
-		String[] inputX = new String[]{input2,input3,input4,input5};
+		String[] inputX = new String[]{input2,input3,input4};
 		for( int i=1; i<=(inputX.length); i++ ) {
 			Lop ltmp = getInputs().get(i);
 			sb.append( OPERAND_DELIMITOR );

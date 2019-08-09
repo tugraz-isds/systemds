@@ -1,0 +1,173 @@
+
+
+
+
+V = read("C:\\Users\\iantonov\\Desktop\\work\\systemds\\adult1.csv", data_type = "frame");
+jspec = read("C:\\Users\\iantonov\\Desktop\\work\\systemds\\adult.spec.json", data_type = "scalar", value_type = "string");
+
+[X, M] = transformencode(target = V, spec = jspec);
+
+# k = number of slices
+k = 3;
+
+col = ncol(X);
+row = nrow(X);
+
+value = 0;
+val_matrix = matrix(0, rows = 2, cols = col - 1);
+vcol = ncol(val_matrix);
+empty_row = matrix(0, rows = 1, cols = col - 1);
+
+#first scan, spot data, make first slices
+
+for (j in 1:col - 1) {
+  vector = order(target = X[, j], by = 1, decreasing = FALSE);
+  val_matrix[2, j] = vector[1, 1];
+  val_counter = 1;
+  print("Col " + j);
+  for (i in 1:row) {
+    if (as.scalar(val_matrix[val_counter + 1, j]) != as.scalar(vector[i, 1])) {
+      if (nrow(val_matrix) == val_counter + 1) {
+        val_matrix = rbind(val_matrix, empty_row);
+      }
+      val_counter = val_counter + 1;
+      val_matrix[val_counter + 1, j] = vector[i, 1];
+
+    }
+  }
+
+  val_matrix[1, j] = val_counter;
+  #here I can add some condition to split the values from each column if val_counter is too big;
+  if (val_counter > k) {
+    position = floor(val_counter / k);
+
+    for (a in 1:k) {
+      if (a == k) {
+        position = as.scalar(val_matrix[1, j]) + 1;
+        tresh = val_matrix[position, j];
+        val_matrix[a + 1, j] = tresh;
+      } else {
+        position = position * a;
+        tresh = val_matrix[position, j];
+        val_matrix[a + 1, j] = tresh;
+      }
+    }
+  }
+}
+# now val_matrix[1:4,]) is a treshhold matrix that define clear slices
+print(toString(val_matrix[1:4,]));
+
+#start selecting slices
+vrow = nrow(val_matrix[1:k + 1,]);
+vcol = ncol(val_matrix[1:k + 1,]);
+totalrows = (vrow - 1) * vcol;
+set_matrix = matrix(0, rows = totalrows, cols = 8);
+cont = 1;
+for (j in 1:vcol) {
+  x = order(target = X, by = j, decreasing = FALSE);
+  for (i in 2:vrow) {
+
+    if (i == 2) {
+      value = as.scalar(val_matrix[i, j]);
+      a0 = 1;
+      a1 = index(x, j, value, 1);
+      b0 = 1;
+      b1 = col - 1;
+      # can be changed in the beginning
+      slice_matrix = x[a0:a1, b0:b1];
+      Y = x[a0:a1, col];
+      #needs to be changed
+    } else {
+      value0 = as.scalar(val_matrix[i - 1, j]);
+      value = as.scalar(val_matrix[i, j]);
+      a0 = index(x, j, value, 0);
+      a1 = index(x, j, value, 1);
+      b0 = 1;
+      b1 = col - 1;
+      # can be changed in the beginning
+      slice_matrix = x[a0:a1, b0:b1];
+      Y = x[a0:a1, col];
+      #needs to be changed
+    }
+    beta = lm(X = slice_matrix, y = Y, icpt = 1);
+    #beta = eval(model1 + "(X = slice_matrix, y = Y, icpt = 1)");
+    Y0 = lmpredict(X = slice_matrix, w = beta, icpt = 1);
+    error = standart_error(Y, Y0);
+    set_matrix[cont, 1] = a0;
+    set_matrix[cont, 2] = a1;
+    set_matrix[cont, 3] = b0;
+    set_matrix[cont, 4] = b1;
+    set_matrix[cont, 5] = nrow(slice_matrix);
+    set_matrix[cont, 6] = ncol(slice_matrix);
+    set_matrix[cont, 7] = j;
+    # column to order to get the dataset
+    set_matrix[cont, 8] = error;
+    cont = cont + 1;
+  }
+}
+
+## check the worst performing slices
+ress = order(target = set_matrix, by = 8, decreasing = FALSE);
+set_rows = nrow(set_matrix);
+set_cols = ncol(set_matrix);
+#print(toString(ress));
+
+for (i in 0:k - 1) {
+  print(toString(ress[set_rows - i,]));
+  x = order(target = X, by = as.scalar(ress[set_rows - i, 7]), decreasing = FALSE);
+  a0 = as.scalar(ress[set_rows - i, 1]);
+  a0 = as.scalar(ress[set_rows - i, 2]);
+  a0 = as.scalar(ress[set_rows - i, 3]);
+  a0 = as.scalar(ress[set_rows - i, 4]);
+  sol = transformdecode(target = x, spec = jspec, meta = M);
+  print("rows: " + a0 + " " + a1);
+  print("cols: " + b0 + " " + b1);
+  print("ordered by: " + as.scalar(ress[set_rows - i, 7]));
+  print(toString(sol[a0:a1, b0:b1]));
+}
+
+
+standart_error = function(matrix[double] Y, matrix[double] Y0) return(double error) {
+  i = 1;
+  sum = 0;
+  d = nrow(Y);
+  while (i <= d) {
+    sum = sum + (as.scalar(Y0[i, 1]) - as.scalar(Y[i, 1])) ^ 2;
+    i = i + 1;
+  }
+  val = sum / (d - 2);
+  error = sqrt(val);
+
+}
+
+index = function(matrix[double] X, Integer column, double value, Integer mode) return(Integer pos) {
+
+  begin = 1;
+  e = nrow(X) + 1;
+
+  while (begin < e - 1) {
+
+    pos = as.integer(floor((begin + e) / 2));
+    if (mode == 0) {
+      if (as.scalar(X[pos, column]) < value) {
+        begin = pos;
+      } else {
+        e = pos;
+      }
+    } else if (mode == 1) {
+
+      if (as.scalar(X[pos, column]) <= value) {
+        begin = pos;
+      } else {
+        e = pos;
+      }
+    }
+  }
+}
+
+
+
+
+
+
+
