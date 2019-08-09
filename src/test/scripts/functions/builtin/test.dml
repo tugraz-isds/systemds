@@ -8,7 +8,7 @@ jspec = read("C:\\Users\\iantonov\\Desktop\\work\\systemds\\adult.spec.json", da
 [X, M] = transformencode(target = V, spec = jspec);
 
 # k = number of slices
-k = 3;
+k = 6;
 
 col = ncol(X);
 row = nrow(X);
@@ -39,16 +39,15 @@ for (j in 1:col - 1) {
   val_matrix[1, j] = val_counter;
   #here I can add some condition to split the values from each column if val_counter is too big;
   if (val_counter > k) {
-    position = floor(val_counter / k);
-
+    position = as.integer(floor(val_counter / k));
     for (a in 1:k) {
       if (a == k) {
-        position = as.scalar(val_matrix[1, j]) + 1;
-        tresh = val_matrix[position, j];
+        pos = as.scalar(val_matrix[1, j]) + 1;
+        tresh = val_matrix[pos, j];
         val_matrix[a + 1, j] = tresh;
       } else {
-        position = position * a;
-        tresh = val_matrix[position, j];
+        pos = position * a;
+        tresh = val_matrix[pos, j];
         val_matrix[a + 1, j] = tresh;
       }
     }
@@ -89,6 +88,7 @@ for (j in 1:vcol) {
       Y = x[a0:a1, col];
       #needs to be changed
     }
+    print("LM nr: " + i +" " + j);
     beta = lm(X = slice_matrix, y = Y, icpt = 1);
     #beta = eval(model1 + "(X = slice_matrix, y = Y, icpt = 1)");
     Y0 = lmpredict(X = slice_matrix, w = beta, icpt = 1);
@@ -123,6 +123,8 @@ for (i in 0:k - 1) {
   print("rows: " + a0 + " " + a1);
   print("cols: " + b0 + " " + b1);
   print("ordered by: " + as.scalar(ress[set_rows - i, 7]));
+  print("Recoded -> decreasing = FALSE!")
+  print("feature : " + toString(sol[1, as.scalar(ress[set_rows - i, 7])]));
   print(toString(sol[a0:a1, b0:b1]));
 }
 
@@ -164,10 +166,4 @@ index = function(matrix[double] X, Integer column, double value, Integer mode) r
     }
   }
 }
-
-
-
-
-
-
 
