@@ -646,7 +646,7 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 				ValueType vt = tBlock instanceof BasicTensor ? ((BasicTensor) tBlock).getValueType() : ((DataTensor) tBlock).getColValueType(0);
 				switch (vt) {
 					case STRING:
-						String str = tBlock.getString(new int[] {0, 0});
+						String str = tBlock.get(new int[] {0, 0}).toString();
 						ec.setScalarOutput(output.getName(), new StringObject(str));
 						break;
 					case INT64:

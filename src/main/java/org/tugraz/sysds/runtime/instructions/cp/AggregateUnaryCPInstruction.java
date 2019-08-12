@@ -183,14 +183,20 @@ public class AggregateUnaryCPInstruction extends UnaryCPInstruction
 						switch (input1.getValueType()) {
 							case BOOLEAN:
 							case INT64:
+								IntObject il = new IntObject((Long) resultBlock.get(new int[]{0, 0}));
+								ec.setScalarOutput(output_name, il);
+								break;
 							case INT32:
-								// Calculate accurate result
-								IntObject i = new IntObject(resultBlock.getLong(new int[]{0, 0}));
+								IntObject i = new IntObject((Integer) resultBlock.get(new int[]{0, 0}));
 								ec.setScalarOutput(output_name, i);
 								break;
-							default:
-								DoubleObject out = new DoubleObject(resultBlock.get(new int[]{0, 0}));
+							case FP64:
+								DoubleObject out = new DoubleObject((Double) resultBlock.get(new int[]{0, 0}));
 								ec.setScalarOutput(output_name, out);
+								break;
+							case FP32:
+								DoubleObject outf = new DoubleObject((Float) resultBlock.get(new int[]{0, 0}));
+								ec.setScalarOutput(output_name, outf);
 								break;
 						}
 					} else{

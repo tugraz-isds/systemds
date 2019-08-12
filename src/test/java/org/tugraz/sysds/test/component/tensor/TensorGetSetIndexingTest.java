@@ -4,9 +4,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -38,19 +38,19 @@ public class TensorGetSetIndexingTest
 		BasicTensor tb = getBasicTensor2(ValueType.FP64);
 		checkSequence(setSequence(tb));
 	}
-	
+
 	@Test
 	public void testIndexBasicTensor2BoolSetGetCell() {
 		BasicTensor tb = getBasicTensor2(ValueType.BOOLEAN);
 		checkSequence(setSequence(tb));
 	}
-	
+
 	@Test
 	public void testIndexBasicTensor2Int32SetGetCell() {
 		BasicTensor tb = getBasicTensor2(ValueType.INT32);
 		checkSequence(setSequence(tb));
 	}
-	
+
 	@Test
 	public void testIndexBasicTensor2Int64SetGetCell() {
 		BasicTensor tb = getBasicTensor2(ValueType.INT64);
@@ -62,25 +62,25 @@ public class TensorGetSetIndexingTest
 		BasicTensor tb = getBasicTensor3(ValueType.FP32);
 		checkSequence(setSequence(tb));
 	}
-	
+
 	@Test
 	public void testIndexBasicTensor3FP64SetGetCell() {
 		BasicTensor tb = getBasicTensor3(ValueType.FP64);
 		checkSequence(setSequence(tb));
 	}
-	
+
 	@Test
 	public void testIndexBasicTensor3BoolSetGetCell() {
 		BasicTensor tb = getBasicTensor3(ValueType.BOOLEAN);
 		checkSequence(setSequence(tb));
 	}
-	
+
 	@Test
 	public void testIndexBasicTensor3Int32SetGetCell() {
 		BasicTensor tb = getBasicTensor3(ValueType.INT32);
 		checkSequence(setSequence(tb));
 	}
-	
+
 	@Test
 	public void testIndexBasicTensor3Int64SetGetCell() {
 		BasicTensor tb = getBasicTensor3(ValueType.INT64);
@@ -91,7 +91,7 @@ public class TensorGetSetIndexingTest
 		// Todo: implement sparse for Tensor
 		return new BasicTensor(vt, new int[] {DIM0,DIM1}, false);
 	}
-	
+
 	private BasicTensor getBasicTensor3(ValueType vt) {
 		// Todo: implement sparse for Tensor
 		return new BasicTensor(vt, new int[] {DIM0,DIM1,DIM2}, false);
@@ -122,7 +122,29 @@ public class TensorGetSetIndexingTest
 					for(int k=0; k<DIM2; k++) {
 						int val = i*dim12+j*DIM2+k;
 						double expected = isBool && val!=0 ? 1 : val;
-						Assert.assertEquals(expected, tb.get(new int[] {i,j,k}), 0);
+						Object actualObj = tb.get(new int[]{i, j, k});
+						double actual = -1;
+						switch (tb.getValueType()) {
+							case FP64:
+								actual = (Double) actualObj;
+								break;
+							case FP32:
+								actual = (Float) actualObj;
+								break;
+							case INT64:
+								actual = (Long) actualObj;
+								break;
+							case INT32:
+								actual = (Integer) actualObj;
+								break;
+							case BOOLEAN:
+								actual = (Boolean) actualObj ? 1.0 : 0.0;
+								break;
+							case STRING:
+								actual = Double.parseDouble((String) actualObj);
+								break;
+						}
+						Assert.assertEquals(expected, actual, 0);
 					}
 		}
 		else { //num dims = 2
@@ -130,7 +152,29 @@ public class TensorGetSetIndexingTest
 				for(int j=0; j<DIM1; j++) {
 					int val = i*DIM1+j;
 					double expected = isBool && val!=0 ? 1 : val;
-					Assert.assertEquals(expected, tb.get(new int[]{i, j}), 0);
+					Object actualObj = tb.get(new int[]{i, j});
+					double actual = -1;
+					switch (tb.getValueType()) {
+						case FP64:
+							actual = (Double) actualObj;
+							break;
+						case FP32:
+							actual = (Float) actualObj;
+							break;
+						case INT64:
+							actual = (Long) actualObj;
+							break;
+						case INT32:
+							actual = (Integer) actualObj;
+							break;
+						case BOOLEAN:
+							actual = (Boolean) actualObj ? 1.0 : 0.0;
+							break;
+						case STRING:
+							actual = Double.parseDouble((String) actualObj);
+							break;
+					}
+					Assert.assertEquals(expected, actual, 0);
 				}
 		}
 	}
@@ -228,7 +272,29 @@ public class TensorGetSetIndexingTest
 					for(int k=0; k<DIM2; k++) {
 						int val = i*dim12+j*DIM2+k;
 						double expected = isBool && val!=0 ? 1 : val;
-						Assert.assertEquals(expected, tb.get(new int[] {i,j,k}), 0);
+						Object actualObj = tb.get(new int[]{i, j, k});
+						double actual = -1;
+						switch (tb.getSchema()[0]) {
+							case FP64:
+								actual = (Double) actualObj;
+								break;
+							case FP32:
+								actual = (Float) actualObj;
+								break;
+							case INT64:
+								actual = (Long) actualObj;
+								break;
+							case INT32:
+								actual = (Integer) actualObj;
+								break;
+							case BOOLEAN:
+								actual = (Boolean) actualObj ? 1.0 : 0.0;
+								break;
+							case STRING:
+								actual = Double.parseDouble((String) actualObj);
+								break;
+						}
+						Assert.assertEquals(expected, actual, 0);
 					}
 		}
 		else { //num dims = 2
@@ -236,7 +302,29 @@ public class TensorGetSetIndexingTest
 				for(int j=0; j<DIM1; j++) {
 					int val = i*DIM1+j;
 					double expected = isBool && val!=0 ? 1 : val;
-					Assert.assertEquals(expected, tb.get(new int[]{i, j}), 0);
+					Object actualObj = tb.get(new int[]{i, j});
+					double actual = -1;
+					switch (tb.getSchema()[0]) {
+						case FP64:
+							actual = (Double) actualObj;
+							break;
+						case FP32:
+							actual = (Float) actualObj;
+							break;
+						case INT64:
+							actual = (Long) actualObj;
+							break;
+						case INT32:
+							actual = (Integer) actualObj;
+							break;
+						case BOOLEAN:
+							actual = (Boolean) actualObj ? 1.0 : 0.0;
+							break;
+						case STRING:
+							actual = Double.parseDouble((String) actualObj);
+							break;
+					}
+					Assert.assertEquals(expected, actual, 0);
 				}
 		}
 	}
