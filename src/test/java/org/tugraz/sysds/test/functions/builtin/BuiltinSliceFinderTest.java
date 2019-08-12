@@ -40,7 +40,7 @@ import java.util.*;
 
 public class BuiltinSliceFinderTest extends AutomatedTestBase {
 
-	private final static String TEST_NAME = "test";
+	private final static String TEST_NAME = "slicefinder";
 	private final static String TEST_DIR = "functions/builtin/";
 	private static final String TEST_CLASS_DIR = TEST_DIR + BuiltinSliceFinderTest.class.getSimpleName() + "/";
 
@@ -70,7 +70,6 @@ public class BuiltinSliceFinderTest extends AutomatedTestBase {
 		//String X = null;
 		String dml_test_name = TEST_NAME;
 
-
 		try
 		{
 			loadTestConfiguration(getTestConfiguration(TEST_NAME));
@@ -78,20 +77,17 @@ public class BuiltinSliceFinderTest extends AutomatedTestBase {
 
 			fullDMLScriptName = HOME + dml_test_name + ".dml";
 			//programArgs = new String[]{"-explain", "-args", input("A"), input("B"), output("C") };
-			fullRScriptName = HOME + TEST_NAME + ".R";
-			rCmd = "Rscript" + " " + fullRScriptName + " " + inputDir() + " "  + expectedDir();
+			//fullRScriptName = HOME + TEST_NAME + ".R";
+			//rCmd = "Rscript" + " " + fullRScriptName + " " + inputDir() + " "  + expectedDir();
 
 			runTest();
 
 		}
 		finally {
-		//	rtplatform = platformOld;
+			//rtplatform = platformOld;
 		}
 
-
-
 	}
-
 
 }
 
