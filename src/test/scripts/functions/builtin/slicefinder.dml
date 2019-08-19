@@ -16,7 +16,7 @@
 #
 #-------------------------------------------------------------
 
-
-
-ress = slicefinder(k = 5);
+X = read($1);
+w = read($2);
+ress = slicefinder(X0 = X,W = w,  k = 5);
 print(toString(ress));

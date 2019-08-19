@@ -16,26 +16,14 @@
 
 package org.tugraz.sysds.test.functions.builtin;
 
-import org.tugraz.sysds.common.Types;
-
 
 import org.junit.Test;
 import org.tugraz.sysds.common.Types.ExecMode;
 import org.tugraz.sysds.lops.LopProperties.ExecType;
-import org.tugraz.sysds.runtime.matrix.data.MatrixValue.CellIndex;
 import org.tugraz.sysds.test.AutomatedTestBase;
 import org.tugraz.sysds.test.TestConfiguration;
-import org.tugraz.sysds.test.TestUtils;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.util.HashMap;
-
-import java.io.File;
 //package io;
-import java.nio.file.*;
-import java.io.*;
 import java.util.*;
 
 public class BuiltinSliceFinderTest extends AutomatedTestBase {
@@ -44,11 +32,11 @@ public class BuiltinSliceFinderTest extends AutomatedTestBase {
 	private final static String TEST_DIR = "functions/builtin/";
 	private static final String TEST_CLASS_DIR = TEST_DIR + BuiltinSliceFinderTest.class.getSimpleName() + "/";
 
-    /*private final static double eps = 1e-10;
-    private final static int rows = 10;
-    private final static int cols = 3;
-    private final static double spSparse = 0.3;
-    private final static double spDense = 0.7;*/
+	private final static double eps = 1e-10;
+	private final static int rows = 32000;
+	private final static int cols = 10;
+	private final static double spSparse = 1;
+	private final static double spDense = 10;
 
 
 	@Override
@@ -57,39 +45,179 @@ public class BuiltinSliceFinderTest extends AutomatedTestBase {
 	}
 
 	@Test
-	public void testslicefinder() {
-		try {
-			runslicefindertest();
-		} catch (Exception e) {
-			e.printStackTrace();
+	public void SingleFreatureTest() { runslicefindertest(1,true, ExecType.CP, BuiltinLmTest.LinregType.AUTO); }
+
+
+	@Test
+	public void MultipleValuesOneFeature() { runslicefindertest(2,true, ExecType.CP, BuiltinLmTest.LinregType.AUTO); }
+
+	@Test
+	public void MultipleFeaturesSingleValues() { runslicefindertest(3,true, ExecType.CP, BuiltinLmTest.LinregType.AUTO); }
+
+
+	public double[][] RandomizeArray(double[][]y){
+		int i;
+		Random rgen=new Random();
+
+		for(i=0;i<y.length;i++){
+			int randomPosition=rgen.nextInt(y.length);
+			double temp=y[i][0];
+			y[i][0]=y[randomPosition][0];
+			y[randomPosition][0]=temp;
+
 		}
+
+		return y;
+
 	}
 
-	private void runslicefindertest(){
-		//ExecMode platformOld = setExecMode(instType);
-		//String X = null;
-		String dml_test_name = TEST_NAME;
+	public double[][] modifyvalue(double[][]A,int[][]Y, int value, int coll){
 
-		try
-		{
-			loadTestConfiguration(getTestConfiguration(TEST_NAME));
-			String HOME = SCRIPT_DIR + TEST_DIR;
+		Integer i, j;
 
-			fullDMLScriptName = HOME + dml_test_name + ".dml";
-			//programArgs = new String[]{"-explain", "-args", input("A"), input("B"), output("C") };
-			//fullRScriptName = HOME + TEST_NAME + ".R";
-			//rCmd = "Rscript" + " " + fullRScriptName + " " + inputDir() + " "  + expectedDir();
-
-			runTest();
+		int counter = 0;
+		int nvec[][] = new int[rows][1];
+		for (i = 0; i < rows; i++) {
+			if (A[i][coll] == value) {
+				nvec[counter][0] = Y[i][0];
+				counter++;
+			}
+		}
+		double[][] y = new double[counter][1];
+		for (i = 0; i < counter; i++) {
+			y[i][0] = nvec[i][0];
 
 		}
-		finally {
-			//rtplatform = platformOld;
+
+		double[][] yy = RandomizeArray(y);
+		int dim = cols + 1;
+		double AA [][] = new double[rows][dim];
+		counter = 0;
+
+		for(i = 0;i<rows;i++){
+			for(j = 0; j < dim;j++){
+
+				if(j == cols ){
+					AA[i][j] = Y[i][0];
+				}else{
+					AA[i][j] = A[i][j];
+				}
+			}
+
+			if(A[i][coll] == value){  // this condition changes the values you choose
+
+				AA[i][10] = yy[counter][0];
+				counter++;
+			}
+		}
+		return AA;
+
+	}
+
+	private void runslicefindertest(int test,boolean sparse, ExecType instType, BuiltinLmTest.LinregType linregAlgo) {
+
+		Integer i, j;
+		ExecMode platformOld = setExecMode(instType);
+		String dml_test_name = TEST_NAME;
+		loadTestConfiguration(getTestConfiguration(TEST_NAME));
+		String HOME = SCRIPT_DIR + TEST_DIR;
+
+
+		try {
+			loadTestConfiguration(getTestConfiguration(TEST_NAME));
+			double sparsity = sparse ? spSparse : spDense;
+			fullDMLScriptName = HOME + dml_test_name + ".dml";
+			programArgs = new String[]{"-explain", "-args", input("AA"), input("B")};
+			double[][] A = getRandomMatrix(rows, cols, 0, 10, 1, 7);
+			double[][] B = getRandomMatrix(10, 1, 0, 10, 1.0, 3);
+			double[][] As = new double[rows][cols];
+			int [][] Ys = new int[rows][1];
+
+			for (i = 0; i < rows; i++) {
+				for (j = 0; j < cols; j++) {
+
+					//A[i][j] = A[i][j];
+					A[i][j] = Math.ceil(A[i][j]);
+					if (i == 0) {
+						B[j][0] = Math.ceil(B[j][0]);
+					}
+				}
+			}
+
+			int Y[][] = new int[rows][1];
+			for (i = 0; i < rows; i++) {
+				for (j = 0; j < 1; j++) {
+					for (int k = 0; k < cols; k++) {
+
+						Y[i][j] += A[i][k] * B[k][j];
+					}
+				}
+			}
+			/*for (i = 0; i < rows; i++) {
+				for (j = 0; j < cols; j++) {
+
+					System.out.print(Y[i][0] + " ");
+				}
+				System.out.println();
+			}
+*/
+
+
+			double AA[][] = new double[rows][cols+1];
+
+
+
+			if(test == 1){
+
+				 AA = modifyvalue(A,Y,7,5);
+
+
+			}else if(test == 2) {
+
+				 AA = modifyvalue(A, Y, 6, 3);
+
+				for(i = 0;i<rows;i++){
+					for(j = 0; j < cols+1;j++){
+
+						if(j == cols ){
+							Ys[i][0] = (int) AA[i][j];
+						}else{
+							As[i][j] = AA[i][j];
+						}
+					}
+				}
+
+				 AA = modifyvalue(As,Ys,3,3);
+
+			}else{
+
+				AA = modifyvalue(A, Y, 6, 3);
+
+				for(i = 0;i<rows;i++){
+					for(j = 0; j < cols+1;j++){
+
+						if(j == cols ){
+							Ys[i][0] = (int) AA[i][j];
+						}else{
+							As[i][j] = AA[i][j];
+						}
+					}
+				}
+
+				AA = modifyvalue(As,Ys,3,7);
+			}
+
+			writeInputMatrixWithMTD("AA", AA, true);
+			writeInputMatrixWithMTD("B", B, true);
+
+
+			runTest(true, false, null, -1);
+
+		} finally {
+			rtplatform = platformOld;
 		}
 
 	}
 
 }
-
-
 

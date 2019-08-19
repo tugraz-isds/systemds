@@ -17,18 +17,23 @@
 #-------------------------------------------------------------
 
 
-s_slicefinder = function(Integer k = 1) return(Matrix[Double] ress) {
+m_slicefinder = function(Matrix[Double] X0, Matrix[Double] W, Integer k = 1) return(Matrix[Double] result) {
 
   #String trend,  output
-  V = read("C:\\Users\\iantonov\\Desktop\\work\\systemds\\adult1.csv", data_type = "frame");
-  jspec = read("C:\\Users\\iantonov\\Desktop\\work\\systemds\\adult.spec.json", data_type = "scalar", value_type = "string");
+  #V = read("C:\\Users\\iantonov\\Desktop\\work\\systemds\\adult1.csv", data_type = "frame");
+  #V0 = read("C:\\Users\\iantonov\\Desktop\\work\\systemds\\adultrandmix.csv", data_type = "frame");
+  #jspec = read("C:\\Users\\iantonov\\Desktop\\work\\systemds\\adult1.spec.json", data_type = "scalar", value_type = "string");
+  #print(toString(V));
+  #print(toString(V0));
   #X = matrix(0, rows = nrow(V), cols = ncol(V));
-  [X, M] = transformencode(target = V, spec = jspec);
+  #[X, M] = transformencode(target = V, spec = jspec);
+  #[X0, M] = transformencode(target = V0, spec = jspec);
 
   #k = number of slices
-
-  col = ncol(X);
-  row = nrow(X);
+  f = 2;
+  # number of features combined
+  col = ncol(X0);
+  row = nrow(X0);
   val_matrix = matrix(0, rows = 2, cols = col - 1);
   vcol = ncol(val_matrix);
   empty_row = matrix(0, rows = 1, cols = col - 1);
@@ -36,7 +41,7 @@ s_slicefinder = function(Integer k = 1) return(Matrix[Double] ress) {
   #first scan, spot data, make first slices
 
   for (j in 1:col - 1) {
-    vector = order(target = X[, j], by = 1, decreasing = FALSE);
+    vector = order(target = X0[, j], by = 1, decreasing = FALSE);
     val_matrix[2, j] = vector[1, 1];
     val_counter = 1;
     print("Col " + j);
@@ -53,7 +58,9 @@ s_slicefinder = function(Integer k = 1) return(Matrix[Double] ress) {
 
     val_matrix[1, j] = val_counter;
     #here I can add some condition to split the values from each column if val_counter is too big;
-    if (val_counter > k) {
+    ################################################
+    #this code relates to large datasets
+    /* if (val_counter > k) {
       position = floor(val_counter / k);
       for (a in 1:k) {
         if (a == k) {
@@ -67,103 +74,106 @@ s_slicefinder = function(Integer k = 1) return(Matrix[Double] ress) {
         }
       }
     }
+    */
+
+    ##################################################
   }
+
   # now val_matrix[1:4,]) is a treshhold matrix that define clear slices
-  print(toString(val_matrix[1:k + 1,]));
+  print(toString(val_matrix));
 
   #start selecting slices
-  vrow = nrow(val_matrix[1:k + 1,]);
-  vcol = ncol(val_matrix[1:k + 1,]);
+  vrow = nrow(val_matrix);
+  vcol = ncol(val_matrix);
   totalrows = (vrow - 1) * vcol;
-  set_matrix = matrix(0, rows = totalrows, cols = 8);
+  print("vrow: " + vrow);
+  print("vcol: " + vcol);
+  print("totalrows: " + totalrows);
+
+  #######################################
+  Y = X0[1:nrow(X0), ncol(X0)];
+  #beta = lm(X = X0[1:nrow(X0),1:col-1], y = Y, icpt = 0);
+  Y0 = lmpredict(X = X0[1:nrow(X0), 1:col - 1], w = W, icpt = 0);
+  [error0, diff0] = standart_error(Y, Y0);
+  print("Error0: " + error0);
+  print("diff0: " + diff0);
+
+  #####################################################
+
+  set_matrix = matrix(0, rows = totalrows, cols = 2 + (8 * f));
+  set_row = matrix(0, rows = 1, cols = 2 + (8 * f));
+
   cont = 1;
-  for (j in 1:vcol) {
-    x = order(target = X, by = j, decreasing = FALSE);
-    for (i in 2:vrow) {
 
-      if (i == 2) {
-        a0 = 1;
-        swich = 1;
-        #needs to be changed
-      } else if (as.scalar(val_matrix[i - 1, j]) <= as.scalar(val_matrix[i, j])) {
-        value0 = as.scalar(val_matrix[i - 1, j]);
-        a0 = index(x, j, value0, 0);
-        swich = 1;
-        #needs to be changed
-      }
+  b0 = 1;
+  b1 = col - 1;
+  slice_number = 0;
+  pointer_col = 1;
+  pointer_row = 2;
 
-      if (swich == 1) {
+  beta = W;
+  set_matrix = first_slices(val_matrix, set_matrix, X0, W);
+  #ress = order(target = set_matrix, by = 1, decreasing = FALSE);
+  #print(toString(ress));
 
-        value = as.scalar(val_matrix[i, j]);
-        a1 = index(x, j, value, 1);
-        b0 = 1;
-        b1 = col - 1;
-        slice_matrix = x[a0:a1, b0:b1];
-        Y = x[a0:a1, col];
-        beta = lm(X = slice_matrix, y = Y, icpt = 0);
-        Y0 = lmpredict(X = slice_matrix, w = beta, icpt = 0);
-        error = standart_error(Y, Y0);
-        set_matrix[cont, 1] = a0;
-        set_matrix[cont, 2] = a1;
-        set_matrix[cont, 3] = b0;
-        set_matrix[cont, 4] = b1;
-        set_matrix[cont, 5] = nrow(slice_matrix);
-        set_matrix[cont, 6] = ncol(slice_matrix);
-        set_matrix[cont, 7] = j;
-        # column to order to get the dataset
-        set_matrix[cont, 8] = error;
-        cont = cont + 1;
-        swich = 0;
-      }
-    }
-  }
+  set_matrix = double_features(val_matrix, set_matrix, X0, set_row, W);
+  #ress = order(target = set_matrix, by = 1, decreasing = FALSE);
+  #print(toString(ress));
   ## check the worst performing slices
 
-  ress = order(target = set_matrix, by = 8, decreasing = FALSE);
+  ress = order(target = set_matrix, by = 1, decreasing = FALSE);
   set_rows = nrow(set_matrix);
   set_cols = ncol(set_matrix);
-  #print(toString(ress));
+  #printing top 500 slices
+  print(toString(ress[set_rows-500:set_rows-400,]));
+  print(toString(ress[set_rows-400:set_rows-300,]));
+  print(toString(ress[set_rows-300:set_rows-200,]));
+  print(toString(ress[set_rows-200:set_rows-100,]));
+  print(toString(ress[set_rows-100:set_rows,]));
+  #print(toString(q))
   #result = ress[set_rows - k:set_rows,]
+  print(set_rows);
 
-
-
-
+  /*
   for (i in 0:k - 1) {
-    print(toString(ress[set_rows - i,]));
+    #print(toString(ress[set_rows - i,]));
     #dim = transformdecode(target=ress[set_rows - i,],spec = jspec, meta = M);
     #print(dim);
-    x = order(target = X, by = as.scalar(ress[set_rows - i, 7]), decreasing = FALSE);
+    x = order(target = X0, by = as.scalar(ress[set_rows - i, 7]), decreasing = FALSE);
     a0 = as.scalar(ress[set_rows - i, 1]);
     a0 = as.scalar(ress[set_rows - i, 2]);
     a0 = as.scalar(ress[set_rows - i, 3]);
     a0 = as.scalar(ress[set_rows - i, 4]);
-    sol = transformdecode(target = x, spec = jspec, meta = M);
+
+    #sol = transformdecode(target = x, spec = jspec, meta = M);
+    print("diff0: " + diff0);
+    print("error0: " + error0);
+    # print("diff1: " + diff1);
+    #print("error1: " + error1);
+    print("diff: " + as.scalar(ress[set_rows - i, 9]));
+    print("error: " + as.scalar(ress[set_rows - i, 8]));
     print("rows: " + a0 + " " + a1);
     print("cols: " + b0 + " " + b1);
     print("ordered by: " + as.scalar(ress[set_rows - i, 7]));
     print("Recoded -> decreasing = FALSE!")
-    print("feature : " + toString(sol[1, as.scalar(ress[set_rows - i, 7])]));
-    print(toString(sol[a0:a1, b0:b1]));
-    #trend = "rows: " + a0 + ":" + a1 + "cols: " + b0 + ":" + b1 + "Recoded -> decreasing = FALSE!\n feature : " + toString(sol[1, as.scalar(ress[set_rows - i, 7])]) + "Error: " + toString(sol[1, as.scalar(ress[set_rows - i, 8])]);
-    #output = sol[a0:a1, b0:b1];
-  }
+    print("Value: " + as.scalar(ress[set_rows - i, 10]));
 
+  }
+  */
+
+  result = ress[set_rows-100:set_rows,];
 }
 
 
 
-standart_error = function(matrix[double] Y, matrix[double] Y0) return(double error) {
-  i = 1;
-  sum = 0;
+standart_error = function(matrix[double] Y, matrix[double] Y0) return(double error, double diff) {
   d = nrow(Y);
-  while (i <= d) {
-    sum = sum + (as.scalar(Y0[i, 1]) - as.scalar(Y[i, 1])) ^ 2;
-    i = i + 1;
-  }
+  sum = sum((Y0 - Y) ^ 2);
+  diff = var(Y0 - Y);
   val = sum / (d - 2);
   error = sqrt(val);
-
 }
+
 
 index = function(matrix[double] X, Integer column, double value, Integer mode) return(Integer pos) {
 
@@ -185,6 +195,147 @@ index = function(matrix[double] X, Integer column, double value, Integer mode) r
         begin = pos;
       } else {
         e = pos;
+      }
+    }
+  }
+}
+
+first_slices = function(Matrix[Double] val_matrix, Matrix[Double] set_matrix, Matrix[Double] X0, Matrix[Double] beta) return(Matrix[Double] set_matrix) {
+  col = ncol(X0);
+  row = nrow(X0);
+  vrow = nrow(val_matrix);
+  vcol = ncol(val_matrix);
+  cont = 1;
+  b0 = 1;
+  b1 = col - 1;
+
+  for (j in 1:vcol) {
+    x = order(target = X0, by = j, decreasing = FALSE);
+    for (i in 2:vrow) {
+      ##########################################
+      #this code relates to large datasets
+            /*
+          if (i == 2) {
+            a0 = 1;
+            swich = 1;
+            #needs to be changed
+          } else if (as.scalar(val_matrix[i - 1, j]) <= as.scalar(val_matrix[i, j])) {
+            value0 = as.scalar(val_matrix[i - 1, j]);
+            a0 = index(x, j, value0, 0);
+            swich = 1;
+            #needs to be changed
+          }
+            */
+      ##########################################
+      swich = 1;
+
+          if (swich == 1) {
+
+            value = as.scalar(val_matrix[i, j]);
+            a0 = index(x, j, value, 0);
+            a1 = index(x, j, value, 1);
+            slice_matrix = x[a0:a1, b0:b1];
+            Y = x[a0:a1, col];
+            #beta = lm(X = slice_matrix, y = Y, icpt = 0);
+            Y0 = lmpredict(X = slice_matrix, w = beta, icpt = 0);
+            [error, diff] = standart_error(Y, Y0);
+            set_matrix[cont, 1] = diff;
+            set_matrix[cont, 2] = error;
+            set_matrix[cont, 3] = value;
+            set_matrix[cont, 4] = j;
+            set_matrix[cont, 5] = nrow(slice_matrix);
+            set_matrix[cont, 6] = ncol(slice_matrix);
+            set_matrix[cont, 7] = a0;
+            # column to order to get the dataset
+            set_matrix[cont, 8] = a1;
+            set_matrix[cont, 9] = b0;
+            set_matrix[cont, 10] = b1;
+            cont = cont + 1;
+            swich = 0;
+          }
+    }
+  }
+
+}
+
+
+double_features = function(Matrix[Double] val_matrix, Matrix[Double] set_matrix, Matrix[Double] X0, Matrix[Double] set_row, Matrix[Double] beta) return(Matrix[Double] set_matrix) {
+  vrow = nrow(val_matrix);
+  vcol = ncol(val_matrix);
+  cont = nrow(set_matrix);
+  print("Cont: " + cont)
+  col = ncol(X0);
+  row = nrow(X0);
+  totalrows = (vrow - 1) * vcol;
+  b0 = 1;
+  b1 = col - 1;
+  slice_number = 2;
+  print("totalrows: " + totalrows);
+  for (j in 1:vcol) {
+    x = order(target = X0, by = j, decreasing = FALSE);
+    print("col: " + j);
+    if(j == vcol){
+      vrow = vrow -1;
+    }
+    for (i in 2:vrow) {
+      #print("row: " + i);
+      if (i > 2 | j > 1) {
+        slice_number = slice_number + 1;
+      }
+
+        for (a in slice_number:totalrows) {
+        #print("A: " + a);
+        #print("slice_number: " + slice_number);
+        #slice_number = slice_number+1;
+        num_col = as.scalar(set_matrix[a, 4]);
+        x_x = order(target = X0, by = num_col, decreasing = FALSE);
+
+        value_A = as.scalar(set_matrix[a, 3]);
+        a00 = index(x_x, num_col, value_A, 0);
+        a11 = index(x_x, num_col, value_A, 1);
+        A = x[a00:a11, b0:b1];
+        Ya = x[a00:a11, col];
+
+        if (nrow(set_matrix) <= cont) {
+          set_matrix = rbind(set_matrix, set_row);
+        }
+
+
+        value_B = as.scalar(val_matrix[i,j]);
+        a0 = index(x, j, value_B, 0);
+        a1 = index(x, j, value_B, 1);
+        B = x[a0:a1, b0:b1];
+        slice_matrix = rbind(A, B);
+        Yb = x[a0:a1, col];
+        Y = rbind(Ya, Yb);
+        #print("FeatureA: " + j + " ValueA: " + value_A);
+        #print("FeatureB: " + num_col + " ValueB: " + value_B);
+
+
+        #beta = lm(X = slice_matrix, y = Y, icpt = 0);
+        Y0 = lmpredict(X = slice_matrix, w = beta, icpt = 0);
+
+        [error, diff] = standart_error(Y, Y0);
+
+        set_matrix[cont, 1] = diff;
+        set_matrix[cont, 2] = error;
+        set_matrix[cont, 3] = value_A;
+        set_matrix[cont, 4] = num_col;
+        set_matrix[cont, 5] = nrow(A);
+        set_matrix[cont, 6] = ncol(A);
+        set_matrix[cont, 7] = a00;
+        set_matrix[cont, 8] = a11;
+        set_matrix[cont, 9] = b0;
+        set_matrix[cont, 10] = b1;
+        set_matrix[cont, 11] = value_B;
+        set_matrix[cont, 12] = j;
+        set_matrix[cont, 13] = nrow(B);
+        set_matrix[cont, 14] = ncol(B);
+        set_matrix[cont, 15] = a0;
+        set_matrix[cont, 16] = a1;
+        set_matrix[cont, 17] = b0;
+        set_matrix[cont, 18] = b1;
+        cont = cont + 1;
       }
     }
   }
