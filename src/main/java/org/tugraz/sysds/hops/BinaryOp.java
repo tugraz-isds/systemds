@@ -879,6 +879,9 @@ public class BinaryOp extends MultiThreadedHop
 	}
 
 	private static MMBinaryMethod optFindMMBinaryMethodSpark(Hop left, Hop right) {
+		// TODO size information for tensor
+		if (left._dataType == DataType.TENSOR && right._dataType == DataType.TENSOR)
+			return MMBinaryMethod.MR_BINARY_R;
 		long m1_dim1 = left.getDim1();
 		long m1_dim2 = left.getDim2();
 		long m2_dim1 =  right.getDim1();

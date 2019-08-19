@@ -1160,7 +1160,13 @@ public class SparkExecutionContext extends ExecutionContext
 				lower[i] = (int) ((ix.getIndex(i) - 1) * dc.getBlockSize(i));
 				upper[i] = lower[i] + block.getDim(i) - 1;
 			}
-			out.getNextIndexes(upper);
+			upper[upper.length - 1]++;
+			for (int i = upper.length - 1; i > 0; i--) {
+				if (upper[i] == block.getDim(i)) {
+					upper[i] = 0;
+					upper[i - 1]++;
+				}
+			}
 
 			// TODO sparse copy
 			out.copy(lower, upper, block);
