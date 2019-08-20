@@ -17,6 +17,6 @@
 #-------------------------------------------------------------
 
 X = read($X)
-[C, Y] = kmeans(X,  $num_centroids, $num_runs, $max_iter, $eps, FALSE, 50)
+[C, Y] = kmeans(X,  $k, $runs, $max_iter, $eps, TRUE, 50)
 write(C, $C, format="text")
 write(Y, $Y, format="text")

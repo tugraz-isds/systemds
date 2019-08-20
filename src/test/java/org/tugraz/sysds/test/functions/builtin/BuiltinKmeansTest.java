@@ -6,14 +6,11 @@ import org.tugraz.sysds.api.DMLScript;
 import org.tugraz.sysds.common.Types;
 import org.tugraz.sysds.hops.OptimizerUtils;
 import org.tugraz.sysds.lops.LopProperties;
-import org.tugraz.sysds.runtime.matrix.data.MatrixValue;
 import org.tugraz.sysds.test.AutomatedTestBase;
 import org.tugraz.sysds.test.TestConfiguration;
 import org.tugraz.sysds.test.TestUtils;
-import org.tugraz.sysds.test.functions.codegenalg.AlgorithmKMeans;
 
 import java.io.File;
-import java.util.HashMap;
 
 public class BuiltinKmeansTest extends AutomatedTestBase
 {
@@ -28,15 +25,12 @@ public class BuiltinKmeansTest extends AutomatedTestBase
     private final static File TEST_CONF_FILE_FUSE_NO_REDUNDANCY = new File(SCRIPT_DIR + TEST_DIR,
             TEST_CONF_FUSE_NO_REDUNDANCY);
     private enum TestType { DEFAULT,FUSE_ALL,FUSE_NO_REDUNDANCY }
-
     private final static double eps = 1e-10;
     private final static int rows = 3972;
     private final static int cols = 972;
     private final static double spSparse = 0.3;
     private final static double spDense = 0.7;
-
-    private final static double epsilon = 0.000000001;
-    private final static double maxiter = 10;
+    private final static double max_iter = 10;
 
     private TestType currentTestType = TestType.DEFAULT;
 
@@ -302,6 +296,19 @@ public class BuiltinKmeansTest extends AutomatedTestBase
                 TestType.FUSE_NO_REDUNDANCY);
     }
 
+    // added last two test cases as SPARK to have some and get rid of a warning
+    @Test
+    public void testKMeansDenseMulMultiSparkFuseNoRedundancy() {
+        runKMeansTest(false, 20, 10, false, LopProperties.ExecType.SPARK,
+                TestType.FUSE_NO_REDUNDANCY);
+    }
+
+    @Test
+    public void testKMeansSparseMulMultiSparkFuseNoRedundancy() {
+        runKMeansTest(true,20, 10, false, LopProperties.ExecType.SPARK,
+                TestType.FUSE_NO_REDUNDANCY);
+    }
+
     private void runKMeansTest(boolean sparse, int centroids, int runs, boolean rewrites,
                                LopProperties.ExecType instType, TestType testType)
     {
@@ -311,8 +318,6 @@ public class BuiltinKmeansTest extends AutomatedTestBase
         currentTestType = testType;
         boolean sparkConfigOld = DMLScript.USE_LOCAL_SPARK_CONFIG;
 
-        String dml_test_name = TEST_NAME;
-
         try
         {
             loadTestConfiguration(getTestConfiguration(TEST_NAME));
@@ -321,11 +326,11 @@ public class BuiltinKmeansTest extends AutomatedTestBase
 
             String HOME = SCRIPT_DIR + TEST_DIR;
 
-            fullDMLScriptName = HOME + dml_test_name + ".dml";
+            fullDMLScriptName = HOME + TEST_NAME + ".dml";
             programArgs = new String[]{ "-explain", "-stats",
-                    "-nvargs", "X="+input("X"), "Y="+output("Y"), "C="+output("C"),
-                    "num_centroids="+String.valueOf(centroids), "num_runs="+String.valueOf(runs),
-                    "eps="+String.valueOf(epsilon), "max_iter="+String.valueOf(maxiter)};
+                    "-nvargs", "X=" + input("X"), "Y=" + output("Y"), "C=" + output("C"),
+                    "k=" + centroids, "runs=" + runs,
+                    "eps=" + eps, "max_iter=" + max_iter};
 
             OptimizerUtils.ALLOW_ALGEBRAIC_SIMPLIFICATION = rewrites;
 
