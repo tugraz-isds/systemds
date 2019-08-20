@@ -71,12 +71,12 @@ public class BuiltinSliceFinderTest extends AutomatedTestBase {
 
 	}
 
-	public double[][] modifyvalue(double[][]A,int[][]Y, int value, int coll){
+	public double[][] modifyvalue(double[][]A,double[][]Y, int value, int coll){
 
 		Integer i, j;
 
 		int counter = 0;
-		int nvec[][] = new int[rows][1];
+		double nvec[][] = new double[rows][1];
 		for (i = 0; i < rows; i++) {
 			if (A[i][coll] == value) {
 				nvec[counter][0] = Y[i][0];
@@ -131,7 +131,7 @@ public class BuiltinSliceFinderTest extends AutomatedTestBase {
 			double[][] A = getRandomMatrix(rows, cols, 0, 10, 1, 7);
 			double[][] B = getRandomMatrix(10, 1, 0, 10, 1.0, 3);
 			double[][] As = new double[rows][cols];
-			int [][] Ys = new int[rows][1];
+			double [][] Ys = new double[rows][1];
 
 			for (i = 0; i < rows; i++) {
 				for (j = 0; j < cols; j++) {
@@ -144,7 +144,7 @@ public class BuiltinSliceFinderTest extends AutomatedTestBase {
 				}
 			}
 
-			int Y[][] = new int[rows][1];
+			double Y[][] = new double[rows][1];
 			for (i = 0; i < rows; i++) {
 				for (j = 0; j < 1; j++) {
 					for (int k = 0; k < cols; k++) {
@@ -169,7 +169,7 @@ public class BuiltinSliceFinderTest extends AutomatedTestBase {
 
 			if(test == 1){
 
-				 AA = modifyvalue(A,Y,7,5);
+				 AA = modifyvalue(A, Y,7,5);
 
 
 			}else if(test == 2) {
@@ -209,6 +209,7 @@ public class BuiltinSliceFinderTest extends AutomatedTestBase {
 
 			writeInputMatrixWithMTD("AA", AA, true);
 			writeInputMatrixWithMTD("B", B, true);
+			//writeInputMatrixWithMTD("A", A, true);
 
 
 			runTest(true, false, null, -1);
