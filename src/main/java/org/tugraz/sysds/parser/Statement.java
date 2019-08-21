@@ -41,6 +41,7 @@ public abstract class Statement implements ParseInfo
 	public static final String SETWD 	= "setwd";
 
 	public static final String MATRIX_DATA_TYPE = "matrix";
+	public static final String TENSOR_DATA_TYPE = "tensor";
 	public static final String FRAME_DATA_TYPE = "frame";
 	public static final String SCALAR_DATA_TYPE = "scalar";
 	
@@ -249,8 +250,6 @@ public abstract class Statement implements ParseInfo
 	 *            parse information, such as beginning line position, beginning
 	 *            column position, ending line position, ending column position,
 	 *            text, and filename
-	 * @param filename
-	 *            the DML/PYDML filename (if it exists)
 	 */
 	public void setParseInfo(ParseInfo parseInfo) {
 		_beginLine = parseInfo.getBeginLine();

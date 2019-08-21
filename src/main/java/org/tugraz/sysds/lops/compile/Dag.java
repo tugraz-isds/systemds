@@ -344,9 +344,9 @@ public class Dag<N extends Lop>
 	private static ArrayList<Instruction> generateInstructionsForInputVariables(List<Lop> nodes_v) {
 		ArrayList<Instruction> insts = new ArrayList<>();
 		for(Lop n : nodes_v) {
-			if (n.isDataExecLocation() && !((Data) n).isTransient() 
-					&& ((Data) n).getOperationType() == OperationTypes.READ 
-					&& (n.getDataType() == DataType.MATRIX || n.getDataType() == DataType.FRAME) ) {
+			if (n.isDataExecLocation() && !((Data) n).isTransient()
+					&& ((Data) n).getOperationType() == OperationTypes.READ
+					&& (n.getDataType() == DataType.MATRIX || n.getDataType() == DataType.FRAME || n.getDataType() == DataType.TENSOR)) {
 				if ( !((Data)n).isLiteral() ) {
 					try {
 						String inst_string = n.getInstructions();

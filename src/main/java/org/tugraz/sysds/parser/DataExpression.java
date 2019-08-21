@@ -74,6 +74,7 @@ public class DataExpression extends DataIdentifier
 	public static final String IO_FILENAME = "iofilename";
 	public static final String READROWPARAM = "rows";
 	public static final String READCOLPARAM = "cols";
+	public static final String READDIMSPARAM = "dims";
 	public static final String READNNZPARAM = "nnz";
 	
 	public static final String FORMAT_TYPE = "format";
@@ -85,6 +86,7 @@ public class DataExpression extends DataIdentifier
 	
 	public static final String ROWBLOCKCOUNTPARAM = "rows_in_block";
 	public static final String COLUMNBLOCKCOUNTPARAM = "cols_in_block";
+	public static final String DIMSBLOCKCOUNTPARAM = "dims_in_block";
 	public static final String DATATYPEPARAM = "data_type";
 	public static final String VALUETYPEPARAM = "value_type";
 	public static final String DESCRIPTIONPARAM = "description";
@@ -111,13 +113,13 @@ public class DataExpression extends DataIdentifier
 		{  RAND_BY_ROW, RAND_DIMNAMES, RAND_DATA, RAND_ROWS, RAND_COLS, RAND_DIMS};
 
 	// Valid parameter names in a metadata file
-	public static final String[] READ_VALID_MTD_PARAM_NAMES = 
-		{ IO_FILENAME, READROWPARAM, READCOLPARAM, READNNZPARAM, FORMAT_TYPE,
-			ROWBLOCKCOUNTPARAM, COLUMNBLOCKCOUNTPARAM, DATATYPEPARAM, VALUETYPEPARAM, SCHEMAPARAM, DESCRIPTIONPARAM,
-			AUTHORPARAM, CREATEDPARAM,
-			// Parameters related to delimited/csv files.
-			DELIM_FILL_VALUE, DELIM_DELIMITER, DELIM_FILL, DELIM_HAS_HEADER_ROW, DELIM_NA_STRINGS
-		}; 
+	public static final String[] READ_VALID_MTD_PARAM_NAMES =
+			{IO_FILENAME, READROWPARAM, READCOLPARAM, READDIMSPARAM, READNNZPARAM, FORMAT_TYPE,
+					ROWBLOCKCOUNTPARAM, COLUMNBLOCKCOUNTPARAM, DIMSBLOCKCOUNTPARAM, DATATYPEPARAM, VALUETYPEPARAM, SCHEMAPARAM,
+					DESCRIPTIONPARAM, AUTHORPARAM, CREATEDPARAM,
+					// Parameters related to delimited/csv files.
+					DELIM_FILL_VALUE, DELIM_DELIMITER, DELIM_FILL, DELIM_HAS_HEADER_ROW, DELIM_NA_STRINGS
+			};
 
 	public static final String[] READ_VALID_PARAM_NAMES = 
 	{	IO_FILENAME, READROWPARAM, READCOLPARAM, FORMAT_TYPE, DATATYPEPARAM, VALUETYPEPARAM, SCHEMAPARAM,
@@ -1058,6 +1060,9 @@ public class DataExpression extends DataIdentifier
 					raiseValidateError("Invalid block dimensions (" + getOutput().getBlocksize() + ") when format=" + getVarParam(FORMAT_TYPE) + " in \"" + this.toString() + "\".", conditional);
 				}
 			
+			}
+			else if (dataTypeString.equalsIgnoreCase(Statement.TENSOR_DATA_TYPE)) {
+				getOutput().setDataType(DataType.TENSOR);
 			}
 			else if ( dataTypeString.equalsIgnoreCase(Statement.SCALAR_DATA_TYPE)) {
 				getOutput().setDataType(DataType.SCALAR);
