@@ -81,8 +81,15 @@ public class PartitionedBroadcast<T extends CacheBlock> implements Serializable
 	}
 
 	public static int computeBlocksPerPartition(long rlen, long clen, long brlen, long bclen) {
-		return (int) Math.floor( BROADCAST_PARTSIZE /
-			Math.min(rlen, brlen) / Math.min(clen, bclen));
+		return (int) (BROADCAST_PARTSIZE / Math.min(rlen, brlen) / Math.min(clen, bclen));
+	}
+
+	public static int computeBlocksPerPartition(long[] dims, int[] blen) {
+		long blocksPerPartition = BROADCAST_PARTSIZE;
+		for (int i = 0; i < dims.length; i++) {
+			blocksPerPartition /= Math.min(dims[i], blen[i]);
+		}
+		return (int) blocksPerPartition;
 	}
 
 	public T getBlock(int rowIndex, int colIndex) {
@@ -96,7 +103,27 @@ public class PartitionedBroadcast<T extends CacheBlock> implements Serializable
 		
 		return _pbc[pix].value().getBlock(rowIndex, colIndex);
 	}
-	
+
+	public T getBlock(int[] ix) {
+		int pix = 0;
+		if( _pbc.length > 1 ) { //compute partition index
+			long[] dims = new long[_dc.getNumDims()];
+			int[] blen = new int[_dc.getNumDims()];
+			for (int i = 0; i < dims.length; i++) {
+				dims[i] = _dc.getDim(i);
+				blen[i] = (int) _dc.getBlockSize(i);
+			}
+			int numPerPart = computeBlocksPerPartition(dims, blen);
+			long l = blen[blen.length - 1];
+			for (int i = blen.length - 2; i >= 0; i--) {
+				l += (ix[i] - 1) * blen[i + 1];
+			}
+			pix = (int) (l / numPerPart);
+		}
+
+		return _pbc[pix].value().getBlock(ix);
+	}
+
 	/**
 	 * Utility for slice operations over partitioned matrices, where the index range can cover
 	 * multiple blocks. The result is always a single result matrix block. All semantics are 

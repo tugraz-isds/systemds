@@ -714,9 +714,77 @@ public class SparkExecutionContext extends ExecutionContext
 		return bret;
 	}
 
+	@SuppressWarnings("unchecked")
+	public PartitionedBroadcast<TensorBlock> getBroadcastForTensorObject(TensorObject to) {
+		long t0 = DMLScript.STATISTICS ? System.nanoTime() : 0;
+
+		PartitionedBroadcast<TensorBlock> bret = null;
+
+		//reuse existing broadcast handle
+		if (to.getBroadcastHandle() != null && to.getBroadcastHandle().isPartitionedBroadcastValid()) {
+			bret = to.getBroadcastHandle().getPartitionedBroadcast();
+		}
+
+		//create new broadcast handle (never created, evicted)
+		if (bret == null) {
+			//account for overwritten invalid broadcast (e.g., evicted)
+			if (to.getBroadcastHandle() != null)
+				CacheableData.addBroadcastSize(-to.getBroadcastHandle().getPartitionedBroadcastSize());
+
+			//obtain meta data for matrix
+			DataCharacteristics dc = to.getDataCharacteristics();
+			long[] dims = new long[dc.getNumDims()];
+			int[] blen = new int[dc.getNumDims()];
+			for (int i = 0; i < dc.getNumDims(); i++) {
+				dims[i] = dc.getDim(i);
+				blen[i] = (int) dc.getBlockSize(i);
+			}
+
+			//create partitioned matrix block and release memory consumed by input
+			TensorBlock tb = to.acquireRead();
+			PartitionedBlock<TensorBlock> pmb = new PartitionedBlock<>(tb, dims, blen);
+			to.release();
+
+			//determine coarse-grained partitioning
+			int numPerPart = PartitionedBroadcast.computeBlocksPerPartition(dims, blen);
+			int numParts = (int) Math.ceil((double) pmb.getNumRowBlocks() * pmb.getNumColumnBlocks() / numPerPart);
+			Broadcast<PartitionedBlock<TensorBlock>>[] ret = new Broadcast[numParts];
+
+			//create coarse-grained partitioned broadcasts
+			if (numParts > 1) {
+				Arrays.parallelSetAll(ret, i -> createPartitionedBroadcast(pmb, numPerPart, i));
+			} else { //single partition
+				ret[0] = getSparkContext().broadcast(pmb);
+				if (!isLocalMaster())
+					pmb.clearBlocks();
+			}
+
+			bret = new PartitionedBroadcast<>(ret, to.getDataCharacteristics());
+			// create the broadcast handle if the matrix or frame has never been broadcasted
+			if (to.getBroadcastHandle() == null) {
+				to.setBroadcastHandle(new BroadcastObject<MatrixBlock>());
+			}
+			to.getBroadcastHandle().setPartitionedBroadcast(bret,
+					OptimizerUtils.estimatePartitionedSizeExactSparsity(to.getDataCharacteristics()));
+			CacheableData.addBroadcastSize(to.getBroadcastHandle().getPartitionedBroadcastSize());
+		}
+
+		if (DMLScript.STATISTICS) {
+			Statistics.accSparkBroadCastTime(System.nanoTime() - t0);
+			Statistics.incSparkBroadcastCount(1);
+		}
+
+		return bret;
+	}
+
 	public PartitionedBroadcast<MatrixBlock> getBroadcastForVariable(String varname) {
 		MatrixObject mo = getMatrixObject(varname);
 		return getBroadcastForMatrixObject(mo);
+	}
+
+	public PartitionedBroadcast<TensorBlock> getBroadcastForTensorVariable(String varname) {
+		TensorObject to = getTensorObject(varname);
+		return getBroadcastForTensorObject(to);
 	}
 
 	@SuppressWarnings("unchecked")

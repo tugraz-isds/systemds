@@ -59,12 +59,13 @@ public class BinaryOp extends MultiThreadedHop
 {
 	//we use the full remote memory budget (but reduced by sort buffer), 
 	public static final double APPEND_MEM_MULTIPLIER = 1.0;
-	
+
 	private Hop.OpOp2 op;
 	private boolean outer = false;
 	
 	public static AppendMethod FORCED_APPEND_METHOD = null;
-	
+	public static MMBinaryMethod FORCED_BINARY_METHOD = null;
+
 	public enum AppendMethod { 
 		CP_APPEND, //in-memory general case append (implicitly selected for CP)
 		MR_MAPPEND, //map-only append (rhs must be vector and fit in mapper mem)
@@ -73,7 +74,7 @@ public class BinaryOp extends MultiThreadedHop
 		SP_GAlignedAppend // special case for general case in Spark where left.getCols() % left.getColsPerBlock() == 0
 	}
 	
-	private enum MMBinaryMethod {
+	public enum MMBinaryMethod {
 		CP_BINARY, //(implicitly selected for CP) 
 		MR_BINARY_R, //both mm, mv 
 		MR_BINARY_M, //only mv (mr/spark)
@@ -414,7 +415,7 @@ public class BinaryOp extends MultiThreadedHop
 		} 
 		else 
 		{
-			// Both operands are Matrixes
+			// Both operands are Matrixes or Tensors
 			ExecType et = optFindExecType();
 			boolean isGPUSoftmax = et == ExecType.GPU && op == Hop.OpOp2.DIV && 
 					getInput().get(0) instanceof UnaryOp && getInput().get(1) instanceof AggUnaryOp && 
@@ -433,7 +434,7 @@ public class BinaryOp extends MultiThreadedHop
 				Lop binary = null;
 				
 				boolean isLeftXGt = (getInput().get(0) instanceof BinaryOp) && ((BinaryOp) getInput().get(0)).getOp() == OpOp2.GREATER;
-				Hop potentialZero = isLeftXGt ? ((BinaryOp) getInput().get(0)).getInput().get(1) : null;
+				Hop potentialZero = isLeftXGt ? getInput().get(0).getInput().get(1) : null;
 				
 				boolean isLeftXGt0 = isLeftXGt && potentialZero != null
 					&& HopRewriteUtils.isLiteralOfValue(potentialZero, 0);
@@ -458,6 +459,8 @@ public class BinaryOp extends MultiThreadedHop
 				Hop left = getInput().get(0);
 				Hop right = getInput().get(1);
 				MMBinaryMethod mbin = optFindMMBinaryMethodSpark(left, right);
+				if (FORCED_BINARY_METHOD != null)
+					mbin = FORCED_BINARY_METHOD;
 				
 				Lop  binary = null;
 				if( mbin == MMBinaryMethod.MR_BINARY_UAGG_CHAIN ) {
@@ -467,11 +470,11 @@ public class BinaryOp extends MultiThreadedHop
 							getDataType(), getValueType(), et);
 				}
 				else if (mbin == MMBinaryMethod.MR_BINARY_M) {
-					boolean partitioned = false;
-					boolean isColVector = (right.getDim2()==1 && left.getDim1()==right.getDim1());
-					
+					boolean isColVector = dt1 != DataType.TENSOR && dt2 != DataType.TENSOR &&
+							(right.getDim2() == 1 && left.getDim1() == right.getDim1());
+
 					binary = new BinaryM(left.constructLops(), right.constructLops(),
-							HopsOpOp2LopsB.get(op), getDataType(), getValueType(), et, partitioned, isColVector); 
+							HopsOpOp2LopsB.get(op), getDataType(), getValueType(), et, false, isColVector);
 				}
 				else {
 					binary = new Binary(left.constructLops(), right.constructLops(), 
@@ -487,7 +490,7 @@ public class BinaryOp extends MultiThreadedHop
 
 	@Override
 	public String getOpString() {
-		String s = new String("");
+		String s = "";
 		s += "b(" + HopsOpOp2String.get(op) + ")";
 		return s;
 	}

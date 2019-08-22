@@ -23,6 +23,7 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.tugraz.sysds.api.DMLScript;
 import org.tugraz.sysds.common.Types.ExecMode;
+import org.tugraz.sysds.hops.BinaryOp;
 import org.tugraz.sysds.lops.LopProperties;
 import org.tugraz.sysds.test.AutomatedTestBase;
 import org.tugraz.sysds.test.TestConfiguration;
@@ -63,16 +64,23 @@ public class ElementwiseMultiplicationTest extends AutomatedTestBase
 	}
 
 	@Test
-	public void elementwiseAdditionTestCP() {
-		testElementwiseAddition(TEST_NAME, LopProperties.ExecType.CP);
+	public void elementwiseMultiplicationTestCP() {
+		testElementwiseMultiplication(TEST_NAME, LopProperties.ExecType.CP);
 	}
 
 	@Test
-	public void elementwiseAdditionTestSpark() {
-		testElementwiseAddition(TEST_NAME, LopProperties.ExecType.SPARK);
+	public void elementwiseMultiplicationTestSpark() {
+		BinaryOp.FORCED_BINARY_METHOD = null;
+		testElementwiseMultiplication(TEST_NAME, LopProperties.ExecType.SPARK);
 	}
 
-	private void testElementwiseAddition(String testName, LopProperties.ExecType platform) {
+	@Test
+	public void elementwiseMultiplicationTestBroadcastSpark() {
+		BinaryOp.FORCED_BINARY_METHOD = BinaryOp.MMBinaryMethod.MR_BINARY_M;
+		testElementwiseMultiplication(TEST_NAME, LopProperties.ExecType.SPARK);
+	}
+
+	private void testElementwiseMultiplication(String testName, LopProperties.ExecType platform) {
 		ExecMode platformOld = rtplatform;
 		if (platform == LopProperties.ExecType.SPARK) {
 			rtplatform = ExecMode.SPARK;
@@ -86,17 +94,18 @@ public class ElementwiseMultiplicationTest extends AutomatedTestBase
 			DMLScript.USE_LOCAL_SPARK_CONFIG = true;
 		}
 		try {
-			getAndLoadTestConfiguration(TEST_NAME);
+			getAndLoadTestConfiguration(testName);
 
 			String HOME = SCRIPT_DIR + TEST_DIR;
 
-			fullDMLScriptName = HOME + TEST_NAME + ".dml";
+			fullDMLScriptName = HOME + testName + ".dml";
 			String dimensionsString = Arrays.toString(dimensions).replace("[", "")
 					.replace(",", "").replace("]", "");
 			programArgs = new String[]{"-explain", "-args",
 					dimensionsString, Integer.toString(dimensions.length), lvalue, rvalue, output("A")};
 
 			runTest(true, false, null, -1);
+			//TODO test correctness
 		}
 		finally {
 			rtplatform = platformOld;

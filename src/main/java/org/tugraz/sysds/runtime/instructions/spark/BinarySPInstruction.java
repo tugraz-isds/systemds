@@ -41,6 +41,7 @@ import org.tugraz.sysds.runtime.instructions.spark.functions.MatrixVectorBinaryO
 import org.tugraz.sysds.runtime.instructions.spark.functions.OuterVectorBinaryOpFunction;
 import org.tugraz.sysds.runtime.instructions.spark.functions.ReplicateVectorFunction;
 import org.tugraz.sysds.runtime.instructions.spark.functions.TensorTensorBinaryOpFunction;
+import org.tugraz.sysds.runtime.instructions.spark.functions.TensorTensorBinaryOpPartitionFunction;
 import org.tugraz.sysds.runtime.instructions.spark.utils.SparkUtils;
 import org.tugraz.sysds.runtime.matrix.data.MatrixBlock;
 import org.tugraz.sysds.runtime.matrix.data.MatrixIndexes;
@@ -95,7 +96,10 @@ public abstract class BinarySPInstruction extends ComputationSPInstruction {
 		}
 		else if (dt1 == DataType.TENSOR || dt2 == DataType.TENSOR) {
 			if (dt1 == DataType.TENSOR && dt2 == DataType.TENSOR) {
-				return new BinaryTensorTensorSPInstruction(operator, in1, in2, out, opcode, str);
+				if (isBroadcast)
+					return new BinaryTensorTensorBroadcastSPInstruction(operator, in1, in2, out, opcode, str);
+				else
+					return new BinaryTensorTensorSPInstruction(operator, in1, in2, out, opcode, str);
 			}
 			else
 				throw new DMLRuntimeException("Tensor binary operation not yet implemented for tensor-scalar, or tensor-matrix");
@@ -245,7 +249,39 @@ public abstract class BinarySPInstruction extends ComputationSPInstruction {
 		sec.addLineageBroadcast(output.getName(), bcastVar);
 	}
 
-	protected void processMatrixScalarBinaryInstruction(ExecutionContext ec) 
+	protected void processTensorTensorBroadcastBinaryInstruction(ExecutionContext ec) {
+		SparkExecutionContext sec = (SparkExecutionContext) ec;
+
+		//sanity check dimensions
+		checkTensorTensorBinaryCharacteristics(sec);
+
+		//get input RDDs
+		String rddVar = input1.getName();
+		String bcastVar = input2.getName();
+		JavaPairRDD<TensorIndexes, TensorBlock> in1 = sec.getBinaryTensorBlockRDDHandleForVariable(rddVar);
+		PartitionedBroadcast<TensorBlock> in2 = sec.getBroadcastForTensorVariable(bcastVar);
+		DataCharacteristics mc1 = sec.getDataCharacteristics(rddVar);
+		DataCharacteristics mc2 = sec.getDataCharacteristics(bcastVar);
+
+		BinaryOperator bop = (BinaryOperator) _optr;
+
+		boolean[] replicateDim = new boolean[mc2.getNumDims()];
+		for (int i = 0; i < replicateDim.length; i++)
+			replicateDim[i] = mc2.getDim(i) == 1;
+
+		//execute map binary operation
+		JavaPairRDD<TensorIndexes, TensorBlock> out = null;
+		out = in1.mapPartitionsToPair(
+				new TensorTensorBinaryOpPartitionFunction(bop, in2, replicateDim), true);
+
+		//set output RDD
+		updateBinaryTensorOutputDataCharacteristics(sec);
+		sec.setRDDHandleForVariable(output.getName(), out);
+		sec.addLineageRDD(output.getName(), rddVar);
+		sec.addLineageBroadcast(output.getName(), bcastVar);
+	}
+
+	protected void processMatrixScalarBinaryInstruction(ExecutionContext ec)
 	{
 		SparkExecutionContext sec = (SparkExecutionContext)ec;
 	

@@ -23,6 +23,7 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.tugraz.sysds.api.DMLScript;
 import org.tugraz.sysds.common.Types.ExecMode;
+import org.tugraz.sysds.hops.BinaryOp;
 import org.tugraz.sysds.lops.LopProperties;
 import org.tugraz.sysds.test.AutomatedTestBase;
 import org.tugraz.sysds.test.TestConfiguration;
@@ -69,6 +70,13 @@ public class ElementwiseAdditionTest extends AutomatedTestBase
 
 	@Test
 	public void elementwiseAdditionTestSpark() {
+		BinaryOp.FORCED_BINARY_METHOD = null;
+		testElementwiseAddition(TEST_NAME, LopProperties.ExecType.SPARK);
+	}
+
+	@Test
+	public void elementwiseAdditionTestBroadcastSpark() {
+		BinaryOp.FORCED_BINARY_METHOD = BinaryOp.MMBinaryMethod.MR_BINARY_M;
 		testElementwiseAddition(TEST_NAME, LopProperties.ExecType.SPARK);
 	}
 
@@ -97,6 +105,7 @@ public class ElementwiseAdditionTest extends AutomatedTestBase
 					dimensionsString, Integer.toString(dimensions.length), lvalue, rvalue, output("A")};
 
 			runTest(true, false, null, -1);
+			//TODO test correctness
 		}
 		finally {
 			rtplatform = platformOld;

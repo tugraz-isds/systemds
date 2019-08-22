@@ -37,6 +37,7 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Arrays;
 
 public class BasicTensor extends TensorBlock implements Externalizable
 {
@@ -666,8 +667,15 @@ public class BasicTensor extends TensorBlock implements Externalizable
 
 	@Override
 	public CacheBlock slice(int rl, int ru, int cl, int cu, CacheBlock block) {
-		// TODO Auto-generated method stub
-		return null;
+		BasicTensor bt = (BasicTensor) block;
+		int[] dims = Arrays.copyOf(_dims, _dims.length);
+		dims[0] = ru - rl + 1;
+		dims[1] = cu - cl + 1;
+		bt.reset(dims, false);
+		int[] offsets = new int[dims.length];
+		offsets[0] = rl;
+		offsets[1] = cl;
+		return slice(offsets, bt);
 	}
 
 	/**
@@ -678,6 +686,7 @@ public class BasicTensor extends TensorBlock implements Externalizable
 	 * @return the sliced result block
 	 */
 	public BasicTensor slice(int[] offsets, BasicTensor outBlock) {
+		// TODO change signature to use upper lower instead of offsets and size of outBlock
 		// TODO perf
 		int[] srcIx = new int[offsets.length];
 		Array.copy(offsets, 0, srcIx, 0, offsets.length);
