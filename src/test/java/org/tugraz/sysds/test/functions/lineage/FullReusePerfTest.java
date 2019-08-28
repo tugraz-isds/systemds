@@ -90,7 +90,9 @@ public class FullReusePerfTest extends AutomatedTestBase
 			writeInputMatrixWithMTD("X", X, true);
 			
 			Lineage.resetInternalState();
+			OptimizerUtils.setLinResFull();
 			runTest(true, EXCEPTION_NOT_EXPECTED, null, -1);
+			OptimizerUtils.setLinResNone();
 			
 			String X_lineage = readDMLLineageFromHDFS("X");
 			LineageItem X_li = LineageParser.parseLineageTrace(X_lineage);

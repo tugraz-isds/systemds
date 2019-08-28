@@ -95,8 +95,10 @@ public class FullReuseTest extends AutomatedTestBase {
 			programArgs = proArgs.toArray(new String[proArgs.size()]);
 			
 			Lineage.resetInternalState();
+			OptimizerUtils.setLinResFull();
 			runTest(true, EXCEPTION_NOT_EXPECTED, null, -1);
 			HashMap<MatrixValue.CellIndex, Double> X_reused = readDMLMatrixFromHDFS("X");
+			OptimizerUtils.setLinResNone();
 			
 			TestUtils.compareMatrices(X_orig, X_reused, 1e-6, "Origin", "Reused");
 		}

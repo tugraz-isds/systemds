@@ -65,6 +65,8 @@ import org.tugraz.sysds.parser.IfStatementBlock;
 import org.tugraz.sysds.parser.Statement;
 import org.tugraz.sysds.parser.StatementBlock;
 import org.tugraz.sysds.parser.WhileStatementBlock;
+import org.tugraz.sysds.runtime.controlprogram.caching.MatrixObject;
+import org.tugraz.sysds.runtime.controlprogram.caching.MatrixObject.UpdateType;
 import org.tugraz.sysds.runtime.instructions.InstructionUtils;
 import org.tugraz.sysds.runtime.instructions.cp.ScalarObject;
 import org.tugraz.sysds.runtime.instructions.cp.ScalarObjectFactory;
@@ -532,6 +534,32 @@ public class HopRewriteUtils
 			h.getUpdateType(), h.getBlocksize());
 		tread.setVisited();
 		copyLineNumbers(h, tread);
+		return tread;
+	}
+	
+	public static DataOp createTransientRead(String name, MatrixBlock mb) {
+		DataOp tread = new DataOp(name, DataType.MATRIX, ValueType.FP64, DataOpTypes.TRANSIENTREAD,
+			null, mb.getNumRows(), mb.getNumColumns(), mb.getNonZeros(), UpdateType.COPY, 
+			ConfigurationManager.getBlocksize());
+		tread.setVisited();
+		tread.setBeginLine(1);
+		tread.setEndLine(mb.getNumRows());
+		tread.setBeginColumn(1);
+		tread.setEndColumn(mb.getNumColumns());
+		tread.setFileName(name);
+		return tread;
+	}
+	
+	public static DataOp createTransientRead(String name, MatrixObject mo) {
+		DataOp tread = new DataOp(name, DataType.MATRIX, ValueType.FP64, DataOpTypes.TRANSIENTREAD,
+			null, mo.getNumRows(), mo.getNumColumns(), mo.getNnz(), UpdateType.COPY,
+			(int)mo.getBlocksize());
+		tread.setVisited();
+		tread.setBeginLine(1);
+		tread.setEndLine((int)mo.getNumRows());
+		tread.setBeginColumn(1);
+		tread.setEndColumn((int)mo.getNumColumns());
+		tread.setFileName(name);
 		return tread;
 	}
 	

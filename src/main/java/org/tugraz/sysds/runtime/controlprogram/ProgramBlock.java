@@ -203,6 +203,8 @@ public abstract class ProgramBlock implements ParseInfo
 
 			// pre-process instruction (inst patching, listeners, lineage)
 			Instruction tmp = currInst.preprocessInstruction( ec );
+			
+			//ArrayList<Instruction> rInst = LineageRewriteOps.rewriteLineage(tmp, _sb, _sb.getHops(), ec.getVariables());
 
 			// try to reuse instruction result from lineage cache
 			if( !LineageCache.reuse(tmp, ec) ) {

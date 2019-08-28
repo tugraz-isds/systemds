@@ -70,6 +70,8 @@ import org.tugraz.sysds.runtime.controlprogram.parfor.stat.InfrastructureAnalyze
 import org.tugraz.sysds.runtime.controlprogram.parfor.util.IDHandler;
 import org.tugraz.sysds.runtime.instructions.gpu.context.GPUContextPool;
 import org.tugraz.sysds.runtime.io.IOUtilFunctions;
+import org.tugraz.sysds.runtime.lineage.LineageCacheConfig;
+import org.tugraz.sysds.runtime.lineage.LineageCacheConfig.cacheType;
 import org.tugraz.sysds.runtime.matrix.mapred.MRConfigurationNames;
 import org.tugraz.sysds.runtime.matrix.mapred.MRJobConfiguration;
 import org.tugraz.sysds.runtime.util.LocalFileUtils;

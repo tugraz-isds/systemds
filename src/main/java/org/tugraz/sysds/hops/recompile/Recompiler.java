@@ -396,12 +396,20 @@ public class Recompiler
 	
 	private static void logExplainDAG(StatementBlock sb, ArrayList<Hop> hops, ArrayList<Instruction> inst) {
 		if( DMLScript.EXPLAIN == ExplainType.RECOMPILE_HOPS ) {
-			System.out.println("EXPLAIN RECOMPILE \nGENERIC (lines "+sb.getBeginLine()+"-"+sb.getEndLine()+"):\n" +
-				Explain.explainHops(hops, 1));
+			if (sb != null)
+				System.out.println("EXPLAIN RECOMPILE \nGENERIC (lines "+sb.getBeginLine()+"-"+sb.getEndLine()+"):\n" +
+						Explain.explainHops(hops, 1));
+			else
+				System.out.println("EXPLAIN RECOMPILE \nGENERIC (lines "+hops.get(0).getBeginLine()+"-"+hops.get(0).getEndLine()+"):\n" +
+						Explain.explainHops(hops, 1));
 		}
 		if( DMLScript.EXPLAIN == ExplainType.RECOMPILE_RUNTIME ) {
-			System.out.println("EXPLAIN RECOMPILE \nGENERIC (lines "+sb.getBeginLine()+"-"+sb.getEndLine()+"):\n" +
-				Explain.explain(inst, 1));
+			if (sb != null)
+				System.out.println("EXPLAIN RECOMPILE \nGENERIC (lines "+sb.getBeginLine()+"-"+sb.getEndLine()+"):\n" +
+						Explain.explain(inst, 1));
+			else
+				System.out.println("EXPLAIN RECOMPILE \nGENERIC (lines "+hops.get(0).getBeginLine()+"-"+hops.get(0).getEndLine()+"):\n" +
+						Explain.explain(inst, 1));
 		}
 	}
 	
