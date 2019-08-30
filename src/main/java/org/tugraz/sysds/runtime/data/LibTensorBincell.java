@@ -40,6 +40,7 @@ public class LibTensorBincell {
 	 * @param op  binary operator
 	 */
 	public static void bincellOp(BasicTensor m1, BasicTensor m2, BasicTensor ret, BinaryOperator op) {
+		// TODO separate implementations for matching dims and broadcasting
 		// TODO perf (empty, sparse safe, etc.)
 		int[] ix1 = new int[ret.getNumDims()];
 		int[] ix2 = new int[ret.getNumDims()];

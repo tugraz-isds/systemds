@@ -16,8 +16,9 @@
 #
 #-------------------------------------------------------------
 
-d = matrix($1, 1, $2);
-A = tensor($3, d);
-B = tensor($4, d);
+d1 = matrix($1, 1, $3);
+d2 = matrix($2, 1, $3);
+A = tensor($4, d1);
+B = tensor($5, d2);
 C = A + B;
 print(toString(C));

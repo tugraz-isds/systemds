@@ -18,6 +18,7 @@
 package org.tugraz.sysds.runtime.data;
 
 import org.tugraz.sysds.common.Types.ValueType;
+import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.controlprogram.caching.CacheBlock;
 import org.tugraz.sysds.runtime.matrix.operators.AggregateOperator;
 import org.tugraz.sysds.runtime.matrix.operators.AggregateUnaryOperator;
@@ -132,7 +133,11 @@ public abstract class TensorBlock implements CacheBlock
 
 	public abstract TensorBlock binaryOperations(BinaryOperator op, TensorBlock thatValue, TensorBlock result);
 
+	protected abstract TensorBlock checkType(TensorBlock that);
+
 	public static ValueType resultValueType(ValueType in1, ValueType in2) {
+		if (in1 == ValueType.UNKNOWN || in2 == ValueType.UNKNOWN)
+			throw new DMLRuntimeException("Operations on unknown value types not possible");
 		if (in1 == ValueType.STRING || in2 == ValueType.STRING)
 			return ValueType.STRING;
 		if (in1 == ValueType.FP64 || in2 == ValueType.FP64)
@@ -145,6 +150,6 @@ public abstract class TensorBlock implements CacheBlock
 			return ValueType.INT32;
 		if (in1 == ValueType.BOOLEAN || in2 == ValueType.BOOLEAN)
 			return ValueType.INT64;
-		return ValueType.UNKNOWN;
+		throw new DMLRuntimeException("TensorBlock(ValueType,ValueType) value types not recognized");
 	}
 }

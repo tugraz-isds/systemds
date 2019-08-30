@@ -37,7 +37,6 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.Arrays;
 
 public class BasicTensor extends TensorBlock implements Externalizable
 {
@@ -561,7 +560,7 @@ public class BasicTensor extends TensorBlock implements Externalizable
 		}
 		//prepare result matrix block
 		BasicTensor res;
-		if(result==null || ((BasicTensor) result)._vt != _vt)
+		if(result==null || checkType(result)._vt != _vt)
 			res = new BasicTensor(_vt, new int[]{dim0, dim1}, false);
 		else {
 			res = (BasicTensor) result;
@@ -594,9 +593,10 @@ public class BasicTensor extends TensorBlock implements Externalizable
 			throw new RuntimeException("Block sizes are not matched for binary cell operations");
 		}
 		//prepare result matrix block
-		ValueType vt = resultValueType(_vt, ((BasicTensor) thatValue)._vt);
+		BasicTensor that = checkType(thatValue);
+		ValueType vt = resultValueType(_vt, that._vt);
 		BasicTensor res;
-		if (result == null || ((BasicTensor) result)._vt != vt)
+		if (result == null || checkType(result)._vt != vt)
 			res = new BasicTensor(vt, _dims, false);
 		else {
 			res = (BasicTensor) result;
@@ -606,6 +606,14 @@ public class BasicTensor extends TensorBlock implements Externalizable
 		LibTensorBincell.bincellOp(this, (BasicTensor) thatValue, res, op);
 
 		return res;
+	}
+
+	@Override
+	protected BasicTensor checkType(TensorBlock that) {
+		if (that instanceof BasicTensor)
+			return (BasicTensor) that;
+		else
+			throw new DMLRuntimeException("BasicTensor.checkType(TensorBlock) given TensorBlock was no BasicTensor");
 	}
 
 	@Override
@@ -667,10 +675,13 @@ public class BasicTensor extends TensorBlock implements Externalizable
 
 	@Override
 	public CacheBlock slice(int rl, int ru, int cl, int cu, CacheBlock block) {
+		if (!(block instanceof BasicTensor))
+			throw new DMLRuntimeException("BasicTensor.slice(int,int,int,int,CacheBlock) CacheBlock was no BasicTensor");
 		BasicTensor bt = (BasicTensor) block;
-		int[] dims = Arrays.copyOf(_dims, _dims.length);
+		int[] dims = new int[_dims.length];
 		dims[0] = ru - rl + 1;
 		dims[1] = cu - cl + 1;
+		System.arraycopy(_dims, 2, dims, 2, _dims.length - 2);
 		bt.reset(dims, false);
 		int[] offsets = new int[dims.length];
 		offsets[0] = rl;

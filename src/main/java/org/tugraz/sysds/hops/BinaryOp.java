@@ -436,8 +436,7 @@ public class BinaryOp extends MultiThreadedHop
 				boolean isLeftXGt = (getInput().get(0) instanceof BinaryOp) && ((BinaryOp) getInput().get(0)).getOp() == OpOp2.GREATER;
 				Hop potentialZero = isLeftXGt ? getInput().get(0).getInput().get(1) : null;
 				
-				boolean isLeftXGt0 = isLeftXGt && potentialZero != null
-					&& HopRewriteUtils.isLiteralOfValue(potentialZero, 0);
+				boolean isLeftXGt0 = isLeftXGt && HopRewriteUtils.isLiteralOfValue(potentialZero, 0);
 				
 				if(op == OpOp2.MULT && isLeftXGt0 && 
 					!getInput().get(0).isVector() && !getInput().get(1).isVector()
@@ -474,7 +473,7 @@ public class BinaryOp extends MultiThreadedHop
 							(right.getDim2() == 1 && left.getDim1() == right.getDim1());
 
 					binary = new BinaryM(left.constructLops(), right.constructLops(),
-							HopsOpOp2LopsB.get(op), getDataType(), getValueType(), et, false, isColVector);
+							HopsOpOp2LopsB.get(op), getDataType(), getValueType(), et, isColVector);
 				}
 				else {
 					binary = new Binary(left.constructLops(), right.constructLops(), 
@@ -490,9 +489,7 @@ public class BinaryOp extends MultiThreadedHop
 
 	@Override
 	public String getOpString() {
-		String s = "";
-		s += "b(" + HopsOpOp2String.get(op) + ")";
-		return s;
+		return "b(" + HopsOpOp2String.get(op) + ")";
 	}
 
 	@Override

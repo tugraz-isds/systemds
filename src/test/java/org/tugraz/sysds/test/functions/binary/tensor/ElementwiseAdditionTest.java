@@ -32,35 +32,36 @@ import java.util.Arrays;
 import java.util.Collection;
 
 @RunWith(value = Parameterized.class)
-public class ElementwiseAdditionTest extends AutomatedTestBase
-{
+public class ElementwiseAdditionTest extends AutomatedTestBase {
 	private final static String TEST_DIR = "functions/binary/tensor/";
 	private final static String TEST_NAME = "ElementwiseAdditionTest";
 	private final static String TEST_CLASS_DIR = TEST_DIR + ElementwiseAdditionTest.class.getSimpleName() + "/";
 
-	private String lvalue, rvalue;
-	private int[] dimensions;
+	private String _lvalue, _rvalue;
+	private int[] _dimsLeft, _dimsRight;
 
-	public ElementwiseAdditionTest(int[] dims, String lv, String rv) {
-		dimensions = dims;
-		lvalue = lv;
-		rvalue = rv;
+	public ElementwiseAdditionTest(int[] dimsLeft, int[] dimsRight, String lv, String rv) {
+		_dimsLeft = dimsLeft;
+		_dimsRight = dimsRight;
+		_lvalue = lv;
+		_rvalue = rv;
 	}
-	
+
 	@Parameters
 	public static Collection<Object[]> data() {
-		Object[][] data = new Object[][] {
-				{new int[]{3, 4, 5}, "3", "-2"},
-				{new int[]{1, 1, 1, 1, 1}, "2", "30000000000.0"},
-				{new int[]{4000, 4000}, "3.0", "-2.0"},
-				{new int[]{4000, 4000}, "3.0", "-2"},
-				};
+		Object[][] data = new Object[][]{
+				{new int[]{3, 4, 5}, new int[]{3, 4, 5}, "3", "-2"},
+				{new int[]{1, 1, 1, 1, 1}, new int[]{1, 1, 1, 1, 1}, "2", "30000000000.0"},
+				{new int[]{4000, 4000}, new int[]{4000, 4000}, "3.0", "-2.0"},
+				{new int[]{4000, 4000}, new int[]{4000, 1}, "3.0", "-2.0"},
+				{new int[]{4000, 4000}, new int[]{1, 1}, "3.0", "-2"},
+		};
 		return Arrays.asList(data);
 	}
-	
+
 	@Override
 	public void setUp() {
-		addTestConfiguration(TEST_NAME,new TestConfiguration(TEST_CLASS_DIR, TEST_NAME,new String[]{"A.scalar"}));
+		addTestConfiguration(TEST_NAME, new TestConfiguration(TEST_CLASS_DIR, TEST_NAME, new String[]{"A.scalar"}));
 	}
 
 	@Test
@@ -99,10 +100,12 @@ public class ElementwiseAdditionTest extends AutomatedTestBase
 			String HOME = SCRIPT_DIR + TEST_DIR;
 
 			fullDMLScriptName = HOME + TEST_NAME + ".dml";
-			String dimensionsString = Arrays.toString(dimensions).replace("[", "")
+			String ldimString = Arrays.toString(_dimsLeft).replace("[", "")
+					.replace(",", "").replace("]", "");
+			String rdimString = Arrays.toString(_dimsRight).replace("[", "")
 					.replace(",", "").replace("]", "");
 			programArgs = new String[]{"-explain", "-args",
-					dimensionsString, Integer.toString(dimensions.length), lvalue, rvalue, output("A")};
+					ldimString, rdimString, Integer.toString(_dimsLeft.length), _lvalue, _rvalue, output("A")};
 
 			runTest(true, false, null, -1);
 			//TODO test correctness

@@ -58,6 +58,10 @@ public class TensorIndexes implements WritableComparable<TensorIndexes>, Externa
 		return _ix[dim];
 	}
 
+	public long[] getIndexes() {
+		return _ix;
+	}
+
 	public int getNumDims() {
 		return _ix.length;
 	}

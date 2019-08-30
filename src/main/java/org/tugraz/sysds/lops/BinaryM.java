@@ -56,14 +56,13 @@ public class BinaryM extends Lop
 	 * @param dt data type
 	 * @param vt value type
 	 * @param et exec type
-	 * @param partitioned true if partitioned
 	 * @param colVector true if colVector
 	 */
-	public BinaryM(Lop input1, Lop input2, OperationTypes op, DataType dt, ValueType vt, ExecType et, boolean partitioned, boolean colVector ) {
+	public BinaryM(Lop input1, Lop input2, OperationTypes op, DataType dt, ValueType vt, ExecType et, boolean colVector ) {
 		super(Lop.Type.Binary, dt, vt);
 		
 		_operation = op;
-		_cacheType = partitioned ? CacheType.RIGHT_PART : CacheType.RIGHT;
+		_cacheType = CacheType.RIGHT;
 		_vectorType = colVector ? VectorType.COL_VECTOR : VectorType.ROW_VECTOR;
 		
 		this.addInput(input1);

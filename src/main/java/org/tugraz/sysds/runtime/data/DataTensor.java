@@ -309,6 +309,14 @@ public class DataTensor extends TensorBlock {
 		throw new DMLRuntimeException("DataTensor.binaryOperations is not implemented yet.");
 	}
 
+	@Override
+	protected DataTensor checkType(TensorBlock that) {
+		if (that instanceof DataTensor)
+			return (DataTensor) that;
+		else
+			throw new DMLRuntimeException("BasicTensor.checkType(TensorBlock) given TensorBlock was no BasicTensor");
+	}
+
 	public void copy(DataTensor that) {
 		_dims = that._dims.clone();
 		_schema = that._schema.clone();

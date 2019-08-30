@@ -478,10 +478,7 @@ public class SparkExecutionContext extends ExecutionContext
 				fromFile = true;*/
 			} else { //default case
 				TensorBlock tb = to.acquireRead(); //pin matrix in memory
-				int[] blen = new int[dc.getNumDims()];
-				for (int i = 0; i < blen.length; i++) {
-					blen[i] = (int) dc.getBlockSize(i);
-				}
+				int[] blen = dc.getBlockSizes();
 				rdd = toTensorJavaPairRDD(sc, tb, blen, numParts, inclEmpty);
 				to.release(); //unpin matrix
 				_parRDDs.registerRDD(rdd.id(), OptimizerUtils.estimatePartitionedSizeExactSparsity(dc), true);
@@ -733,17 +730,11 @@ public class SparkExecutionContext extends ExecutionContext
 
 			//obtain meta data for matrix
 			DataCharacteristics dc = to.getDataCharacteristics();
-			long[] dims = new long[dc.getNumDims()];
-			int[] blen = new int[dc.getNumDims()];
-			for (int i = 0; i < dc.getNumDims(); i++) {
-				dims[i] = dc.getDim(i);
-				blen[i] = (int) dc.getBlockSize(i);
-			}
+			long[] dims = dc.getDims();
+			int[] blen = dc.getBlockSizes();
 
 			//create partitioned matrix block and release memory consumed by input
-			TensorBlock tb = to.acquireRead();
-			PartitionedBlock<TensorBlock> pmb = new PartitionedBlock<>(tb, dims, blen);
-			to.release();
+			PartitionedBlock<TensorBlock> pmb = new PartitionedBlock<>(to.acquireReadAndRelease(), dims, blen);
 
 			//determine coarse-grained partitioning
 			int numPerPart = PartitionedBroadcast.computeBlocksPerPartition(dims, blen);
@@ -778,13 +769,11 @@ public class SparkExecutionContext extends ExecutionContext
 	}
 
 	public PartitionedBroadcast<MatrixBlock> getBroadcastForVariable(String varname) {
-		MatrixObject mo = getMatrixObject(varname);
-		return getBroadcastForMatrixObject(mo);
+		return getBroadcastForMatrixObject(getMatrixObject(varname));
 	}
 
 	public PartitionedBroadcast<TensorBlock> getBroadcastForTensorVariable(String varname) {
-		TensorObject to = getTensorObject(varname);
-		return getBroadcastForTensorObject(to);
+		return getBroadcastForTensorObject(getTensorObject(varname));
 	}
 
 	@SuppressWarnings("unchecked")
@@ -973,13 +962,13 @@ public class SparkExecutionContext extends ExecutionContext
 		try {
 			//compute block indexes
 			long[] blockIx = new long[tc.getNumDims()];
+			int[] blkSize = tc.getBlockSizes();
 			int[] outDims = new int[tc.getNumDims()];
 			int[] offset = new int[tc.getNumDims()];
 			for (int i = tc.getNumDims() - 1; i >= 0; i--) {
 				blockIx[i] = ix % tc.getNumBlocks(i);
-				outDims[i] = UtilFunctions.computeBlockSize(tc.getDim(i), blockIx[i] + 1,
-						tc.getBlockSize(i));
-				offset[i] = (int) (blockIx[i] * tc.getBlockSize(i));
+				outDims[i] = UtilFunctions.computeBlockSize(tc.getDim(i), blockIx[i] + 1, blkSize[i]);
+				offset[i] = (int) (blockIx[i] * blkSize[i]);
 				ix /= tc.getNumBlocks(i);
 			}
 			// TODO: sparse
