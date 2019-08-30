@@ -36,6 +36,7 @@ import org.tugraz.sysds.runtime.controlprogram.caching.CacheBlock;
 import org.tugraz.sysds.runtime.controlprogram.caching.CacheBlockFactory;
 import org.tugraz.sysds.runtime.util.FastBufferedDataInputStream;
 import org.tugraz.sysds.runtime.util.FastBufferedDataOutputStream;
+import org.tugraz.sysds.runtime.util.UtilFunctions;
 
 /**
  * This class is for partitioned matrix/frame blocks, to be used as broadcasts. 
@@ -191,12 +192,9 @@ public class PartitionedBlock<T extends CacheBlock> implements Externalizable
 
 	@SuppressWarnings("unchecked")
 	public T getBlock(int[] ix) {
-		int index = ix[ix.length - 1] - 1;
-		for (int i = ix.length - 2; i >= 0; i--) {
-			index += (ix[i] - 1) * getNumDimBlocks(i + 1);
-		}
+		long index = UtilFunctions.computeBlockNumber(ix, _dims, _blens);
 		index -= _offset;
-		return (T)_partBlocks[index];
+		return (T)_partBlocks[(int) index];
 	}
 
 	public void setBlock(int rowIndex, int colIndex, T block) {

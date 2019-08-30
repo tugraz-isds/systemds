@@ -49,9 +49,8 @@ public class ReplicateTensorFunction implements PairFlatMapFunction<Tuple2<Tenso
 		}
 
 		ArrayList<Tuple2<TensorIndexes, TensorBlock>> retVal = new ArrayList<>();
+		long[] indexes = ix.getIndexes();
 		for (int i = 1; i <= _numReplicas; i++) {
-			// create copies so we don't change the other replications
-			long[] indexes = ix.getIndexes().clone();
 			indexes[_byDim] = i;
 			retVal.add(new Tuple2<>(new TensorIndexes(indexes), tb));
 		}

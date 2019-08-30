@@ -196,6 +196,7 @@ public abstract class BinarySPInstruction extends ComputationSPInstruction {
 
 		BinaryOperator bop = (BinaryOperator) _optr;
 
+		// TODO blocking scheme for tensors/matrices with mismatching number of dimensions
 		for (int i = 0; i < tc1.getNumDims(); i++) {
 			long numReps = getNumDimReplicas(tc1, tc2, i);
 			if (numReps > 1)

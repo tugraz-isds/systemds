@@ -29,6 +29,7 @@ import org.tugraz.sysds.runtime.matrix.data.OperationsOnMatrixValues;
 import org.tugraz.sysds.runtime.matrix.data.Pair;
 import org.tugraz.sysds.runtime.meta.DataCharacteristics;
 import org.tugraz.sysds.runtime.util.IndexRange;
+import org.tugraz.sysds.runtime.util.UtilFunctions;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -109,12 +110,8 @@ public class PartitionedBroadcast<T extends CacheBlock> implements Serializable
 		if( _pbc.length > 1 ) { //compute partition index
 			long[] dims = _dc.getDims();
 			int[] blen = _dc.getBlockSizes();
-			int numPerPart = computeBlocksPerPartition(dims, blen);
-			long l = ix[ix.length - 1];
-			for (int i = blen.length - 2; i >= 0; i--) {
-				l += (ix[i] - 1) * blen[i + 1];
-			}
-			pix = (int) (l / numPerPart);
+			int numPerPart = computeBlocksPerPartition(dims, _dc.getBlockSizes());
+			pix = (int) (UtilFunctions.computeBlockNumber(ix, dims, blen) / numPerPart);
 		}
 
 		return _pbc[pix].value().getBlock(ix);

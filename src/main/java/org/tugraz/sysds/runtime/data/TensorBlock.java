@@ -136,20 +136,20 @@ public abstract class TensorBlock implements CacheBlock
 	protected abstract TensorBlock checkType(TensorBlock that);
 
 	public static ValueType resultValueType(ValueType in1, ValueType in2) {
+		// TODO reconsider with operation types
 		if (in1 == ValueType.UNKNOWN || in2 == ValueType.UNKNOWN)
 			throw new DMLRuntimeException("Operations on unknown value types not possible");
-		if (in1 == ValueType.STRING || in2 == ValueType.STRING)
+		else if (in1 == ValueType.STRING || in2 == ValueType.STRING)
 			return ValueType.STRING;
-		if (in1 == ValueType.FP64 || in2 == ValueType.FP64)
+		else if (in1 == ValueType.FP64 || in2 == ValueType.FP64)
 			return ValueType.FP64;
-		if (in1 == ValueType.FP32 || in2 == ValueType.FP32)
+		else if (in1 == ValueType.FP32 || in2 == ValueType.FP32)
 			return ValueType.FP32;
-		if (in1 == ValueType.INT64 || in2 == ValueType.INT64)
+		else if (in1 == ValueType.INT64 || in2 == ValueType.INT64)
 			return ValueType.INT64;
-		if (in1 == ValueType.INT32 || in2 == ValueType.INT32)
+		else if (in1 == ValueType.INT32 || in2 == ValueType.INT32)
 			return ValueType.INT32;
-		if (in1 == ValueType.BOOLEAN || in2 == ValueType.BOOLEAN)
+		else // Boolean - Boolean
 			return ValueType.INT64;
-		throw new DMLRuntimeException("TensorBlock(ValueType,ValueType) value types not recognized");
 	}
 }
