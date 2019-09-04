@@ -352,19 +352,8 @@ public class DataTensorBlock implements Serializable {
 		for (int i = 0; i < VALID_VALUE_TYPES_LENGTH; i++) {
 			if (src._colsdata[i] == null)
 				continue;
-			// TODO binary search
-			for (int j = 0; j < src._ixToCols[i].length; j++) {
-				if (src._ixToCols[i][j] >= lower[1]) {
-					subLower[1] = src._ixToCols[i][j];
-					break;
-				}
-			}
-			for (int j = src._ixToCols[i].length - 1; j >= 0; j--) {
-				if (src._ixToCols[i][j] < upper[1]) {
-					subUpper[1] = src._ixToCols[i][j] + 1;
-					break;
-				}
-			}
+			subLower[1] = lower[1];
+			subUpper[1] = lower[1] + src._colsdata[i].getNumColumns();
 			_colsdata[i].copy(subLower, subUpper, src._colsdata[i]);
 		}
 	}

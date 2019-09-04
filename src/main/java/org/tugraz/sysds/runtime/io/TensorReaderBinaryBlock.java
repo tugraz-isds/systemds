@@ -69,7 +69,7 @@ public class TensorReaderBinaryBlock extends TensorReader {
 
 					int[] lower = new int[dims.length];
 					int[] upper = new int[lower.length];
-					UtilFunctions.getBlockBounds(key, dims, blen, lower, upper);
+					UtilFunctions.getBlockBounds(key, value.getLongDims(), blen, lower, upper);
 
 					ret.copy(lower, upper, value);
 				}
