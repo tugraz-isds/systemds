@@ -24,8 +24,6 @@ import org.tugraz.sysds.runtime.data.TensorBlock;
 import org.tugraz.sysds.runtime.io.TensorReaderTextCell;
 import org.tugraz.sysds.runtime.io.TensorWriterTextCell;
 
-import java.util.Arrays;
-
 import static org.tugraz.sysds.test.TestUtils.*;
 
 
@@ -104,9 +102,7 @@ public class TensorTextCellTest {
 
 	private TensorBlock writeAndReadBasicTensorTextCell(TensorBlock tb1) {
 		try {
-			long[] dims = new long[tb1.getNumDims()];
-			for (int i = 0; i < dims.length; i++)
-				dims[i] = tb1.getDim(i);
+			long[] dims = tb1.getLongDims();
 			TensorWriterTextCell writer = new TensorWriterTextCell();
 			writer.writeTensorToHDFS(tb1, "a", dims, 1024);
 			TensorReaderTextCell reader = new TensorReaderTextCell();
@@ -119,7 +115,7 @@ public class TensorTextCellTest {
 
 	private TensorBlock writeAndReadDataTensorTextCell(TensorBlock tb1) {
 		try {
-			long[] dims = Arrays.stream(tb1.getDims()).mapToLong(i -> i).toArray();
+			long[] dims = tb1.getLongDims();
 			TensorWriterTextCell writer = new TensorWriterTextCell();
 			writer.writeTensorToHDFS(tb1, "a", dims, 1024);
 			TensorReaderTextCell reader = new TensorReaderTextCell();

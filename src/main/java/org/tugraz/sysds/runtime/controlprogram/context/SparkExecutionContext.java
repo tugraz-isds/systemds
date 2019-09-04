@@ -912,7 +912,7 @@ public class SparkExecutionContext extends ExecutionContext
 			list = Arrays.asList(new Tuple2<>(new TensorIndexes(ix), src));
 		} else {
 			// TODO rows and columns for matrix characteristics
-			long[] dims = Arrays.stream(src.getDims()).mapToLong(i -> i).toArray();
+			long[] dims = src.getLongDims();
 			TensorCharacteristics mc = new TensorCharacteristics(dims, src.getNonZeros());
 			list = LongStream.range(0, mc.getNumBlocks()).parallel()
 					.mapToObj(i -> createIndexedTensorBlock(src, mc, i))

@@ -24,8 +24,6 @@ import org.tugraz.sysds.runtime.data.TensorBlock;
 import org.tugraz.sysds.runtime.io.TensorReaderBinaryBlock;
 import org.tugraz.sysds.runtime.io.TensorWriterBinaryBlock;
 
-import java.util.Arrays;
-
 import static org.tugraz.sysds.test.TestUtils.*;
 
 
@@ -104,7 +102,7 @@ public class TensorBinaryBlockTest {
 
 	private TensorBlock writeAndReadBasicTensorBinaryBlock(TensorBlock tb1) {
 		try {
-			long[] dims = Arrays.stream(tb1.getDims()).mapToLong(i -> i).toArray();
+			long[] dims = tb1.getLongDims();
 			TensorWriterBinaryBlock writer = new TensorWriterBinaryBlock();
 			writer.writeTensorToHDFS(tb1, "a", dims, 1024);
 			TensorReaderBinaryBlock reader = new TensorReaderBinaryBlock();
@@ -117,7 +115,7 @@ public class TensorBinaryBlockTest {
 
 	private TensorBlock writeAndReadDataTensorBinaryBlock(TensorBlock tb1) {
 		try {
-			long[] dims = Arrays.stream(tb1.getDims()).mapToLong(i -> i).toArray();
+			long[] dims = tb1.getLongDims();
 			TensorWriterBinaryBlock writer = new TensorWriterBinaryBlock();
 			writer.writeTensorToHDFS(tb1, "a", dims, 1024);
 			TensorReaderBinaryBlock reader = new TensorReaderBinaryBlock();
