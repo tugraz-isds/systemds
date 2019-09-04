@@ -41,7 +41,6 @@ public abstract class Statement implements ParseInfo
 	public static final String SETWD 	= "setwd";
 
 	public static final String MATRIX_DATA_TYPE = "matrix";
-	public static final String TENSOR_DATA_TYPE = "tensor";
 	public static final String FRAME_DATA_TYPE = "frame";
 	public static final String SCALAR_DATA_TYPE = "scalar";
 	

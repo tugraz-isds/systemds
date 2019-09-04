@@ -60,7 +60,7 @@ public class TensorObject extends CacheableData<TensorBlock> {
 		super(DataType.TENSOR, vt);
 		setFileName(fname);
 	}
-
+	
 	public TensorObject(String fname, MetaData meta) {
 		this();
 		setFileName(fname);
@@ -78,7 +78,7 @@ public class TensorObject extends CacheableData<TensorBlock> {
 
 	@Override
 	public void refreshMetaData() {
-		if (_data == null || _metaData == null) //refresh only for existing data
+		if ( _data == null || _metaData == null ) //refresh only for existing data
 			throw new DMLRuntimeException("Cannot refresh meta data because there is no data or meta data. ");
 
 		//update matrix characteristics
