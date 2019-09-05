@@ -52,7 +52,7 @@ import org.tugraz.sysds.runtime.functionobjects.Modulus;
 import org.tugraz.sysds.runtime.instructions.cp.Data;
 import org.tugraz.sysds.runtime.instructions.cp.ScalarObject;
 import org.tugraz.sysds.runtime.lineage.LineageCacheConfig;
-import org.tugraz.sysds.runtime.lineage.LineageCacheConfig.cacheType;
+import org.tugraz.sysds.runtime.lineage.LineageCacheConfig.CacheType;
 import org.tugraz.sysds.runtime.matrix.data.MatrixBlock;
 import org.tugraz.sysds.runtime.matrix.data.OutputInfo;
 import org.tugraz.sysds.runtime.meta.DataCharacteristics;
@@ -1474,15 +1474,15 @@ public class OptimizerUtils
 		valMemo.put(root.getHopID(), ret);
 		return ret;
 	}		
-	public static void setLinResPartial() {
-		LineageCacheConfig.setConfigTsmmCbind(cacheType.PARTIAL);
+	public static void setLinReusePartial() {
+		LineageCacheConfig.setConfigTsmmCbind(CacheType.PARTIAL);
 	}
 
-	public static void setLinResFull() {
-		LineageCacheConfig.setConfigTsmmCbind(cacheType.FULL);
+	public static void setLinReuseFull() {
+		LineageCacheConfig.setConfigTsmmCbind(CacheType.FULL);
 	}
 
-	public static void setLinResNone() {
-		LineageCacheConfig.setConfigTsmmCbind(cacheType.NONE);
+	public static void setLinReuseNone() {
+		LineageCacheConfig.setConfigTsmmCbind(CacheType.NONE);
 	}
 }

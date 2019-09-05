@@ -20,41 +20,41 @@ import org.tugraz.sysds.api.DMLScript;
 import java.util.ArrayList;
 
 public class LineageCacheConfig {
-	public enum cacheType {
+	public enum CacheType {
 		FULL,   // no rewrites
 		PARTIAL, 
-		BOTH,
+		HYBRID_FULL_PARTIAL,
 		NONE
 	}
 	
 	public ArrayList<String> _MMult = new ArrayList<String>();
 	
-	public enum cachedItemsL1 {
+	public enum CachedItemHead {
 		TSMM,
 		ALL
 	}
 	
-	public enum cachedItemsL2 {
+	public enum CachedItemTail {
 		CBIND,
 		RBIND,
 		INDEX,
 		ALL
 	}
 
-	private static cacheType _cacheType = null;
-	private static cachedItemsL1 _itemL1 = null;
-	private static cachedItemsL2 _itemL2 = null;
+	private static CacheType _cacheType = null;
+	private static CachedItemHead _itemH = null;
+	private static CachedItemTail _itemT = null;
 	
-	public static void setConfigTsmmCbind(cacheType ct) {
+	public static void setConfigTsmmCbind(CacheType ct) {
 		_cacheType = ct;
-		_itemL1 = cachedItemsL1.TSMM;
-		_itemL2 = cachedItemsL2.CBIND;
+		_itemH = CachedItemHead.TSMM;
+		_itemT = CachedItemTail.CBIND;
 	}
 	
-	public static void setConfig(cacheType ct, cachedItemsL1 itl1, cachedItemsL2 itl2) {
+	public static void setConfig(CacheType ct, CachedItemHead ith, CachedItemTail itt) {
 		_cacheType = ct;
-		_itemL1 = itl1;
-		_itemL2 = itl2;
+		_itemH = ith;
+		_itemT = itt;
 	}
 	
 	public static void shutdownReuse() {
@@ -67,15 +67,15 @@ public class LineageCacheConfig {
 		DMLScript.LINEAGE_REUSE = true;
 	}
 	
-	public static cacheType getCacheType() {
+	public static CacheType getCacheType() {
 		return _cacheType;
 	}
 
-	public static cachedItemsL1 getCachedItemL1() {
-		return _itemL1;
+	public static CachedItemHead getCachedItemHead() {
+		return _itemH;
 	}
 
-	public static cachedItemsL2 getCachedItemL2() {
-		return _itemL2;
+	public static CachedItemTail getCachedItemTail() {
+		return _itemT;
 	}
 }

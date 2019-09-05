@@ -97,23 +97,20 @@ public class RewriteCPlans
 			return false;
 		
 		ExecutionContext lrwec = getExecutionContext();
-		ArrayList<Instruction> newInst = null;
 
 		try {
-		if (oneappend)
-			newInst = rewrite1(curr, ec, lrwec, lastResult);
-		if (twoappend)
-			newInst = rewrite2(curr, ec, lrwec, lastResult);
-		//execute instructions
-		BasicProgramBlock pb = getProgramBlock();
-		pb.setInstructions(newInst);
-		LineageCacheConfig.shutdownReuse();
-		pb.execute(lrwec);
-		LineageCacheConfig.restartReuse();
-		
-		ec.setVariable(((ComputationCPInstruction)curr).output.getName(), lrwec.getVariable(LR_VAR));
-		// add this to cache
-		LineageCache.put(curr, ec);
+			ArrayList<Instruction> newInst = oneappend ? rewriteCbindTsmm(curr, ec, lrwec, lastResult) : 
+					twoappend ? rewrite2CbindTsmm(curr, ec, lrwec, lastResult) : null;
+			//execute instructions
+			BasicProgramBlock pb = getProgramBlock();
+			pb.setInstructions(newInst);
+			LineageCacheConfig.shutdownReuse();
+			pb.execute(lrwec);
+			LineageCacheConfig.restartReuse();
+			
+			ec.setVariable(((ComputationCPInstruction)curr).output.getName(), lrwec.getVariable(LR_VAR));
+			// add this to cache
+			LineageCache.put(curr, ec);
 		}
 		catch (Exception e) {
 			throw new DMLRuntimeException("Error evaluating instruction: " + curr.toString() , e);
@@ -121,7 +118,7 @@ public class RewriteCPlans
 		return true;
 	}
 
-	static ArrayList<Instruction> rewrite1(Instruction curr, ExecutionContext ec, ExecutionContext lrwec, MatrixBlock lastResult) 
+	static ArrayList<Instruction> rewriteCbindTsmm(Instruction curr, ExecutionContext ec, ExecutionContext lrwec, MatrixBlock lastResult) 
 	{
 		// Create a transient read op over the last tsmm result
 		MetaData md = new MetaData(lastResult.getDataCharacteristics());
@@ -158,15 +155,13 @@ public class RewriteCPlans
 		DataOp lrwWrite = HopRewriteUtils.createTransientWrite(LR_VAR, lrwHop);
 		
 		// generate runtime instructions
-		ArrayList<Instruction> newInst = null;
 		if (DMLScript.EXPLAIN == ExplainType.RECOMPILE_HOPS || DMLScript.EXPLAIN == ExplainType.RECOMPILE_RUNTIME) 
-			System.out.println("LINEAGE REWRITE 1 APPLIED");
-		newInst = Recompiler.recompileHopsDag(null, new ArrayList<>(Arrays.asList(lrwWrite)),
+			System.out.println("LINEAGE REWRITE rewriteCbindTsmm APPLIED");
+		return Recompiler.recompileHopsDag(null, new ArrayList<>(Arrays.asList(lrwWrite)),
 				lrwec.getVariables(), null, true, true, 0);
-		return newInst;
 	}
 
-	static ArrayList<Instruction> rewrite2(Instruction curr, ExecutionContext ec, ExecutionContext lrwec, MatrixBlock lastResult) 
+	static ArrayList<Instruction> rewrite2CbindTsmm(Instruction curr, ExecutionContext ec, ExecutionContext lrwec, MatrixBlock lastResult) 
 	{
 		// Create a transient read op over the last tsmm result
 		MetaData md = new MetaData(lastResult.getDataCharacteristics());
@@ -206,12 +201,10 @@ public class RewriteCPlans
 		DataOp lrwWrite = HopRewriteUtils.createTransientWrite(LR_VAR, lrwHop);
 
 		// generate runtime instructions
-		ArrayList<Instruction> newInst = null;
 		if (DMLScript.EXPLAIN == ExplainType.RECOMPILE_HOPS || DMLScript.EXPLAIN == ExplainType.RECOMPILE_RUNTIME) 
-			System.out.println("LINEAGE REWRITE 2 APPLIED");
-		newInst = Recompiler.recompileHopsDag(null, new ArrayList<>(Arrays.asList(lrwWrite)),
+			System.out.println("LINEAGE REWRITE rewrite2CbindTsmm APPLIED");
+		return Recompiler.recompileHopsDag(null, new ArrayList<>(Arrays.asList(lrwWrite)),
 				lrwec.getVariables(), null, true, true, 0);
-		return newInst;
 	}
 
 	private static ExecutionContext getExecutionContext() {

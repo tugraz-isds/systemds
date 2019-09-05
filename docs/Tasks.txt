@@ -109,5 +109,7 @@ SYSTEMDS-160 Tensor Compiler/Runtime
  
  SYSTEMDS-170 Partial Reuse and Experiment
  * 171 Initial version of partial rewrites
- * 171 Rewrites for rbind-tsmm, cbind/rbind-elementwise */+
-       aggregate.
+ * 172 Bug fix: parfor, ba+*, cost estimates
+ * 173 Rewrite for rbind-tsmm 
+ * 174 Rewrite for cbind/rbind-elementwise */+
+ * 175 Rewrite for aggregate.

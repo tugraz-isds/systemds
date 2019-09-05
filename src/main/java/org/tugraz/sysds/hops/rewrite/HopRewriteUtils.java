@@ -542,10 +542,7 @@ public class HopRewriteUtils
 			null, mb.getNumRows(), mb.getNumColumns(), mb.getNonZeros(), UpdateType.COPY, 
 			ConfigurationManager.getBlocksize());
 		tread.setVisited();
-		tread.setBeginLine(1);
-		tread.setEndLine(mb.getNumRows());
-		tread.setBeginColumn(1);
-		tread.setEndColumn(mb.getNumColumns());
+		copyLineNumbers(mb, tread);
 		tread.setFileName(name);
 		return tread;
 	}
@@ -555,10 +552,7 @@ public class HopRewriteUtils
 			null, mo.getNumRows(), mo.getNumColumns(), mo.getNnz(), UpdateType.COPY,
 			(int)mo.getBlocksize());
 		tread.setVisited();
-		tread.setBeginLine(1);
-		tread.setEndLine((int)mo.getNumRows());
-		tread.setBeginColumn(1);
-		tread.setEndColumn((int)mo.getNumColumns());
+		copyLineNumbers(mo, tread);
 		tread.setFileName(name);
 		return tread;
 	}
@@ -802,6 +796,20 @@ public class HopRewriteUtils
 
 	public static void copyLineNumbers(Hop src, Hop dest) {
 		dest.setParseInfo(src);
+	}
+	
+	public static void copyLineNumbers(MatrixBlock mb, Hop tread) {
+		tread.setBeginLine(1);
+		tread.setEndLine(mb.getNumRows());
+		tread.setBeginColumn(1);
+		tread.setEndColumn(mb.getNumColumns());
+	}
+	
+	public static void copyLineNumbers(MatrixObject mo, Hop tread) {
+		tread.setBeginLine(1);
+		tread.setEndLine((int)mo.getNumRows());
+		tread.setBeginColumn(1);
+		tread.setEndColumn((int)mo.getNumColumns());
 	}
 
 	public static void updateHopCharacteristics( Hop hop, int blen, Hop src ) {

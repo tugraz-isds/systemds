@@ -49,8 +49,8 @@ Res2 = rbind(r1, r2);
 while(FALSE) {}	
 sum1 = sum(Res1);
 sum2 = sum(Res2);
-print("original matrix sum = " + sum1);
-print("rewritten matrix sum = " + sum2);
+#print("original matrix sum = " + sum1);
+#print("rewritten matrix sum = " + sum2);
 
 write(Res1, $2, format="text");
 write(Res2, $3, format="text");

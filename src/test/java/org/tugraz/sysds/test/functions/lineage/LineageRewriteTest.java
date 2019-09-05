@@ -87,9 +87,9 @@ public class LineageRewriteTest extends AutomatedTestBase {
 			fullDMLScriptName = getScript();
 			writeInputMatrixWithMTD("X", X, true);
 			Lineage.resetInternalState();
-			OptimizerUtils.setLinResPartial();
+			OptimizerUtils.setLinReusePartial();
 			runTest(true, EXCEPTION_NOT_EXPECTED, null, -1);
-			OptimizerUtils.setLinResNone();
+			OptimizerUtils.setLinReuseNone();
 			HashMap<MatrixValue.CellIndex, Double> R_reused = readDMLMatrixFromHDFS("Res");
 			TestUtils.compareMatrices(R_orig, R_reused, 1e-6, "Origin", "Reused");
 		}

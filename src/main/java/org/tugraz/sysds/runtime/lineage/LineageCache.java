@@ -28,7 +28,7 @@ import org.tugraz.sysds.runtime.instructions.Instruction;
 import org.tugraz.sysds.runtime.instructions.cp.CPInstruction.CPType;
 import org.tugraz.sysds.runtime.instructions.cp.ComputationCPInstruction;
 import org.tugraz.sysds.runtime.instructions.cp.MMTSJCPInstruction;
-import org.tugraz.sysds.runtime.lineage.LineageCacheConfig.cacheType;
+import org.tugraz.sysds.runtime.lineage.LineageCacheConfig.CacheType;
 import org.tugraz.sysds.runtime.matrix.data.MatrixBlock;
 import org.tugraz.sysds.runtime.util.LocalFileUtils;
 
@@ -107,10 +107,10 @@ public class LineageCache {
 		if (!DMLScript.LINEAGE_REUSE)
 			return false;
 		
-		if (LineageCacheConfig.getCacheType() == cacheType.FULL) 
+		if (LineageCacheConfig.getCacheType() == CacheType.FULL) 
 			return fullReuse(inst, ec);
 
-		else if (LineageCacheConfig.getCacheType() == cacheType.PARTIAL) 
+		else if (LineageCacheConfig.getCacheType() == CacheType.PARTIAL) 
 			return RewriteCPlans.executeRewrites(inst, ec);
 		
 		return false;
@@ -151,6 +151,7 @@ public class LineageCache {
 		// TODO: Move this to the new class LineageCacheConfig and extend
 		return (inst.getOpcode().equalsIgnoreCase("tsmm"));
 			//|| inst.getOpcode().equalsIgnoreCase("ba+*"));
+		// TODO: Fix getRecomputeEstimate to support ba+* before enabling above code.
 	}
 	
 	//---------------- CACHE SPACE MANAGEMENT METHODS -----------------
