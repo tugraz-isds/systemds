@@ -18,5 +18,6 @@
 
 X = read($1);
 y = read($2);
-Y = lmCV(X=X, y=y, k=$3);
+[Y, beta] = cvlm(X=X, y=y, k=$3);
 write(Y, $4)
+write(beta, $5)

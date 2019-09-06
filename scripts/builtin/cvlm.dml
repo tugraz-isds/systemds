@@ -16,21 +16,19 @@
 #
 #-------------------------------------------------------------
 
-m_lmCV = function(Matrix[Double] X, Matrix[Double] y, Integer k, Integer icpt = 0, Double reg = 1e-7) return (Matrix[Double] y_predict) 
+m_cvlm = function(Matrix[Double] X, Matrix[Double] y, Integer k, Integer icpt = 0, Double reg = 1e-7) return (Matrix[Double] y_predict, Matrix[Double] allbeta) 
 {
   M = nrow(X);
   lim = as.integer(M/k);
   y_predict = y;
+  allbeta = matrix(0, rows=k, cols=ncol(X));
 
   for (i in 1:k)
   {
-    if (i == 1)
-      testS = 1;
-    else
-      testS = ((i-1) * lim)+1;
+    testS = ifelse(i==1, 1, ((i-1) * lim)+1)
     testE = i * lim;
-
     testSet = X[testS:testE,];
+
     if (i == 1) {
       trainSet = X[testE+1:M,];
       trainRes = y[testE+1:M,];
@@ -43,5 +41,6 @@ m_lmCV = function(Matrix[Double] X, Matrix[Double] y, Integer k, Integer icpt = 
     beta = lm(X=trainSet, y=trainRes, icpt=icpt, reg=reg);
     pred = lmpredict(X=testSet, w=beta, icpt=icpt);
     y_predict[testS:testE,] = pred;
+    allbeta[i,] = t(beta);
   }
 }

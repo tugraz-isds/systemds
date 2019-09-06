@@ -24,11 +24,11 @@ import org.tugraz.sysds.test.AutomatedTestBase;
 import org.tugraz.sysds.test.TestConfiguration;
 
 
-public class BuiltinLmCVTest extends AutomatedTestBase
+public class BuiltinCVLmTest extends AutomatedTestBase
 {
-	private final static String TEST_NAME = "lmCV";
+	private final static String TEST_NAME = "cvlm";
 	private final static String TEST_DIR = "functions/builtin/";
-	private final static String TEST_CLASS_DIR = TEST_DIR + BuiltinScaleTest.class.getSimpleName() + "/";
+	private final static String TEST_CLASS_DIR = TEST_DIR + BuiltinCVLmTest.class.getSimpleName() + "/";
 	
 	private final static int rows = 100;
 	private final static int cols = 10;
@@ -57,7 +57,8 @@ public class BuiltinLmCVTest extends AutomatedTestBase
 		proArgs.add(input("X"));
 		proArgs.add(input("y"));
 		proArgs.add(String.valueOf(k));
-		proArgs.add(output("B"));
+		proArgs.add(output("y_predict"));
+		proArgs.add(output("beta"));
 		programArgs = proArgs.toArray(new String[proArgs.size()]);
 		double[][] X = getRandomMatrix(rows, cols, 0, 1, 0.8, -1);
 		double[][] y = getRandomMatrix(rows, 1, 0, 1, 0.8, -1);
@@ -66,6 +67,4 @@ public class BuiltinLmCVTest extends AutomatedTestBase
 		
 		runTest(true, EXCEPTION_NOT_EXPECTED, null, -1);
 	}
-	
-
 }

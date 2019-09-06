@@ -174,7 +174,7 @@ public enum Builtins {
 	RMEMPTY("removeEmpty", false, true),
 	SCALE("scale", true, false),     //TODO parameterize center & scale
 	TIME("time", false),
-	LMCV("lmCV", true, false),
+	CVLM("cvlm", true, false),
 	TOSTRING("toString", false, true),
 	TRANSFORMAPPLY("transformapply", false, true),
 	TRANSFORMCOLMAP("transformcolmap", false, true),
