@@ -19,11 +19,14 @@ package org.tugraz.sysds.runtime.lineage;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.tugraz.sysds.api.DMLScript;
 import org.tugraz.sysds.common.Types.ValueType;
 import org.tugraz.sysds.hops.AggBinaryOp;
 import org.tugraz.sysds.hops.BinaryOp;
 import org.tugraz.sysds.hops.DataOp;
+import org.tugraz.sysds.hops.Hop;
 import org.tugraz.sysds.hops.Hop.OpOp2;
 import org.tugraz.sysds.hops.Hop.OpOpN;
 import org.tugraz.sysds.hops.IndexingOp;
@@ -42,6 +45,7 @@ import org.tugraz.sysds.runtime.instructions.Instruction;
 import org.tugraz.sysds.runtime.instructions.cp.ComputationCPInstruction;
 import org.tugraz.sysds.runtime.matrix.data.MatrixBlock;
 import org.tugraz.sysds.runtime.meta.MetaData;
+import org.tugraz.sysds.utils.Explain;
 import org.tugraz.sysds.utils.Explain.ExplainType;
 
 public class RewriteCPlans
@@ -49,6 +53,7 @@ public class RewriteCPlans
 	private static final String LR_VAR = "__lrwrt";
 	private static BasicProgramBlock _lrPB = null;
 	private static ExecutionContext _lrEC = null;
+	private static final Log LOG = LogFactory.getLog(RewriteCPlans.class.getName());
 	
 	public static boolean executeRewrites (Instruction curr, ExecutionContext ec)
 	{
@@ -97,6 +102,9 @@ public class RewriteCPlans
 			return false;
 		
 		ExecutionContext lrwec = getExecutionContext();
+		ExplainType et = DMLScript.EXPLAIN;
+		// Disable explain not to print unnecessary logs
+		DMLScript.EXPLAIN = ExplainType.NONE;
 
 		try {
 			ArrayList<Instruction> newInst = oneappend ? rewriteCbindTsmm(curr, ec, lrwec, lastResult) : 
@@ -107,7 +115,6 @@ public class RewriteCPlans
 			LineageCacheConfig.shutdownReuse();
 			pb.execute(lrwec);
 			LineageCacheConfig.restartReuse();
-			
 			ec.setVariable(((ComputationCPInstruction)curr).output.getName(), lrwec.getVariable(LR_VAR));
 			// add this to cache
 			LineageCache.put(curr, ec);
@@ -115,6 +122,7 @@ public class RewriteCPlans
 		catch (Exception e) {
 			throw new DMLRuntimeException("Error evaluating instruction: " + curr.toString() , e);
 		}
+		DMLScript.EXPLAIN = et;
 		return true;
 	}
 
@@ -155,10 +163,8 @@ public class RewriteCPlans
 		DataOp lrwWrite = HopRewriteUtils.createTransientWrite(LR_VAR, lrwHop);
 		
 		// generate runtime instructions
-		if (DMLScript.EXPLAIN == ExplainType.RECOMPILE_HOPS || DMLScript.EXPLAIN == ExplainType.RECOMPILE_RUNTIME) 
-			System.out.println("LINEAGE REWRITE rewriteCbindTsmm APPLIED");
-		return Recompiler.recompileHopsDag(null, new ArrayList<>(Arrays.asList(lrwWrite)),
-				lrwec.getVariables(), null, true, true, 0);
+		LOG.debug("LINEAGE REWRITE rewriteCbindTsmm APPLIED");
+		return genInst(lrwWrite, lrwec);
 	}
 
 	static ArrayList<Instruction> rewrite2CbindTsmm(Instruction curr, ExecutionContext ec, ExecutionContext lrwec, MatrixBlock lastResult) 
@@ -201,12 +207,17 @@ public class RewriteCPlans
 		DataOp lrwWrite = HopRewriteUtils.createTransientWrite(LR_VAR, lrwHop);
 
 		// generate runtime instructions
-		if (DMLScript.EXPLAIN == ExplainType.RECOMPILE_HOPS || DMLScript.EXPLAIN == ExplainType.RECOMPILE_RUNTIME) 
-			System.out.println("LINEAGE REWRITE rewrite2CbindTsmm APPLIED");
-		return Recompiler.recompileHopsDag(null, new ArrayList<>(Arrays.asList(lrwWrite)),
-				lrwec.getVariables(), null, true, true, 0);
+		LOG.debug("LINEAGE REWRITE rewrite2CbindTsmm APPLIED");
+		return genInst(lrwWrite, lrwec);
 	}
-
+	
+	private static ArrayList<Instruction> genInst(Hop hops, ExecutionContext ec) {
+		ArrayList<Instruction> newInst = Recompiler.recompileHopsDag(hops, ec.getVariables(), null, true, true, 0);
+		LOG.debug("EXPLAIN LINEAGE REWRITE \nGENERIC (line "+hops.getBeginLine()+"):\n" + Explain.explain(hops,1));
+		LOG.debug("EXPLAIN LINEAGE REWRITE \nGENERIC (line "+hops.getBeginLine()+"):\n" + Explain.explain(newInst,1));
+		return newInst;
+	}
+	
 	private static ExecutionContext getExecutionContext() {
 		if( _lrEC == null )
 			_lrEC = ExecutionContextFactory.createContext();
