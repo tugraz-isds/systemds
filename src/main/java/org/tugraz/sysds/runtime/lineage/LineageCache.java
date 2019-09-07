@@ -38,7 +38,7 @@ import java.util.Map;
 
 public class LineageCache {
 	private static final Map<LineageItem, Entry> _cache = new HashMap<>();
-	private static final Map<LineageItem, String> _spillList = new HashMap<>();
+	private static final Map<LineageItem, SpilledItem> _spillList = new HashMap<>();
 	private static final HashSet<LineageItem> _removelist = new HashSet<>();
 	private static final long CACHELIMIT= (long)512*1024*1024; // 500MB
 	private static String outdir = null;
@@ -56,12 +56,12 @@ public class LineageCache {
 			for (LineageItem item : items) {
 				MatrixObject mo = ec.getMatrixObject(((ComputationCPInstruction) inst).output);
 				// Safe to pin the object in memory as coming from CPInstruction
-				LineageCache.put(inst, item, mo.acquireReadAndRelease());
+				LineageCache.put(inst, item, mo.acquireReadAndRelease(), getRecomputeEstimate(inst, ec));
 			}
 		}
 	}
 	
-	public static synchronized void put(Instruction inst, LineageItem key, MatrixBlock value) {
+	public static synchronized void put(Instruction inst, LineageItem key, MatrixBlock value, double compcost) {
 		if (_cache.containsKey(key)) {
 			// Read from cache, replace value and place the entry at the head of the linkedlist.
 			Entry oldItem = _cache.get(key);
@@ -71,7 +71,7 @@ public class LineageCache {
 		}
 		else {
 			// Create a new entry.
-			Entry newItem = new Entry(key, value);
+			Entry newItem = new Entry(key, value, compcost);
 			if (isBelowThreshold(value)) 
 				// Place the entry at head position.
 				setHead(newItem);
@@ -145,9 +145,8 @@ public class LineageCache {
 	
 	public static boolean isReusable (Instruction inst) {
 		// TODO: Move this to the new class LineageCacheConfig and extend
-		return (inst.getOpcode().equalsIgnoreCase("tsmm"));
-			//|| inst.getOpcode().equalsIgnoreCase("ba+*"));
-		// TODO: Fix getRecomputeEstimate to support ba+* before enabling above code.
+		return (inst.getOpcode().equalsIgnoreCase("tsmm")
+			|| inst.getOpcode().equalsIgnoreCase("ba+*"));
 	}
 	
 	//---------------- CACHE SPACE MANAGEMENT METHODS -----------------
@@ -164,14 +163,7 @@ public class LineageCache {
 		while ((valSize+_cachesize) > CACHELIMIT)
 		{
 			double reduction = _cache.get(_end._key)._value.getInMemorySize();
-			long t0 = DMLScript.STATISTICS ? System.nanoTime() : 0;
-			double spill = getDiskSpillEstimate();
-			double comp = getRecomputeEstimate(inst);
-			if (DMLScript.STATISTICS) {
-				long t1 = System.nanoTime();
-				LineageCacheStatistics.incrementCostingTime(t1-t0);
-			}
-			if (comp > spill) 
+			if (_cache.get(_end._key)._compEst > getDiskSpillEstimate()) 
 				spillToLocalFS(); // If re-computation is more expensive, spill data to disk.
 
 			removeEntry(reduction);
@@ -189,6 +181,7 @@ public class LineageCache {
 
 	public static double getDiskSpillEstimate() {
 		// This includes sum of writing to and reading from disk
+		long t0 = DMLScript.STATISTICS ? System.nanoTime() : 0;
 		MatrixBlock mb = _cache.get(_end._key)._value;
 		long r = mb.getNumRows();
 		long c = mb.getNumColumns();
@@ -196,24 +189,27 @@ public class LineageCache {
 		double s = OptimizerUtils.getSparsity(r, c, nnz);
 		double loadtime = CostEstimatorStaticRuntime.getFSReadTime(r, c, s);
 		double writetime = CostEstimatorStaticRuntime.getFSWriteTime(r, c, s);
+		if (DMLScript.STATISTICS) {
+			long t1 = System.nanoTime();
+			LineageCacheStatistics.incrementCostingTime(t1-t0);
+		}
 		return loadtime+writetime;
 	}
 	
-	public static double getRecomputeEstimate(Instruction inst) {
-		MatrixBlock mb = _cache.get(_end._key)._value;
-		long r = mb.getNumRows();
-		long c = mb.getNumColumns();
-		long nnz = mb.getNonZeros();
-		double s = OptimizerUtils.getSparsity(r, c, nnz);
-		boolean sparse = MatrixBlock.evalSparseFormatInMemory(r, c, nnz);
-		
+	public static double getRecomputeEstimate(Instruction inst, ExecutionContext ec) {
+		long t0 = DMLScript.STATISTICS ? System.nanoTime() : 0;
 		double nflops = 0;
 		CPType cptype = CPInstructionParser.String2CPInstructionType.get(inst.getOpcode());
 		//TODO: All other relevant instruction types.
 		switch (cptype)
 		{
-			case MMTSJ:
-			//case AggregateBinary:
+			case MMTSJ:  //tsmm
+				MatrixObject mo = ec.getMatrixObject(((ComputationCPInstruction)inst).input1);
+				long r = mo.getNumRows();
+				long c = mo.getNumColumns();
+				long nnz = mo.getNnz();
+				double s = OptimizerUtils.getSparsity(r, c, nnz);
+				boolean sparse = MatrixBlock.evalSparseFormatInMemory(r, c, nnz);
 				MMTSJType type = ((MMTSJCPInstruction)inst).getMMTSJType();
 				if (type.isLeft())
 					nflops = !sparse ? (r * c * s * c /2):(r * c * s * c * s /2);
@@ -221,8 +217,35 @@ public class LineageCache {
 					nflops = !sparse ? ((double)r * c * r/2):(r*c*s + r*c*s*c*s /2);
 				break;
 				
+			case AggregateBinary:  //ba+*
+				MatrixObject mo1 = ec.getMatrixObject(((ComputationCPInstruction)inst).input1);
+				MatrixObject mo2 = ec.getMatrixObject(((ComputationCPInstruction)inst).input2);
+				long r1 = mo1.getNumRows();
+				long c1 = mo1.getNumColumns();
+				long nnz1 = mo1.getNnz();
+				double s1 = OptimizerUtils.getSparsity(r1, c1, nnz1);
+				boolean lsparse = MatrixBlock.evalSparseFormatInMemory(r1, c1, nnz1);
+				long r2 = mo2.getNumRows();
+				long c2 = mo2.getNumColumns();
+				long nnz2 = mo2.getNnz();
+				double s2 = OptimizerUtils.getSparsity(r2, c2, nnz2);
+				boolean rsparse = MatrixBlock.evalSparseFormatInMemory(r2, c2, nnz2);
+				if( !lsparse && !rsparse )
+					nflops = 2 * (r1 * c1 * ((c2>1)?s1:1.0) * c2) /2;
+				else if( !lsparse && rsparse )
+					nflops = 2 * (r1 * c1 * s1 * c2 * s2) /2;
+				else if( lsparse && !rsparse )
+					nflops = 2 * (r1 * c1 * s1 * c2) /2;
+				else //lsparse && rsparse
+					nflops = 2 * (r1 * c1 * s1 * c2 * s2) /2;
+				break;
+				
 			default:
 				throw new DMLRuntimeException("Lineage Cache: unsupported instruction: "+inst.getOpcode());
+		}
+		if (DMLScript.STATISTICS) {
+			long t1 = System.nanoTime();
+			LineageCacheStatistics.incrementCostingTime(t1-t0);
 		}
 		return nflops / (2L * 1024 * 1024 * 1024);
 	}
@@ -247,7 +270,7 @@ public class LineageCache {
 			LineageCacheStatistics.incrementFSWrites();
 		}
 
-		_spillList.put(_end._key, outfile);
+		_spillList.put(_end._key, new SpilledItem(outfile, _end._compEst));
 	}
 	
 	private static MatrixBlock readFromLocalFS(Instruction inst, LineageItem key) {
@@ -255,14 +278,14 @@ public class LineageCache {
 		MatrixBlock mb = null;
 		// Read from local FS
 		try {
-			mb = LocalFileUtils.readMatrixBlockFromLocal(_spillList.get(key));
+			mb = LocalFileUtils.readMatrixBlockFromLocal(_spillList.get(key)._outfile);
 		} catch (IOException e) {
-			throw new DMLRuntimeException ("Read from " + _spillList.get(key) + " failed.", e);
+			throw new DMLRuntimeException ("Read from " + _spillList.get(key)._outfile + " failed.", e);
 		}
 		// Restore to cache
-		LocalFileUtils.deleteFileIfExists(_spillList.get(key), true);
+		LocalFileUtils.deleteFileIfExists(_spillList.get(key)._outfile, true);
+		put(inst, key, mb, _spillList.get(key)._compEst);
 		_spillList.remove(key);
-		put(inst, key, mb);
 		if (DMLScript.STATISTICS) {
 			long t1 = System.nanoTime();
 			LineageCacheStatistics.incrementFSReadTime(t1-t0);
@@ -305,12 +328,24 @@ public class LineageCache {
 	private static class Entry {
 		LineageItem _key;
 		MatrixBlock _value;
+		double _compEst;
 		Entry _prev;
 		Entry _next;
 		
-		public Entry(LineageItem key, MatrixBlock value) {
+		public Entry(LineageItem key, MatrixBlock value, double computecost) {
 			this._key = key;
 			this._value = value;
+			this._compEst = computecost;
+		}
+	}
+	
+	private static class SpilledItem {
+		String _outfile;
+		double _compEst;
+		
+		public SpilledItem(String outfile, double computecost) {
+			this._outfile = outfile;
+			this._compEst = computecost;
 		}
 	}
 }
