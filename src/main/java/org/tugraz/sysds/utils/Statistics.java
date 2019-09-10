@@ -44,6 +44,7 @@ import org.tugraz.sysds.runtime.instructions.InstructionUtils;
 import org.tugraz.sysds.runtime.instructions.cp.FunctionCallCPInstruction;
 import org.tugraz.sysds.runtime.instructions.spark.SPInstruction;
 import org.tugraz.sysds.runtime.lineage.LineageCacheStatistics;
+import org.tugraz.sysds.runtime.lineage.LineageCacheConfig.ReuseOptions;
 import org.tugraz.sysds.runtime.matrix.data.LibMatrixDNN;
 
 /**
@@ -938,7 +939,7 @@ public class Statistics
 				sb.append("Functions recompiled:\t\t" + getFunRecompiles() + ".\n");
 				sb.append("Functions recompile time:\t" + String.format("%.3f", ((double)getFunRecompileTime())/1000000000) + " sec.\n");
 			}
-			if (DMLScript.LINEAGE && DMLScript.LINEAGE_REUSE) {
+			if (DMLScript.LINEAGE && DMLScript.LINEAGE_REUSE != ReuseOptions.NONE) {
 				sb.append("LineageCache hits (Mem/FS/Del): " + LineageCacheStatistics.displayHits() + ".\n");
 				sb.append("LineageCache writes (Mem/FS): \t" + LineageCacheStatistics.displayWtrites() + ".\n");
 				sb.append("LineageCache Rewrites:   \t" + LineageCacheStatistics.displayRewrites() + ".\n");

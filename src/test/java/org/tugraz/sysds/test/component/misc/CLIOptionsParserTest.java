@@ -30,6 +30,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.tugraz.sysds.api.DMLOptions;
 import org.tugraz.sysds.common.Types.ExecMode;
+import org.tugraz.sysds.runtime.lineage.LineageCacheConfig;
 import org.tugraz.sysds.utils.Explain;
 
 
@@ -131,7 +132,7 @@ public class CLIOptionsParserTest {
         DMLOptions o = DMLOptions.parseCLArguments(args);
         Assert.assertEquals(true, o.lineage);
 		Assert.assertEquals(false, o.lineage_dedup);
-		Assert.assertEquals(false, o.lineage_reuse);
+		Assert.assertEquals(LineageCacheConfig.ReuseOptions.NONE, o.LinReuseType);
     }
     
 	@Test
@@ -141,16 +142,35 @@ public class CLIOptionsParserTest {
 		DMLOptions o = DMLOptions.parseCLArguments(args);
 		Assert.assertEquals(true, o.lineage);
 		Assert.assertEquals(true, o.lineage_dedup);
-		Assert.assertEquals(false, o.lineage_reuse);
+		Assert.assertEquals(LineageCacheConfig.ReuseOptions.NONE, o.LinReuseType);
 	}
 	
 	@Test
-	public void testLineageReuse() throws Exception {
+	public void testLineageReuseF() throws Exception {
 		String cl = "systemds -f test.dml -lineage reuse";
 		String[] args = cl.split(" ");
 		DMLOptions o = DMLOptions.parseCLArguments(args);
 		Assert.assertEquals(true, o.lineage);
-		Assert.assertEquals(true, o.lineage_reuse);
+		Assert.assertEquals(LineageCacheConfig.ReuseOptions.REUSE_FULL, o.LinReuseType);
+		Assert.assertEquals(false, o.lineage_dedup);
+	}
+
+	@Test
+	public void testLineageReuseP() throws Exception {
+		String cl = "systemds -f test.dml -lineage reuse";
+		String[] args = cl.split(" ");
+		DMLOptions o = DMLOptions.parseCLArguments(args);
+		Assert.assertEquals(true, o.lineage);
+		Assert.assertEquals(LineageCacheConfig.ReuseOptions.REUSE_PARTIAL, o.LinReuseType);
+		Assert.assertEquals(false, o.lineage_dedup);
+	}
+	@Test
+	public void testLineageReuseH() throws Exception {
+		String cl = "systemds -f test.dml -lineage reuse";
+		String[] args = cl.split(" ");
+		DMLOptions o = DMLOptions.parseCLArguments(args);
+		Assert.assertEquals(true, o.lineage);
+		Assert.assertEquals(LineageCacheConfig.ReuseOptions.REUSE_HYBRID, o.LinReuseType);
 		Assert.assertEquals(false, o.lineage_dedup);
 	}
 	
@@ -161,7 +181,37 @@ public class CLIOptionsParserTest {
 		DMLOptions o = DMLOptions.parseCLArguments(args);
 		Assert.assertEquals(true, o.lineage);
 		Assert.assertEquals(true, o.lineage_dedup);
-		Assert.assertEquals(true, o.lineage_reuse);
+		Assert.assertEquals(LineageCacheConfig.ReuseOptions.REUSE_FULL, o.LinReuseType);
+	}
+
+	@Test
+	public void testLineageDedupAndReuseF() throws Exception {
+		String cl = "systemds -f test.dml -lineage dedup reuse";
+		String[] args = cl.split(" ");
+		DMLOptions o = DMLOptions.parseCLArguments(args);
+		Assert.assertEquals(true, o.lineage);
+		Assert.assertEquals(true, o.lineage_dedup);
+		Assert.assertEquals(LineageCacheConfig.ReuseOptions.REUSE_FULL, o.LinReuseType);
+	}
+
+	@Test
+	public void testLineageDedupAndReuseP() throws Exception {
+		String cl = "systemds -f test.dml -lineage dedup reuse";
+		String[] args = cl.split(" ");
+		DMLOptions o = DMLOptions.parseCLArguments(args);
+		Assert.assertEquals(true, o.lineage);
+		Assert.assertEquals(true, o.lineage_dedup);
+		Assert.assertEquals(LineageCacheConfig.ReuseOptions.REUSE_PARTIAL, o.LinReuseType);
+	}
+
+	@Test
+	public void testLineageDedupAndReusuH() throws Exception {
+		String cl = "systemds -f test.dml -lineage dedup reuse";
+		String[] args = cl.split(" ");
+		DMLOptions o = DMLOptions.parseCLArguments(args);
+		Assert.assertEquals(true, o.lineage);
+		Assert.assertEquals(true, o.lineage_dedup);
+		Assert.assertEquals(LineageCacheConfig.ReuseOptions.REUSE_HYBRID, o.LinReuseType);
 	}
 	
 	@Test(expected = ParseException.class)

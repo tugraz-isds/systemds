@@ -33,6 +33,13 @@ public class LineageCacheConfig {
 		}
 	}
 	
+	public enum ReuseOptions {
+		REUSE_FULL,
+		REUSE_PARTIAL,
+		REUSE_HYBRID,
+		NONE
+	}
+	
 	public ArrayList<String> _MMult = new ArrayList<>();
 	
 	public enum CachedItemHead {
@@ -69,12 +76,12 @@ public class LineageCacheConfig {
 	
 	public static void shutdownReuse() {
 		DMLScript.LINEAGE = false;
-		DMLScript.LINEAGE_REUSE = false;
+		DMLScript.LINEAGE_REUSE = ReuseOptions.NONE;
 	}
 
-	public static void restartReuse() {
+	public static void restartReuse(ReuseOptions rop) {
 		DMLScript.LINEAGE = true;
-		DMLScript.LINEAGE_REUSE = true;
+		DMLScript.LINEAGE_REUSE = rop;
 	}
 	
 	public static CacheType getCacheType() {

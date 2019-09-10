@@ -92,7 +92,7 @@ public class DMLScript
 	public static String      GPU_MEMORY_ALLOCATOR = "cuda";                                // GPU memory allocator to use
 	public static boolean     LINEAGE = DMLOptions.defaultOptions.lineage;                  // whether compute lineage trace
 	public static boolean     LINEAGE_DEDUP = DMLOptions.defaultOptions.lineage_dedup;      // whether deduplicate lineage items
-	public static boolean     LINEAGE_REUSE = DMLOptions.defaultOptions.lineage_reuse;      // whether lineage-based reuse
+	public static LineageCacheConfig.ReuseOptions LINEAGE_REUSE = DMLOptions.defaultOptions.LinReuseType;      // whether lineage-based reuse
 
 	public static boolean           USE_ACCELERATOR     = DMLOptions.defaultOptions.gpu;
 	public static boolean           FORCE_ACCELERATOR   = DMLOptions.defaultOptions.forceGPU;
@@ -194,7 +194,7 @@ public class DMLScript
 			EXEC_MODE           = dmlOptions.execMode;
 			LINEAGE             = dmlOptions.lineage;
 			LINEAGE_DEDUP       = dmlOptions.lineage_dedup;
-			LINEAGE_REUSE       = dmlOptions.lineage_reuse;
+			LINEAGE_REUSE       = dmlOptions.LinReuseType;
 
 			String fnameOptConfig = dmlOptions.configFile;
 			boolean isFile = dmlOptions.filePath != null;
@@ -213,9 +213,11 @@ public class DMLScript
 				return true;
 			}
 			
-			if( LINEAGE_REUSE ) {
-				//TODO proper cmd line configuration (SYSTEMDS-79)
-				LineageCacheConfig.setConfig(CacheType.FULL);
+			switch (LINEAGE_REUSE) {
+				case REUSE_FULL:    LineageCacheConfig.setConfig(CacheType.FULL); break;
+				case REUSE_PARTIAL: LineageCacheConfig.setConfig(CacheType.PARTIAL); break;
+				case REUSE_HYBRID:  LineageCacheConfig.setConfig(CacheType.HYBRID_FULL_PARTIAL); break;
+				case NONE:          LineageCacheConfig.setConfig(CacheType.NONE); break;
 			}
 
 			String dmlScriptStr = readDMLScript(isFile, fileOrScript);
