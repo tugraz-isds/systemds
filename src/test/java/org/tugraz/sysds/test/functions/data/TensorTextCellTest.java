@@ -28,6 +28,8 @@ import static org.tugraz.sysds.test.TestUtils.*;
 
 
 public class TensorTextCellTest {
+	static final String FILENAME = "target/testTemp/functions/data/TensorTextCellTest/tensor";
+	
 	@Test
 	public void testReadWriteTextCellBasicTensorFP32() {
 		testReadWriteTextCellBasicTensor(ValueType.FP32);
@@ -59,7 +61,7 @@ public class TensorTextCellTest {
 	}
 
 	private static void testReadWriteTextCellBasicTensor(ValueType vt) {
-		TensorBlock tb1 = createBasicTensor(vt, 70, 30, 0.7);
+		TensorBlock tb1 = createBasicTensor(vt, 70, 3000, 0.7);
 		TensorBlock tb2 = writeAndReadBasicTensorTextCell(tb1);
 		compareTensorBlocks(tb1, tb2);
 	}
@@ -95,7 +97,7 @@ public class TensorTextCellTest {
 	}
 
 	private static void testReadWriteTextCellDataTensor(ValueType vt) {
-		TensorBlock tb1 = createDataTensor(vt, 70, 30, 0.7);
+		TensorBlock tb1 = createDataTensor(vt, 70, 3000, 0.7);
 		TensorBlock tb2 = writeAndReadDataTensorTextCell(tb1);
 		compareTensorBlocks(tb1, tb2);
 	}
@@ -104,9 +106,9 @@ public class TensorTextCellTest {
 		try {
 			long[] dims = tb1.getLongDims();
 			TensorWriterTextCell writer = new TensorWriterTextCell();
-			writer.writeTensorToHDFS(tb1, "a", dims, 1024);
+			writer.writeTensorToHDFS(tb1, FILENAME, 1024);
 			TensorReaderTextCell reader = new TensorReaderTextCell();
-			return reader.readTensorFromHDFS("a", dims, 1024, new ValueType[]{tb1.getValueType()});
+			return reader.readTensorFromHDFS(FILENAME, dims, 1024, new ValueType[]{tb1.getValueType()});
 		}
 		catch (Exception ex) {
 			throw new DMLRuntimeException(ex);
@@ -117,9 +119,9 @@ public class TensorTextCellTest {
 		try {
 			long[] dims = tb1.getLongDims();
 			TensorWriterTextCell writer = new TensorWriterTextCell();
-			writer.writeTensorToHDFS(tb1, "a", dims, 1024);
+			writer.writeTensorToHDFS(tb1, FILENAME, 1024);
 			TensorReaderTextCell reader = new TensorReaderTextCell();
-			return reader.readTensorFromHDFS("a", dims, 1024, tb1.getSchema());
+			return reader.readTensorFromHDFS(FILENAME, dims, 1024, tb1.getSchema());
 		}
 		catch (Exception ex) {
 			throw new DMLRuntimeException(ex);
