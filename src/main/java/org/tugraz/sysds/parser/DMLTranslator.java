@@ -1487,7 +1487,7 @@ public class DMLTranslator
 				return processParameterizedBuiltinFunctionExpression((ParameterizedBuiltinFunctionExpression)source, target, hops);
 			else if( source instanceof DataExpression ) {
 				Hop ae = processDataExpression((DataExpression)source, target, hops);
-				if (ae instanceof DataOp){
+				if (ae instanceof DataOp && ((DataOp) ae).getDataOpType() != DataOpTypes.SQLREAD){
 					String formatName = ((DataExpression)source).getVarParam(DataExpression.FORMAT_TYPE).toString();
 					((DataOp)ae).setInputFormatType(Expression.convertFormatType(formatName));
 				}
@@ -2057,10 +2057,15 @@ public class DMLTranslator
 			currBuiltinOp = new ReorgOp(target.getName(), target.getDataType(), target.getValueType(),
 					ReOrgOp.RESHAPE, tmpMatrix);
 			break;
+			
+		case SQL:
+			currBuiltinOp = new DataOp(target.getName(), target.getDataType(), target.getValueType(), DataOpTypes.SQLREAD,
+					paramHops);
+			break;
 
 		default:
 			throw new ParseException(source.printErrorLocation() + 
-					"processDataExpression():: Unknown operation:  "
+					"processDataExpression():: Unknown operation: "
 							+ source.getOpCode());
 		}
 		

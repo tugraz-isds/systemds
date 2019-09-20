@@ -29,6 +29,7 @@ import org.tugraz.sysds.lops.Data;
 import org.tugraz.sysds.lops.Lop;
 import org.tugraz.sysds.lops.LopProperties.ExecType;
 import org.tugraz.sysds.lops.LopsException;
+import org.tugraz.sysds.lops.Sql;
 import org.tugraz.sysds.parser.DataExpression;
 import org.tugraz.sysds.runtime.controlprogram.caching.MatrixObject.UpdateType;
 import org.tugraz.sysds.runtime.meta.DataCharacteristics;
@@ -102,7 +103,7 @@ public class DataOp extends Hop
 	}
 
 	/**
-	 * READ operation for Matrix
+	 * READ operation for Matrix / SQL operation for tensor
 	 * This constructor supports expressions in parameters
 	 * 
 	 * @param l ?
@@ -300,7 +301,11 @@ public class DataOp extends Hop
 				((Data)l).setExecType(et);
 				setOutputDimensions(l);
 				break;
-			
+				
+			case SQLREAD:
+				l = new Sql(inputLops, getDataType(), getValueType());
+				break;
+				
 			default:
 				throw new LopsException("Invalid operation type for Data LOP: " + _dataop);	
 		}
