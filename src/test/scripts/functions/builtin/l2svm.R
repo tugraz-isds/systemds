@@ -40,7 +40,7 @@ if(num_min + num_max != nrow(Y)){
 		Y = 2/(check_max - check_min)*Y - (check_min + check_max)/(check_max - check_min)
 }
 
-intercept = as.integer(args[2]);
+intercept = as.logical(args[2]);
 epsilon = as.double(args[3]);
 lambda = as.double(args[4]);
 maxiterations = as.integer(args[5]);
@@ -48,13 +48,13 @@ maxiterations = as.integer(args[5]);
 N = nrow(X)
 D = ncol(X)
 
-if (intercept == 1) {
+if (intercept) {
 	ones  = matrix(1,N,1)
 	X = cbind(X, ones);
 }
 
 num_rows_in_w = D
-if(intercept == 1){
+if(intercept){
 	num_rows_in_w = num_rows_in_w + 1
 }
 w = matrix(0, num_rows_in_w, 1)
@@ -89,7 +89,7 @@ while(continue && iter < maxiterations){
 	obj = 0.5 * sum(out[sv] * out[sv]) + lambda/2 * sum(w * w)
 	g_new = t(X[sv,]) %*% (out[sv] * Y[sv]) - lambda * w
 
-	print(paste("OBJ : ", obj))
+	#print(paste("OBJ : ", obj))
 
 	continue = (t*sum(s * g_old) >= epsilon*obj)
 

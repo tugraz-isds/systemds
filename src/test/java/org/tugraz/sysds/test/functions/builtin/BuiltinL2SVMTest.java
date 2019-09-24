@@ -1,3 +1,20 @@
+/*
+ * Copyright 2018 Graz University of Technology
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+
 package org.tugraz.sysds.test.functions.builtin;
 
 import org.junit.Test;
@@ -13,6 +30,9 @@ import org.tugraz.sysds.test.TestUtils;
 
 import java.util.*;
 
+import static org.apache.spark.sql.functions.rand;
+
+
 public class BuiltinL2SVMTest extends AutomatedTestBase {
     private final static String TEST_NAME = "l2svm";
     private final static String TEST_DIR = "functions/builtin/";
@@ -22,10 +42,10 @@ public class BuiltinL2SVMTest extends AutomatedTestBase {
     private final static double eps = 0.001;
     private final static int rows = 1000;
     private final static int colsX = 500;
-    private final static int colsY = 1;
     private final static double spSparse = 0.01;
     private final static double spDense = 0.7;
     private final static int max_iter = 10;
+
 
     @Override
     public void setUp() {
@@ -35,43 +55,43 @@ public class BuiltinL2SVMTest extends AutomatedTestBase {
 
     @Test
     public void testL2SVMDense() {
-        runL2SVMTest(false, 0, eps, 1.0, max_iter, LopProperties.ExecType.CP);
+        runL2SVMTest(false, false, eps, 1.0, max_iter, LopProperties.ExecType.CP);
     }
     @Test
     public void testL2SVMSparse() {
-        runL2SVMTest(true, 0, eps, 1.0, max_iter, LopProperties.ExecType.CP);
+        runL2SVMTest(true, false, eps, 1.0, max_iter, LopProperties.ExecType.CP);
     }
 //
     @Test
     public void testL2SVMIntercept() {
-        runL2SVMTest(true,1, eps, 1.0, max_iter, LopProperties.ExecType.SPARK);
+        runL2SVMTest(true,true, eps, 1.0, max_iter, LopProperties.ExecType.SPARK);
     }
 //
     @Test
     public void testL2SVMDenseIntercept() {
-         runL2SVMTest(false,1, 1, 1.0, max_iter, LopProperties.ExecType.CP);
+         runL2SVMTest(false,true, 1, 1.0, max_iter, LopProperties.ExecType.CP);
     }
 
     @Test
     public void testL2SVMSparseLambda2() {
-        runL2SVMTest(true,1, 1, 2.0, max_iter, LopProperties.ExecType.CP);
+        runL2SVMTest(true,true, 1, 2.0, max_iter, LopProperties.ExecType.CP);
     }
 
     @Test
     public void testL2SVMSparseLambda100CP() {
-        runL2SVMTest(true,1, 1, 100, max_iter, LopProperties.ExecType.CP);
+        runL2SVMTest(true,true, 1, 100, max_iter, LopProperties.ExecType.CP);
     }
     @Test
     public void testL2SVMSparseLambda100Spark() {
-        runL2SVMTest(true,1, 1, 100, max_iter, LopProperties.ExecType.SPARK);
+        runL2SVMTest(true,true, 1, 100, max_iter, LopProperties.ExecType.SPARK);
     }
 
     @Test
     public void testL2SVMIteration() {
-        runL2SVMTest(true,1, 1, 2.0, 100, LopProperties.ExecType.CP);
+        runL2SVMTest(true,true, 1, 2.0, 100, LopProperties.ExecType.CP);
     }
 
-    private void runL2SVMTest(boolean sparse, int intercept, double eps,
+    private void runL2SVMTest(boolean sparse, boolean intercept, double eps,
                                double lambda, int run, LopProperties.ExecType instType)
     {
         Types.ExecMode platformOld = setExecMode(instType);
@@ -90,18 +110,18 @@ public class BuiltinL2SVMTest extends AutomatedTestBase {
             fullDMLScriptName = HOME + TEST_NAME + ".dml";
             programArgs = new String[]{ "-explain", "-stats",
                     "-nvargs", "X=" + input("X"), "Y=" + input("Y"), "model=" + output("model"),
-                    "inc=" + intercept,"eps=" + eps, "lam=" + lambda, "max=" + run};
+                    "inc=" + String.valueOf(intercept).toUpperCase(),"eps=" + eps, "lam=" + lambda, "max=" + run};
 
 
             fullRScriptName = HOME + TEST_NAME + ".R";
-            rCmd = getRCmd(inputDir(), Integer.toString(intercept), Double.toString(eps),
+            rCmd = getRCmd(inputDir(), Boolean.toString(intercept), Double.toString(eps),
                     Double.toString(lambda), Integer.toString(run), expectedDir());
 
             //generate actual datasets
             double[][] X = getRandomMatrix(rows, colsX, 0, 100, sparsity, 10);
-            double[][] Y = getRandomMatrix(rows, 1, -1, 1, 1, -1);
-            for(int i=0; i<rows; i++)
-                Y[i][0] = (Y[i][0] > 0) ? 1 : -1;
+            double[][] Y= getRandomMatrix(rows, 1, -1, 1, 1, -1);
+
+            Y = TestUtils.round(Y);
 
             writeInputMatrixWithMTD("X", X, true);
             writeInputMatrixWithMTD("Y", Y, true);
