@@ -214,6 +214,7 @@ public class DMLScript
 			}
 			
 			LineageCacheConfig.setConfig(LINEAGE_REUSE);
+			LineageCacheConfig.setSpill(false);
 
 			String dmlScriptStr = readDMLScript(isFile, fileOrScript);
 			Map<String, String> argVals = dmlOptions.argVals;

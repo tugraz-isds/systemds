@@ -39,6 +39,7 @@ public class LineageCacheConfig {
 	}
 	
 	public ArrayList<String> _MMult = new ArrayList<>();
+	public static boolean _allowSpill = true;
 	
 	public enum CachedItemHead {
 		TSMM,
@@ -70,6 +71,7 @@ public class LineageCacheConfig {
 		_cacheType = ct;
 		_itemH = ith;
 		_itemT = itt;
+		_allowSpill = true;
 	}
 	
 	public static void shutdownReuse() {
@@ -80,6 +82,14 @@ public class LineageCacheConfig {
 	public static void restartReuse(ReuseCacheType rop) {
 		DMLScript.LINEAGE = true;
 		DMLScript.LINEAGE_REUSE = rop;
+	}
+	
+	public static void setSpill(boolean toSpill) {
+		_allowSpill = toSpill;
+	}
+	
+	public static boolean isSetSpill() {
+		return _allowSpill;
 	}
 	
 	public static ReuseCacheType getCacheType() {
