@@ -3439,10 +3439,40 @@ public class MatrixBlock extends MatrixValue implements CacheBlock, Externalizab
 		if( !result.sparse && nnz!=0 ) //DENSE
 		{
 			if( cbind ) {
-				result.copy(0, m-1, 0, clen-1, this, false);
-				for(int i=0, off=clen; i<that.length; i++) {
-					result.copy(0, m-1, off, off+that[i].clen-1, that[i], false);
-					off += that[i].clen;
+				result.allocateDenseBlock(false);
+				ArrayList<MatrixBlock> matList = new ArrayList<MatrixBlock>();
+				matList.add(this);
+				Collections.addAll(matList, that);
+				DenseBlock resd = result.getDenseBlock();
+				
+				for (int i=0; i<m; i++)
+				{
+					int cl = 0;
+					for (int k=0; k<matList.size(); k++) {
+						if (matList.get(k).isEmptyBlock(false))
+							continue;
+						if (matList.get(k).sparse) {
+							SparseBlock src = matList.get(k).sparseBlock;
+							if (src.isEmpty(i)) 
+								continue;
+							int srcpos = src.pos(i);
+							int srclen = src.size(i);
+							int[] srcix = src.indexes(i);
+							double[] srcval = src.values(i);
+							double[] resval = resd.values(i);
+							int resix = resd.pos(i, cl);
+							for (int j=srcpos; j<srcpos+srclen; j++)
+								resval[resix+srcix[j]] = srcval[j];
+							cl += matList.get(k).clen;
+						}
+						else {
+							DenseBlock src = matList.get(k).getDenseBlock();
+							double[] srcval = src.values(i);
+							double[] resval = resd.values(i);
+							System.arraycopy(srcval, src.pos(i, 0), resval, resd.pos(i, cl), matList.get(k).clen);
+							cl += matList.get(k).clen;
+						}
+					}
 				}
 			}
 			else { //rbind
