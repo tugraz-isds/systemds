@@ -87,6 +87,13 @@ public class SqlTest extends AutomatedTestBase {
 		if( rtplatform == ExecMode.SPARK ) {
 			DMLScript.USE_LOCAL_SPARK_CONFIG = true;
 		}
+		Connection db = null;
+		try {
+			db = DriverManager.getConnection(DB_CONNECTION + ";create=true");
+		}
+		catch (SQLException e) {
+			throw new RuntimeException(e);
+		}
 		try {
 			getAndLoadTestConfiguration(SqlTest.TEST_NAME);
 			String HOME = SCRIPT_DIR + TEST_DIR;
@@ -95,7 +102,6 @@ public class SqlTest extends AutomatedTestBase {
 			
 			programArgs = new String[]{"-explain", "-args", DB_CONNECTION, _query};
 			
-			Connection db = DriverManager.getConnection(DB_CONNECTION + ";create=true");
 			Statement st = db.createStatement();
 			st.execute("CREATE TABLE test(id INTEGER PRIMARY KEY, name VARCHAR(256))");
 			StringBuilder sb = new StringBuilder("INSERT INTO test VALUES ");
@@ -108,15 +114,21 @@ public class SqlTest extends AutomatedTestBase {
 			st.execute(sb.toString());
 			// TODO check tensors (write not implemented yet, so not possible)
 			runTest(true, false, null, -1);
-			DriverManager.getConnection(DB_CONNECTION + ";drop=true");
 		}
 		catch (SQLException e) {
-			if( !e.getSQLState().equals(DB_DROP_SUCCESS) )
-				e.printStackTrace();
+			throw new RuntimeException(e);
 		}
 		finally {
 			rtplatform = platformOld;
 			DMLScript.USE_LOCAL_SPARK_CONFIG = sparkConfigOld;
+			try {
+				DriverManager.getConnection(DB_CONNECTION + ";drop=true");
+			}
+			catch (SQLException e) {
+				if( !e.getSQLState().equals(DB_DROP_SUCCESS) ) {
+					throw new RuntimeException(e);
+				}
+			}
 		}
 	}
 }

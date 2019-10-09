@@ -82,8 +82,8 @@ public class SqlCPInstruction extends CPInstruction {
 			for (int row = 0; resultSet.next(); row++)
 				for (int i = 0; i < cols; i++)
 					setCell(outBlock, resultSet, schema[i], new int[]{row, i});
-			
 			ec.setTensorOutput(_output.getName(), outBlock);
+			ec.getDataCharacteristics(_output.getName()).setDim(0, rows).setDim(1, cols);
 		}
 		catch (SQLException e) {
 			throw new DMLRuntimeException("SQL Error: " + e.getMessage());
