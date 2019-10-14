@@ -39,6 +39,7 @@ public class OutputParameters
 	private long _blocksize = -1;
 	private String _file_name = null;
 	private String _file_label = null;
+	private boolean _linCacheCandidate = true;
 
 	FileFormat matrix_format = FileFormat.BINARY;
 	
@@ -81,6 +82,11 @@ public class OutputParameters
 
 	public void setDimensions(long rows, long cols, long blen, long nnz, UpdateType update) {
 		_updateType = update;
+		setDimensions(rows, cols, blen, nnz);
+	}
+
+	public void setDimensions(long rows, long cols, long blen, long nnz, boolean linCacheCand) {
+		_linCacheCandidate = linCacheCand;
 		setDimensions(rows, cols, blen, nnz);
 	}
 	
@@ -136,6 +142,10 @@ public class OutputParameters
 	
 	public void setUpdateType(UpdateType update) {
 		_updateType = update;
+	}
+	
+	public boolean getLinCacheMarking() {
+		return _linCacheCandidate;
 	}
 
 	public long getBlocksize() {
