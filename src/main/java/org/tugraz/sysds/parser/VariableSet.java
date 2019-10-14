@@ -69,6 +69,10 @@ public class VariableSet
 		return _variables.keySet();
 	}
 	
+	public int getSize(){
+		return _variables.size();
+	}
+	
 	public HashMap<String,DataIdentifier> getVariables(){
 		return _variables;
 	}

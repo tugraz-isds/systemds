@@ -180,6 +180,11 @@ public class LineageCache {
 				|| inst.getOpcode().equalsIgnoreCase("groupedagg");
 	}
 	
+	public static boolean isMarkedForCaching (Instruction inst, ExecutionContext ec) {
+		MatrixObject mo = ec.getMatrixObject(((ComputationCPInstruction)inst).output);
+		return mo.isMarked() && (inst.getOpcode().equalsIgnoreCase("tsmm") || inst.getOpcode().equalsIgnoreCase("ba+*"));
+	}
+	
 	//---------------- CACHE SPACE MANAGEMENT METHODS -----------------
 	
 	private static boolean isBelowThreshold(MatrixBlock value) {

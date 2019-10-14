@@ -40,6 +40,7 @@ import org.tugraz.sysds.parser.ParForStatementBlock;
 import org.tugraz.sysds.parser.StatementBlock;
 import org.tugraz.sysds.parser.WhileStatement;
 import org.tugraz.sysds.parser.WhileStatementBlock;
+import org.tugraz.sysds.runtime.lineage.LineageCacheConfig;
 
 /**
  * This program rewriter applies a variety of rule-based rewrites
@@ -116,6 +117,8 @@ public class ProgramRewriter
  				_sbRuleSet.add(  new RewriteHoistLoopInvariantOperations()       ); //dependency: vectorize, but before inplace
  			if( OptimizerUtils.ALLOW_LOOP_UPDATE_IN_PLACE )
  				_sbRuleSet.add(  new RewriteMarkLoopVariablesUpdateInPlace()     );
+ 			if( LineageCacheConfig.getCompAssRW() )
+ 				_sbRuleSet.add(  new MarkForLineageReuse()                      );
 		}
 		
 		// DYNAMIC REWRITES (which do require size information)

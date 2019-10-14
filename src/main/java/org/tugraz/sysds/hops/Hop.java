@@ -109,6 +109,10 @@ public abstract class Hop implements ParseInfo
 	// indicates if the output of this hops needs to contain materialized empty blocks 
 	// if those exists; otherwise only blocks w/ non-zero values are materialized
 	protected boolean _outputEmptyBlocks = true;
+
+	// indicates if the output of this hop needs to be saved in lineage cache
+	// this is just a marking and can be ignored by runtime
+	protected boolean _requiresLineageCaching = true;
 	
 	private Lop _lops = null;
 	
@@ -250,6 +254,14 @@ public abstract class Hop implements ParseInfo
 	
 	public boolean requiresCheckpoint() {
 		return _requiresCheckpoint;
+	}
+	
+	public void setRequiresLineageCaching(boolean flag) {
+		_requiresLineageCaching = flag;
+	}
+	
+	public boolean requiresLineageCaching() {
+		return _requiresLineageCaching;
 	}
 	
 	public void constructAndSetLopsDataFlowProperties() {
@@ -1834,6 +1846,7 @@ public abstract class Hop implements ParseInfo
 		_requiresRecompile = that._requiresRecompile;
 		_requiresReblock = that._requiresReblock;
 		_requiresCheckpoint = that._requiresCheckpoint;
+		_requiresLineageCaching = that._requiresLineageCaching;
 		_outputEmptyBlocks = that._outputEmptyBlocks;
 		
 		_beginLine = that._beginLine;

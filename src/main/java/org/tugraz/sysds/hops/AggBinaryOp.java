@@ -531,7 +531,7 @@ public class AggBinaryOp extends MultiThreadedHop
 		int k = OptimizerUtils.getConstrainedNumThreads(_maxNumThreads);
 		Lop matmultCP = new MMTSJ(getInput().get(mmtsj.isLeft()?1:0).constructLops(),
 			getDataType(), getValueType(), et, mmtsj, false, k);
-		matmultCP.getOutputParameters().setDimensions(getDim1(), getDim2(), getBlocksize(), getNnz());
+		matmultCP.getOutputParameters().setDimensions(getDim1(), getDim2(), getBlocksize(), getNnz(), requiresLineageCaching());
 		setLineNumbers( matmultCP );
 		setLops(matmultCP);
 	}

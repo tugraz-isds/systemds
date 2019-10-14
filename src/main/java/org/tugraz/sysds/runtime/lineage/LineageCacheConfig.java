@@ -56,7 +56,7 @@ public class LineageCacheConfig {
 	private static ReuseCacheType _cacheType = null;
 	private static CachedItemHead _itemH = null;
 	private static CachedItemTail _itemT = null;
-
+	private static boolean _compilerAssistedRW = true;
 	static {
 		//setup static configuration parameters
 		setSpill(false); //disable spilling of cache entries to disk
@@ -76,6 +76,10 @@ public class LineageCacheConfig {
 		_cacheType = ct;
 		_itemH = ith;
 		_itemT = itt;
+	}
+	
+	public static void setCompAssRW(boolean comp) {
+		_compilerAssistedRW = comp;
 	}
 	
 	public static void shutdownReuse() {
@@ -106,5 +110,9 @@ public class LineageCacheConfig {
 
 	public static CachedItemTail getCachedItemTail() {
 		return _itemT;
+	}
+	
+	public static boolean getCompAssRW() {
+		return _compilerAssistedRW;
 	}
 }

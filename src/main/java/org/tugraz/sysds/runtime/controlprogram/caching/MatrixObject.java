@@ -75,6 +75,7 @@ public class MatrixObject extends CacheableData<MatrixBlock>
 	//additional matrix-specific flags
 	private UpdateType _updateType = UpdateType.COPY; 
 	private boolean _diag = false;
+	private boolean _markForLinCache = false;
 
 	//information relevant to partitioned matrices.
 	private boolean _partitioned = false; //indicates if obj partitioned
@@ -128,6 +129,7 @@ public class MatrixObject extends CacheableData<MatrixBlock>
 		_partitionFormat = mo._partitionFormat;
 		_partitionSize = mo._partitionSize;
 		_partitionCacheName = mo._partitionCacheName;
+		_markForLinCache = mo._markForLinCache;
 	}
 
 	public void setUpdateType(UpdateType flag) {
@@ -144,6 +146,14 @@ public class MatrixObject extends CacheableData<MatrixBlock>
 	
 	public void setDiag(boolean diag) {
 		_diag = diag;
+	}
+	
+	public void setMarkForLinCache (boolean mark) {
+		_markForLinCache = mark;
+	}
+	
+	public boolean isMarked() {
+		return _markForLinCache;
 	}
 	
 	@Override

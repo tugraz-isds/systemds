@@ -1,0 +1,157 @@
+/*
+ * Copyright 2019 Graz University of Technology
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.tugraz.sysds.hops.rewrite;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.tugraz.sysds.hops.Hop;
+import org.tugraz.sysds.hops.Hop.DataOpTypes;
+import org.tugraz.sysds.parser.ForStatement;
+import org.tugraz.sysds.parser.ForStatementBlock;
+import org.tugraz.sysds.parser.FunctionStatement;
+import org.tugraz.sysds.parser.FunctionStatementBlock;
+import org.tugraz.sysds.parser.IfStatement;
+import org.tugraz.sysds.parser.IfStatementBlock;
+import org.tugraz.sysds.parser.StatementBlock;
+import org.tugraz.sysds.parser.WhileStatement;
+import org.tugraz.sysds.parser.WhileStatementBlock;
+import org.tugraz.sysds.runtime.lineage.LineageCacheConfig;
+
+public class MarkForLineageReuse extends StatementBlockRewriteRule 
+{
+	@Override
+	public boolean createsSplitDag() {
+		return false;
+	}
+
+	@Override
+	public List<StatementBlock> rewriteStatementBlock(StatementBlock sb, ProgramRewriteStatus status) 
+	{
+		if (sb == null || !HopRewriteUtils.isLoopStatementBlock(sb) || LineageCacheConfig.ReuseCacheType.isNone())
+			return Arrays.asList(sb);    //early abort
+
+		if (sb instanceof ForStatementBlock) {
+			ForStatement fstmt = (ForStatement)sb.getStatement(0);
+			Set<String> loopVar = new HashSet<>(Arrays.asList(fstmt.getIterablePredicate().getIterVar().getName()));
+			HashSet<String> deproots = new HashSet<>();
+			unmarkLoopDepVarsSB(fstmt.getBody(), deproots, loopVar);
+		}
+		if (sb instanceof WhileStatementBlock) {
+			WhileStatement wstmt = (WhileStatement)sb.getStatement(0);
+			// intersection of updated and conditional variables are the loop variables
+			Set<String> loopVar = sb.variablesUpdated().getVariableNames().stream()
+					.filter(v -> wstmt.getConditionalPredicate().variablesRead().containsVariable(v))
+					.collect(Collectors.toSet());
+			HashSet<String> deproots = new HashSet<>();
+			unmarkLoopDepVarsSB(wstmt.getBody(), deproots, loopVar);
+		}
+		return Arrays.asList(sb);
+	}
+	
+	private void unmarkLoopDepVarsSB(ArrayList<StatementBlock> sbs, HashSet<String> deproots, Set<String> loopVar)
+	{
+		HashSet<String> newdepsbs = new HashSet<>();
+		int lim = 0;
+		do {
+			newdepsbs.clear();
+			newdepsbs.addAll(deproots);
+			for (StatementBlock sb : sbs) {
+				if (sb instanceof ForStatementBlock) {
+					ForStatement fstmt = (ForStatement)sb.getStatement(0);
+					unmarkLoopDepVarsSB(fstmt.getBody(), newdepsbs, loopVar);
+					//TODO: nested loops.
+				}
+				else if (sb instanceof WhileStatementBlock) {
+					WhileStatement wstmt = (WhileStatement)sb.getStatement(0);
+					unmarkLoopDepVarsSB(wstmt.getBody(), newdepsbs, loopVar); 
+				}
+				else if (sb instanceof IfStatementBlock) {
+					IfStatement ifstmt = (IfStatement)sb.getStatement(0);
+					unmarkLoopDepVarsSB(ifstmt.getIfBody(), newdepsbs, loopVar); 
+					if (ifstmt.getElseBody() != null)
+						unmarkLoopDepVarsSB(ifstmt.getElseBody(), newdepsbs, loopVar); 
+				}
+				else if (sb instanceof FunctionStatementBlock) {
+					FunctionStatement fnstmt = (FunctionStatement)sb.getStatement(0);
+					unmarkLoopDepVarsSB(fnstmt.getBody(), newdepsbs, loopVar);
+				}
+				else {
+					Hop.resetVisitStatus(sb.getHops());
+					if (sb.getHops() != null)
+						for (int j=0; j<sb.variablesUpdated().getSize(); j++) {
+							HashSet<String> newdeproots = new HashSet<>(deproots);
+							for (Hop hop : sb.getHops()) {
+								// find the loop dependent DAG roots
+								HashSet<Long> dephops = new HashSet<>();
+								unmarkLoopDepVars(hop, loopVar, newdeproots, dephops);
+							}
+							if (!deproots.isEmpty() && deproots.equals(newdeproots))
+								// break if loop dependent DAGs are converged to a unvarying set
+								break;
+							else
+								// iterate to propagate the loop dependency across all the DAGs in this SB
+								deproots.addAll(newdeproots);
+						}
+				}
+			}
+			deproots.addAll(newdepsbs);
+			lim++;
+		}
+		// iterate to propagate the loop dependency across all the SBs
+		while (lim < sbs.size() && (deproots.isEmpty() || !deproots.equals(newdepsbs)));
+	}
+	
+	private void unmarkLoopDepVars(Hop hop, Set<String> loopVar, HashSet<String> deproots, HashSet<Long> dephops)
+	{
+		if (hop.isVisited())
+			return;
+
+		// depth first
+		for (Hop hi : hop.getInput()) 
+			unmarkLoopDepVars(hi, loopVar, deproots, dephops);
+
+		// unmark operation if this itself or any of its inputs are loop dependent
+		boolean loopdephop = (loopVar.contains(hop.getName())
+					|| (HopRewriteUtils.isData(hop, DataOpTypes.TRANSIENTREAD) 
+					&& deproots.contains(hop.getName()))) ? true : false;
+		for (Hop hi : hop.getInput()) 
+			loopdephop |= dephops.contains(hi.getHopID());
+		
+		if (loopdephop) {
+			dephops.add(hop.getHopID());
+			hop.setRequiresLineageCaching(false);
+		}
+		// TODO: logic to separate out partially reusable cases (e.g cbind-tsmm)
+		
+		if (HopRewriteUtils.isData(hop, DataOpTypes.TRANSIENTWRITE) 
+			&& !dephops.isEmpty())
+			// copy to propagate across
+			deproots.add(hop.getName());
+
+		hop.setVisited();
+	}
+	
+	@Override
+	public List<StatementBlock> rewriteStatementBlocks(List<StatementBlock> sbs, ProgramRewriteStatus status) {
+		return sbs;
+	}
+}
