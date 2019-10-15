@@ -42,14 +42,14 @@
 	<properties>
 		<hadoop.version>2.6.0</hadoop.version>
 		<antlr.version>4.5.3</antlr.version>
-		<spark.version>2.1.0</spark.version>
-		<scala.version>2.11.8</scala.version>
+		<spark.version>2.4.4</spark.version>
+		<scala.version>2.11.12</scala.version>
 		<scala.binary.version>2.11</scala.binary.version>
 		<scala.test.version>2.2.6</scala.test.version>
 		<maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss z</maven.build.timestamp.format>
 		<enableGPU>false</enableGPU>
 		<jcuda.scope>provided</jcuda.scope>
-		<jcuda.version>0.9.0d</jcuda.version>
+		<jcuda.version>10.1.0</jcuda.version>
 		<integrationTestExtraJVMArgs />
 	</properties>
 
@@ -321,7 +321,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
-				<version>2.18</version><!--$NO-MVN-MAN-VER$ -->
+				<version>3.0.0-M3</version>
 				<configuration>
 
 					<!-- STDERR/STDOUT to individual .txt files instead of console -->
@@ -565,7 +565,7 @@
 		<profile>
 			<id>scala-2.10</id>
 			<properties>
-				<scala.version>2.10.5</scala.version>
+				<scala.version>2.10.7</scala.version>
 				<scala.binary.version>2.10</scala.binary.version>
 			</properties>
 		</profile>
@@ -573,7 +573,7 @@
 		<profile>
 			<id>scala-2.11</id>
 			<properties>
-				<scala.version>2.11.8</scala.version>
+				<scala.version>2.11.12</scala.version>
 				<scala.binary.version>2.11</scala.binary.version>
 			</properties>
 		</profile>
