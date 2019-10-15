@@ -1,0 +1,9 @@
+{  
+"data_type": "frame",  
+"schema": "int,boolean,int,string,double",
+"description": {    "author": "SystemDS"  },  
+"format": "csv",  
+"header": true,  
+"na.strings": [ "?",   "",    "NA",    "NaN"  ],  
+
+}

@@ -414,6 +414,7 @@ public class FrameBlock implements Writable, CacheBlock, Externalizable
 		_coldata = (_coldata==null) ? new Array[]{new StringArray(col)} :
 			(Array[]) ArrayUtils.add(_coldata, new StringArray(col));
 		_numRows = col.length;
+
 	}
 	
 	/**
@@ -1467,7 +1468,7 @@ public class FrameBlock implements Writable, CacheBlock, Externalizable
 		}
 		@Override
 		public void append(String value) {
-			append((value!=null)?Long.parseLong(value):null);
+			append((value!=null)?Long.parseLong(value.trim()):null);
 		}
 		@Override
 		public void append(Long value) {
@@ -1599,5 +1600,20 @@ public class FrameBlock implements Writable, CacheBlock, Externalizable
 		public void setMvValue(String mvVal) {
 			_mvValue = mvVal;
 		}
+	}
+
+	public FrameBlock getSchemaTypeOf()
+	{
+
+		ValueType[] schemaStrings = new ValueType[this.getNumColumns()];
+		for(int i=0; i<schemaStrings.length; i++)
+			schemaStrings[i] = ValueType.STRING;
+
+		String[][] st = new String[1][this.getNumColumns()];
+		ValueType[] schema = this.getSchema();
+
+		for(int i=0; i<schema.length; i++) {st[0][i] = schema[i].toString(); }
+		FrameBlock retBlock = new FrameBlock(schemaStrings, this.getColumnNames(), st);
+		return retBlock;
 	}
 }
