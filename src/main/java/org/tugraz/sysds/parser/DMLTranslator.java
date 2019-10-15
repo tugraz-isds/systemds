@@ -1100,7 +1100,7 @@ public class DMLTranslator
 
 						if (source instanceof BuiltinFunctionExpression){
 							BuiltinFunctionExpression BuiltinSource = (BuiltinFunctionExpression)source;
-							if (BuiltinSource.getOpCode() == Builtins.TIME)
+							if (BuiltinSource.getOpCode() == Builtins.TIME || BuiltinSource.getOpCode() == Builtins.TYPEOF  )
 								sb.setSplitDag(true);
 						}
 
@@ -2447,6 +2447,7 @@ public class DMLTranslator
 		case CUMSUMPROD:
 		case CUMMIN:
 		case CUMMAX:
+
 			currBuiltinOp = new UnaryOp(target.getName(), target.getDataType(), target.getValueType(),
 				OpOp1.valueOf(source.getOpCode().name()), expr);
 			break;
@@ -2565,7 +2566,8 @@ public class DMLTranslator
 			
 		case INVERSE:
 		case CHOLESKY:
-			currBuiltinOp = new UnaryOp(target.getName(), target.getDataType(), target.getValueType(), 
+		case TYPEOF:
+			currBuiltinOp = new UnaryOp(target.getName(), target.getDataType(), target.getValueType(),
 				OpOp1.valueOf(source.getOpCode().name()), expr);
 			break;
 			

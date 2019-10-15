@@ -1,0 +1,7 @@
+{
+    "data_type": "frame",
+    "schema": "int,string,int,string,int,string,string,string,string,string,int,int,int,string,string",
+    "format": "csv",
+    "header": false,
+    "na.strings": "?"
+}
