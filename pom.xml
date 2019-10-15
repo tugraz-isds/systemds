@@ -98,6 +98,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-dependency-plugin</artifactId>
+				<version>3.1.1</version>
 				<executions>
 					<execution>
 						<id>unpack</id>
@@ -204,29 +205,20 @@
 			<plugin>
 				<groupId>net.alchim31.maven</groupId>
 				<artifactId>scala-maven-plugin</artifactId>
-				<version>3.2.2</version>
+				<version>4.2.0</version>
 				<executions>
 					<execution>
-						<id>eclipse-add-source</id>
-						<goals>
-							<goal>add-source</goal>
-						</goals>
-					</execution>
-					<execution>
-						<id>scala-compile-first</id>
-						<phase>process-resources</phase>
-						<goals>
-							<goal>compile</goal>
-						</goals>
-					</execution>
-					<execution>
-						<id>scala-test-compile-first</id>
-						<phase>process-test-resources</phase>
-						<goals>
-							<goal>testCompile</goal>
-						</goals>
-					</execution>
+            			<goals>
+              				<goal>compile</goal>
+              				<goal>testCompile</goal>
+            			</goals>
+          			</execution>
 				</executions>
+				<configuration>        
+					<source>1.8</source>
+        			<target>1.8</target>
+          			<scalaVersion>${scala.version}</scalaVersion>
+        		</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -643,7 +635,7 @@
 											<pluginExecutionFilter>
 												<groupId>org.apache.maven.plugins</groupId>
 												<artifactId>maven-dependency-plugin</artifactId>
-												<versionRange>[2.10,)</versionRange>
+												<versionRange>[3.1.1,)</versionRange>
 												<goals>
 													<goal>copy-dependencies</goal>
 												</goals>
@@ -657,7 +649,7 @@
 											<pluginExecutionFilter>
 												<groupId>net.alchim31.maven</groupId>
 												<artifactId>scala-maven-plugin</artifactId>
-												<versionRange>[3.2.2,)</versionRange>
+												<versionRange>[4.2.0,)</versionRange>
 												<goals>
 													<goal>add-source</goal>
 													<goal>compile</goal>
