@@ -33,12 +33,14 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.hadoop.io.Writable;
 import org.tugraz.sysds.common.Types.ValueType;
 import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.controlprogram.caching.CacheBlock;
+import org.tugraz.sysds.runtime.controlprogram.caching.FrameObject;
 import org.tugraz.sysds.runtime.io.IOUtilFunctions;
 import org.tugraz.sysds.runtime.transform.encode.EncoderRecode;
 import org.tugraz.sysds.runtime.util.IndexRange;
@@ -1616,4 +1618,85 @@ public class FrameBlock implements Writable, CacheBlock, Externalizable
 		FrameBlock retBlock = new FrameBlock(schemaStrings, this.getColumnNames(), st);
 		return retBlock;
 	}
-}
+
+	public FrameBlock detectSchemaFromRow()
+	{
+		String[] schemaInfo = new String[this.getNumColumns()];
+		Array obj = null;
+		ArrayList<String> cellType = new ArrayList<String>();
+
+
+		for (int i=0; i<this.getNumColumns(); i++)
+			{
+			obj = this.getColumn(i);
+			for(int j=0; j<10; j++)
+			{
+				int randomIndex = ThreadLocalRandom.current().nextInt(0,this.getNumColumns() );
+				//System.out.println(this.getSchema()[0]);
+//				if( _schema != null)
+//					cellType.add(j, obj.get(randomIndex).getClass().getSimpleName());
+//				else
+				cellType.add(j, isType(obj.get(randomIndex).toString()));
+			}
+		 	if(cellType.contains("String")) schemaInfo[i] = "String";
+			else if(cellType.contains("Double")) schemaInfo[i] = "Double";
+			else if(cellType.contains("Long")) schemaInfo[i] = "Long";
+			else if(cellType.contains("Boolean")) schemaInfo[i] = "Boolean";
+			else if(cellType.contains("Character")) schemaInfo[i] = "Character";
+			else  schemaInfo[i] = "String";
+			cellType.clear();
+			}
+
+		ValueType[] schemaStrings = new ValueType[this.getNumColumns()];
+		for(int i=0; i<schemaStrings.length; i++)
+			schemaStrings[i] = ValueType.STRING;
+
+		String[][] st = new String[1][this.getNumColumns()];
+
+		for(int i=0; i<schemaStrings.length; i++) {st[0][i] = schemaInfo[i]; }
+		FrameBlock retBlock = new FrameBlock(schemaStrings, this.getColumnNames(), st);
+		return retBlock;
+
+
+	}
+
+	private static String isType(String val)
+	{
+		if(val.trim().matches("\\d+"))
+			return "Long";
+
+		else if(val.trim().matches("[-+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?"))
+			return "Double";
+
+		else if(val.trim().matches("(true|false|TRUE|FALSE)"))
+			return "Boolean";
+		else if(val.trim().length() == 1)
+			return "Character";
+
+		else return "String";
+
+	}
+
+
+	}
+
+
+
+
+//for (int i=0; i<this.getNumColumns(); i++)
+//		{
+//		obj = this.getColumn(i);
+//		cellType.add(0, obj.get(0).getClass().getSimpleName());
+//		cellType.add(1, obj.get((0+this.getNumColumns()/2)).getClass().getSimpleName());
+//		cellType.add(2, obj.get((this.getNumColumns()-1)).getClass().getSimpleName());
+//
+//		if(cellType.get(0).equals(cellType.get(1)) &&  cellType.get(1).equals(cellType.get(2)) )
+//		{
+//		schemaInfo[i] = cellType.get(0);
+//		}
+//		else
+//		{
+//		if(cellType.contains("String")) schemaInfo[i] = "String";
+//		else if(cellType.contains("Double")) schemaInfo[i] = "Double";
+//		}
+//		}

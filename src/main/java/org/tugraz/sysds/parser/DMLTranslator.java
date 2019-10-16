@@ -2563,6 +2563,7 @@ public class DMLTranslator
 		case INVERSE:
 		case CHOLESKY:
 		case TYPEOF:
+		case DETECTSCHEMA:
 			currBuiltinOp = new UnaryOp(target.getName(), target.getDataType(), target.getValueType(),
 				OpOp1.valueOf(source.getOpCode().name()), expr);
 			break;

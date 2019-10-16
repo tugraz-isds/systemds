@@ -45,7 +45,7 @@ public class Unary extends Lop
 		CUMSUM, CUMPROD, CUMMIN, CUMMAX, CUMSUMPROD,
 		SPROP, SIGMOID, SUBTRACT_NZ, LOG_NZ,
 		CAST_AS_MATRIX, CAST_AS_FRAME,
-		NOTSUPPORTED , TYPEOF
+		NOTSUPPORTED , TYPEOF, DETECTSCHEMA
 	}
 
 	private OperationTypes operation;
@@ -274,6 +274,9 @@ public class Unary extends Lop
 
 		case TYPEOF:
 			return "typeOf";
+
+		case DETECTSCHEMA:
+			return "detectSchema";
 		
 		case CAST_AS_MATRIX:
 			return UnaryCP.CAST_AS_MATRIX_OPCODE;

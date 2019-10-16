@@ -689,6 +689,7 @@ public class BuiltinFunctionExpression extends DataIdentifier
 			output.setValueType(ValueType.FP64); //matrices always in double
 			break;
 			case TYPEOF:
+			case DETECTSCHEMA:
 				checkNumParameters(1);
 				checkMatrixFrameParam(getFirstExpr());
 				output.setDataType(DataType.FRAME);

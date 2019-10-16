@@ -18,7 +18,6 @@
  */
 
 package org.tugraz.sysds.runtime.instructions.cp;
-import com.sun.xml.internal.fastinfoset.util.StringArray;
 import org.tugraz.sysds.common.Types.ValueType;
 import org.tugraz.sysds.runtime.controlprogram.caching.FrameObject;
 import org.tugraz.sysds.runtime.controlprogram.context.ExecutionContext;
@@ -27,6 +26,7 @@ import org.tugraz.sysds.runtime.matrix.data.LibCommonsMath;
 import org.tugraz.sysds.runtime.matrix.data.MatrixBlock;
 import org.tugraz.sysds.runtime.matrix.operators.Operator;
 import org.tugraz.sysds.runtime.matrix.operators.UnaryOperator;
+import org.tugraz.sysds.runtime.meta.MetaData;
 import org.tugraz.sysds.runtime.util.UtilFunctions;
 import scala.Array;
 
@@ -41,11 +41,22 @@ public class UnaryFrameCPInstruction extends UnaryCPInstruction {
 
     @Override
     public void processInstruction(ExecutionContext ec) {
-        FrameBlock inBlock = ec.getFrameInput(input1.getName());
-        FrameBlock retBlock = inBlock.getSchemaTypeOf();
-        ec.releaseFrameInput(input1.getName());
-        ec.setFrameOutput(output.getName(), retBlock);
 
+        if(getOpcode().equals("typeOf")) {
+            FrameBlock inBlock = ec.getFrameInput(input1.getName());
+            FrameBlock retBlock = inBlock.getSchemaTypeOf();
+            ec.releaseFrameInput(input1.getName());
+            ec.setFrameOutput(output.getName(), retBlock);
+        }
+        else if(getOpcode().equals("detectSchema"))
+        {
+            FrameBlock inBlock = ec.getFrameInput(input1.getName());
+            FrameBlock retBlock = inBlock.detectSchemaFromRow();
+
+            ec.releaseFrameInput(input1.getName());
+            ec.setFrameOutput(output.getName(), retBlock);
+
+        }
 
     }
 
