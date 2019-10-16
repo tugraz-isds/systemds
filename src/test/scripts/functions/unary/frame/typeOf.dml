@@ -24,24 +24,3 @@ X = read($1, rows=$2, cols=$3, data_type="frame", format="csv", header=as.logica
 R = typeOf(X);
 print(toString(R))
 write(R, $5, format="csv");  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

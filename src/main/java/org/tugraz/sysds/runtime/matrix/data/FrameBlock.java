@@ -1604,7 +1604,6 @@ public class FrameBlock implements Writable, CacheBlock, Externalizable
 
 	public FrameBlock getSchemaTypeOf()
 	{
-
 		ValueType[] schemaStrings = new ValueType[this.getNumColumns()];
 		for(int i=0; i<schemaStrings.length; i++)
 			schemaStrings[i] = ValueType.STRING;

@@ -416,6 +416,7 @@ public class SPInstructionParser extends InstructionParser
 				
 			case Unary:
 				return UnaryMatrixSPInstruction.parseInstruction(str);
+			
 			case BuiltinNary:
 				return BuiltinNarySPInstruction.parseInstruction(str);
 			

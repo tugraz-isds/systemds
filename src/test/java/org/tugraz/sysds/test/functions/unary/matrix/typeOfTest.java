@@ -28,7 +28,6 @@ import org.tugraz.sysds.test.AutomatedTestBase;
 import org.tugraz.sysds.test.TestConfiguration;
 import org.tugraz.sysds.test.TestUtils;
 
-
 public class typeOfTest extends AutomatedTestBase
 {
     private final static String TEST_NAME = "typeOf";
@@ -108,7 +107,5 @@ public class typeOfTest extends AutomatedTestBase
         catch(Exception ex) {
             throw new RuntimeException(ex);
         }
-
-
     }
 }

@@ -18,7 +18,6 @@
  */
 
 package org.tugraz.sysds.runtime.instructions.cp;
-import com.sun.xml.internal.fastinfoset.util.StringArray;
 import org.tugraz.sysds.common.Types.ValueType;
 import org.tugraz.sysds.runtime.controlprogram.caching.FrameObject;
 import org.tugraz.sysds.runtime.controlprogram.context.ExecutionContext;
@@ -45,12 +44,5 @@ public class UnaryFrameCPInstruction extends UnaryCPInstruction {
         FrameBlock retBlock = inBlock.getSchemaTypeOf();
         ec.releaseFrameInput(input1.getName());
         ec.setFrameOutput(output.getName(), retBlock);
-
-
     }
-
-
-
-
-
 }
