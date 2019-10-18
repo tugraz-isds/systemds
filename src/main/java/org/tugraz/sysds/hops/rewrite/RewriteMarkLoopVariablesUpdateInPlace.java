@@ -25,10 +25,7 @@ import java.util.List;
 
 import org.tugraz.sysds.api.DMLScript;
 import org.tugraz.sysds.common.Types.ExecMode;
-import org.tugraz.sysds.hops.DataOp;
-import org.tugraz.sysds.hops.Hop;
-import org.tugraz.sysds.hops.LeftIndexingOp;
-import org.tugraz.sysds.hops.UnaryOp;
+import org.tugraz.sysds.hops.*;
 import org.tugraz.sysds.hops.Hop.DataOpTypes;
 import org.tugraz.sysds.hops.Hop.OpOp1;
 import org.tugraz.sysds.parser.ForStatement;
@@ -128,7 +125,18 @@ public class RewriteMarkLoopVariablesUpdateInPlace extends StatementBlockRewrite
 		return ret;
 	}
 	
-	private static boolean isApplicableForUpdateInPlace(Hop hop, String varname) {
+	private static boolean isApplicableForUpdateInPlace(Hop hop, String varname)
+	{
+		// Bug fix: for erroneously marking a variable for update-in-place
+		// 			that is written to by a function return value
+		if(hop instanceof FunctionOp)
+		{
+			String[] out_names = ((FunctionOp) hop).getOutputVariableNames();
+			for(String out_name : out_names)
+				if(out_name.equals(varname))
+					return false;
+		}
+
 		//NOTE: single-root-level validity check
 		if( !hop.getName().equals(varname) )
 			return true;
