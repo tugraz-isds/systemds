@@ -20,10 +20,11 @@
 #
 #-------------------------------------------------------------
 
-X = read($1, rows=$2, cols=$3, data_type="frame", format="csv", header=as.logical($4));
+X = read($1, rows=$2, cols=$3, data_type="frame", format="csv", header=FALSE);
 R = detectSchema(X);
 print(toString(R))
-write(R, $5, format="csv");  
+
+write(R, $4, format="binary");  
 
 
 

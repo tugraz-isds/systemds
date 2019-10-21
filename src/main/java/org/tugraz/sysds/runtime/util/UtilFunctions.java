@@ -392,7 +392,7 @@ public class UtilFunctions
 		switch( vt ) {
 			case STRING:  return String.valueOf(in);
 			case BOOLEAN: return (in!=0);
-			case INT64:     return UtilFunctions.toLong(in);
+			case INT64: return UtilFunctions.toLong(in);
 			case FP64:  return in;
 			default: throw new RuntimeException("Unsupported value type: "+vt);
 		}

@@ -28,6 +28,7 @@ import org.tugraz.sysds.runtime.matrix.operators.Operator;
 import org.tugraz.sysds.runtime.matrix.operators.UnaryOperator;
 import org.tugraz.sysds.runtime.meta.MetaData;
 import org.tugraz.sysds.runtime.util.UtilFunctions;
+import org.tugraz.sysds.lops.Lop;
 import scala.Array;
 
 import java.util.Arrays;
@@ -51,7 +52,7 @@ public class UnaryFrameCPInstruction extends UnaryCPInstruction {
         else if(getOpcode().equals("detectSchema"))
         {
             FrameBlock inBlock = ec.getFrameInput(input1.getName());
-            FrameBlock retBlock = inBlock.detectSchemaFromRow();
+            FrameBlock retBlock = inBlock.detectSchemaFromRow(Lop.SAMPLE_FRACTION);
 
             ec.releaseFrameInput(input1.getName());
             ec.setFrameOutput(output.getName(), retBlock);

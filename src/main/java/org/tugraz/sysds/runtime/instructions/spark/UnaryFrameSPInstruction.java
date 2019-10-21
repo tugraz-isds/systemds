@@ -24,15 +24,26 @@
 package org.tugraz.sysds.runtime.instructions.spark;
 
 import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.Function;
+import org.apache.spark.api.java.function.PairFunction;
+import org.json4s.DefaultWriters;
 import org.tugraz.sysds.common.Types;
+import org.tugraz.sysds.hops.OptimizerUtils;
+import org.tugraz.sysds.lops.Lop;
+import org.tugraz.sysds.parser.DataExpression;
 import org.tugraz.sysds.runtime.controlprogram.context.ExecutionContext;
 import org.tugraz.sysds.runtime.controlprogram.context.SparkExecutionContext;
 import org.tugraz.sysds.runtime.instructions.InstructionUtils;
 import org.tugraz.sysds.runtime.instructions.cp.CPOperand;
+import org.tugraz.sysds.runtime.instructions.spark.utils.SparkUtils;
 import org.tugraz.sysds.runtime.matrix.data.FrameBlock;
+import org.tugraz.sysds.runtime.matrix.data.MatrixIndexes;
 import org.tugraz.sysds.runtime.matrix.operators.Operator;
 import org.tugraz.sysds.runtime.meta.DataCharacteristics;
+import scala.Tuple2;
+
+import java.util.ArrayList;
 
 
 public class UnaryFrameSPInstruction extends UnarySPInstruction {
@@ -54,34 +65,30 @@ public class UnaryFrameSPInstruction extends UnarySPInstruction {
         //get input
         JavaPairRDD<Long, FrameBlock> in = sec.getFrameBinaryBlockRDDHandleForVariable(input1.getName() );
         DataCharacteristics dcIn = sec.getDataCharacteristics(input1.getName());
+
         DataCharacteristics dcOut = sec.getDataCharacteristics(output.getName());
 
-        System.out.println("dcout rows before"+dcOut.getRows());
-        System.out.println("dcout cols before"+dcOut.getCols());
-        System.out.println("dcout block before"+dcOut.getBlocksize());
-
-        //  checkValidOutputDimensions(dcOut);
-        dcOut.set(1, dcIn.getCols(), dcIn.getBlocksize());
-        JavaPairRDD<Long,FrameBlock> out = in.mapValues(new UnaryFrameSPInstruction.RDDFrameBuiltinUnaryOp());
-        //out.reduce();
-        dcOut = sec.getDataCharacteristics(output.getName());
-
+        JavaPairRDD<Long,FrameBlock> out = in.mapToPair(new DetectSchemaUsingRows());
 
         sec.setRDDHandleForVariable(output.getName(), out);
         sec.addLineageRDD(output.getName(), input1.getName());
 
     }
-    private static class RDDFrameBuiltinUnaryOp implements Function<FrameBlock, FrameBlock>
+
+    private static class DetectSchemaUsingRows implements PairFunction<Tuple2<Long, FrameBlock>, Long, FrameBlock>
     {
-        private static final long serialVersionUID = -3128192099832877492L;
+        private static final long serialVersionUID = 5850400295183766400L;
 
         @Override
-        public FrameBlock call(FrameBlock aLong) throws Exception {
-            System.out.println();
-            return (FrameBlock) aLong.detectSchemaFromRow();
+        public Tuple2<Long,FrameBlock> call(Tuple2<Long, FrameBlock> arg0)
+                throws Exception
+        {
+            FrameBlock resultBlock = new FrameBlock(arg0._2.detectSchemaFromRow(Lop.SAMPLE_FRACTION));
+            long index = 1;
+            return new Tuple2<>(index, resultBlock);
         }
-
-
     }
 
 }
+
+
