@@ -16,9 +16,15 @@
 #
 #-------------------------------------------------------------
 
-d1 = matrix($1, 1, $2);
-d2 = matrix($3, 1, $4);
-A = tensor($5, d1);
-B = tensor($6, d2);
-C = A + B;
-print(toString(C));
+A = read($1)
+
+for(i in 1:4) {
+  out = A
+  for ( i in 1:4 ) {
+    out[,i] = A[,i] + 2 ^ i;
+  }
+  A = out + A
+}
+
+R = as.matrix(sum(A))
+write(R, $3, format="text")

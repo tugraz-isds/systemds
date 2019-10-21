@@ -16,9 +16,19 @@
 #
 #-------------------------------------------------------------
 
-d1 = matrix($1, 1, $2);
-d2 = matrix($3, 1, $4);
-A = tensor($5, d1);
-B = tensor($6, d2);
-C = A + B;
-print(toString(C));
+bug_test = function(Matrix[Double] inputA) return (Matrix[Double] out) {
+  out = inputA
+  for ( i in 1:4 ) {
+    out[,i] = inputA[,i] + 2 ^ i;
+  }
+  out += inputA
+}
+
+A = read($1)
+
+for(i in 1:4) {
+  A = bug_test(A)
+}
+
+R = as.matrix(sum(A))
+write(R, $3, format="text")

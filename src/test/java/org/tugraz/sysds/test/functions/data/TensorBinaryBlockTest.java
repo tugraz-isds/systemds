@@ -23,11 +23,11 @@ import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.data.TensorBlock;
 import org.tugraz.sysds.runtime.io.TensorReaderBinaryBlock;
 import org.tugraz.sysds.runtime.io.TensorWriterBinaryBlock;
-
-import static org.tugraz.sysds.test.TestUtils.*;
-
+import org.tugraz.sysds.test.TestUtils;
 
 public class TensorBinaryBlockTest {
+	static final String FILENAME = "target/testTemp/functions/data/TensorBinaryBlockTest/tensor";
+	
 	@Test
 	public void testReadWriteBinaryBlockBasicTensorFP32() {
 		testReadWriteBinaryBlockBasicTensor(ValueType.FP32);
@@ -59,9 +59,9 @@ public class TensorBinaryBlockTest {
 	}
 
 	private static void testReadWriteBinaryBlockBasicTensor(ValueType vt) {
-		TensorBlock tb1 = createBasicTensor(vt, 70, 3000, 0.7);
+		TensorBlock tb1 = TestUtils.createBasicTensor(vt, 70, 3000, 0.7);
 		TensorBlock tb2 = writeAndReadBasicTensorBinaryBlock(tb1);
-		compareTensorBlocks(tb1, tb2);
+		TestUtils.compareTensorBlocks(tb1, tb2);
 	}
 
 	@Test
@@ -95,18 +95,18 @@ public class TensorBinaryBlockTest {
 	}
 
 	private static void testReadWriteBinaryBlockDataTensor(ValueType vt) {
-		TensorBlock tb1 = createDataTensor(vt, 70, 3000, 0.7);
+		TensorBlock tb1 = TestUtils.createDataTensor(vt, 70, 3000, 0.7);
 		TensorBlock tb2 = writeAndReadDataTensorBinaryBlock(tb1);
-		compareTensorBlocks(tb1, tb2);
+		TestUtils.compareTensorBlocks(tb1, tb2);
 	}
 
 	private static TensorBlock writeAndReadBasicTensorBinaryBlock(TensorBlock tb1) {
 		try {
 			long[] dims = tb1.getLongDims();
 			TensorWriterBinaryBlock writer = new TensorWriterBinaryBlock();
-			writer.writeTensorToHDFS(tb1, "a", dims, 1024);
+			writer.writeTensorToHDFS(tb1, FILENAME, 1024);
 			TensorReaderBinaryBlock reader = new TensorReaderBinaryBlock();
-			return reader.readTensorFromHDFS("a", dims, 1024, new ValueType[]{tb1.getValueType()});
+			return reader.readTensorFromHDFS(FILENAME, dims, 1024, new ValueType[]{tb1.getValueType()});
 		}
 		catch (Exception ex) {
 			throw new DMLRuntimeException(ex);
@@ -117,9 +117,9 @@ public class TensorBinaryBlockTest {
 		try {
 			long[] dims = tb1.getLongDims();
 			TensorWriterBinaryBlock writer = new TensorWriterBinaryBlock();
-			writer.writeTensorToHDFS(tb1, "a", dims, 1024);
+			writer.writeTensorToHDFS(tb1, FILENAME, 1024);
 			TensorReaderBinaryBlock reader = new TensorReaderBinaryBlock();
-			return reader.readTensorFromHDFS("a", dims, 1024, tb1.getSchema());
+			return reader.readTensorFromHDFS(FILENAME, dims, 1024, tb1.getSchema());
 		}
 		catch (Exception ex) {
 			throw new DMLRuntimeException(ex);

@@ -1527,6 +1527,10 @@ public class DMLTranslator
 				return hops.get(((DataIdentifier) source).getName());
 		} 
 		catch ( Exception e ) {
+			//print exception stacktrace for fatal exceptions w/o messages 
+			//to allow for error analysis other than ('no parse issue message')
+			if( e.getMessage() == null )
+				e.printStackTrace();
 			throw new ParseException(e.getMessage());
 		}
 		
@@ -2052,16 +2056,16 @@ public class DMLTranslator
 			tmpMatrix.add( 0, paramHops.get(DataExpression.RAND_DATA) );
 			tmpMatrix.add( 1, paramHops.get(DataExpression.RAND_ROWS) );
 			tmpMatrix.add( 2, paramHops.get(DataExpression.RAND_COLS) );
-			tmpMatrix.add( 3, paramHops.get(DataExpression.RAND_DIMS) );
+			tmpMatrix.add( 3, !paramHops.containsKey(DataExpression.RAND_DIMS) ?
+				new LiteralOp("-1") : paramHops.get(DataExpression.RAND_DIMS));
 			tmpMatrix.add( 4, paramHops.get(DataExpression.RAND_BY_ROW) );
-			currBuiltinOp = new ReorgOp(target.getName(), target.getDataType(), target.getValueType(),
-					ReOrgOp.RESHAPE, tmpMatrix);
+			currBuiltinOp = new ReorgOp(target.getName(), target.getDataType(),
+				target.getValueType(), ReOrgOp.RESHAPE, tmpMatrix);
 			break;
 
 		default:
 			throw new ParseException(source.printErrorLocation() + 
-					"processDataExpression():: Unknown operation:  "
-							+ source.getOpCode());
+				"processDataExpression():: Unknown operation:  " + source.getOpCode());
 		}
 		
 		//set identifier meta data (incl dimensions and blocksizes)

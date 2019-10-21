@@ -16,9 +16,20 @@
 #
 #-------------------------------------------------------------
 
-d1 = matrix($1, 1, $2);
-d2 = matrix($3, 1, $4);
-A = tensor($5, d1);
-B = tensor($6, d2);
-C = A + B;
-print(toString(C));
+X = read($1);
+Y = read($2);
+
+sum = 0;
+ngroups = as.integer(max(Y));
+tmp = X[,1];
+R = matrix(0, 1, ncol(X));
+
+for (i in 2:ncol(X)) {
+  Res1 = aggregate(target=tmp, groups=Y, fn="sum", ngroups=ngroups);
+  tmp = cbind(tmp, X[,i]);
+  while(FALSE) {}	
+  R[1,i] = sum(Res1);
+  sum = sum + sum(Res1);
+}
+
+write(R, $3, format="text");

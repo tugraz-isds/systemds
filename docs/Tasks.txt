@@ -77,6 +77,7 @@ SYSTEMDS-100 Various Fixes
  * 106 Fix correctness of as.integer for negative numbers             OK
  * 107 Fix correctness IPA check dimension-preserving                 OK
  * 108 Fix codegen optimizer (early costing abort)                    OK 
+ * 109 Fix update-in-place w/ udf function calls                      OK
  
 SYSTEMDS-110 New Builtin Functions
  * 111 Time builtin function for script-level measurements            OK
@@ -87,7 +88,7 @@ SYSTEMDS-110 New Builtin Functions
  * 116 Builtin function for kmeans                                    OK
  * 117 Builtin function for lm cross validation                       OK
  * 118 Builtin function for hyperparameter grid search with CVlm
- * 119 Builtin functions for l2svm and msvm
+ * 119 Builtin functions for l2svm and msvm                           OK
 
 SYSTEMDS-120 Performance Features
  * 121 Avoid spark context creation on parfor result merge            OK
@@ -121,5 +122,5 @@ SYSTEMDS-160 Tensor Compiler/Runtime
  * 174 Reuse rewrite for rbind/cbind-tsmm/ba+*                        OK
  * 175 Refactoring of lineage rewrite code                            OK
  * 176 Reuse rewrite for cbind/rbind-elementwise */+
- * 177 Reuse rewrite for aggregate
+ * 177 Reuse rewrite for aggregate                                    OK
  * 178 Compiler assisted reuse (eg. CV, lmCG)

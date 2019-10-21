@@ -16,9 +16,20 @@
 #
 #-------------------------------------------------------------
 
-d1 = matrix($1, 1, $2);
-d2 = matrix($3, 1, $4);
-A = tensor($5, d1);
-B = tensor($6, d2);
-C = A + B;
-print(toString(C));
+
+args <- commandArgs(TRUE)
+options(digits=22)
+library("Matrix")
+
+A = as.matrix(readMM(paste(args[1], "A.mtx", sep="")))
+
+for(i in 1:4) {
+  out = A
+  for ( i in 1:4 ) {
+    out[,i] = A[,i] + 2 ^ i;
+  }
+  A = out + A
+}
+
+R = as.matrix(sum(A))
+writeMM(as(R,"CsparseMatrix"), paste(args[2], "R", sep=""))
