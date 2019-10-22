@@ -1,4 +1,6 @@
 /*
+ * Modifications Copyright 2019 Graz University of Technology
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,21 +20,11 @@
  */
 
 package org.tugraz.sysds.runtime.instructions.cp;
-import org.tugraz.sysds.common.Types.ValueType;
-import org.tugraz.sysds.runtime.controlprogram.caching.FrameObject;
+
+import org.tugraz.sysds.lops.Lop;
 import org.tugraz.sysds.runtime.controlprogram.context.ExecutionContext;
 import org.tugraz.sysds.runtime.matrix.data.FrameBlock;
-import org.tugraz.sysds.runtime.matrix.data.LibCommonsMath;
-import org.tugraz.sysds.runtime.matrix.data.MatrixBlock;
 import org.tugraz.sysds.runtime.matrix.operators.Operator;
-import org.tugraz.sysds.runtime.matrix.operators.UnaryOperator;
-import org.tugraz.sysds.runtime.meta.MetaData;
-import org.tugraz.sysds.runtime.util.UtilFunctions;
-import org.tugraz.sysds.lops.Lop;
-import scala.Array;
-
-import java.util.Arrays;
-import java.util.Iterator;
 
 public class UnaryFrameCPInstruction extends UnaryCPInstruction {
     protected UnaryFrameCPInstruction(Operator op, CPOperand in, CPOperand out, String opcode, String instr) {
@@ -53,16 +45,8 @@ public class UnaryFrameCPInstruction extends UnaryCPInstruction {
         {
             FrameBlock inBlock = ec.getFrameInput(input1.getName());
             FrameBlock retBlock = inBlock.detectSchemaFromRow(Lop.SAMPLE_FRACTION);
-
             ec.releaseFrameInput(input1.getName());
             ec.setFrameOutput(output.getName(), retBlock);
-
         }
-
     }
-
-
-
-
-
 }

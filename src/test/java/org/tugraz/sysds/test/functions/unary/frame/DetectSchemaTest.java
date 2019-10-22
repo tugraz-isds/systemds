@@ -36,7 +36,6 @@ import org.tugraz.sysds.test.TestUtils;
 
 import java.security.SecureRandom;
 
-
 public class DetectSchemaTest extends AutomatedTestBase {
     private final static String TEST_NAME = "DetectSchema";
     private final static String TEST_DIR = "functions/unary/frame/";
@@ -116,7 +115,6 @@ public class DetectSchemaTest extends AutomatedTestBase {
                 double[][] A = getRandomMatrix(rows, schema.length, -10, 10, 0.9, 2373);
                 initFrameDataDouble(frame1, A, schema);
                 writer.writeFrameToHDFS(frame1, input("A"), rows, schema.length);
-
             } else {
                 String[] randomData = generateRandomString(8, rows); //random string data
                 double[][] A = getRandomMatrix(rows, schema.length - 1, -10, 10, 0.9, 2373);
@@ -133,7 +131,6 @@ public class DetectSchemaTest extends AutomatedTestBase {
                 Assert.assertEquals("Wrong result: " + frame2.getSchema()[i] + ".",
                         schemaExpected[i].toString(), frame2.get(0, i).toString());
             }
-
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         } finally {

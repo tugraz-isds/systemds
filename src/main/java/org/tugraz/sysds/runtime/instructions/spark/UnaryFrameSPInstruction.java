@@ -19,32 +19,19 @@
  * under the License.
  */
 
-
-
 package org.tugraz.sysds.runtime.instructions.spark;
 
 import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.PairFunction;
-import org.json4s.DefaultWriters;
 import org.tugraz.sysds.common.Types;
-import org.tugraz.sysds.hops.OptimizerUtils;
 import org.tugraz.sysds.lops.Lop;
-import org.tugraz.sysds.parser.DataExpression;
 import org.tugraz.sysds.runtime.controlprogram.context.ExecutionContext;
 import org.tugraz.sysds.runtime.controlprogram.context.SparkExecutionContext;
 import org.tugraz.sysds.runtime.instructions.InstructionUtils;
 import org.tugraz.sysds.runtime.instructions.cp.CPOperand;
-import org.tugraz.sysds.runtime.instructions.spark.utils.SparkUtils;
 import org.tugraz.sysds.runtime.matrix.data.FrameBlock;
-import org.tugraz.sysds.runtime.matrix.data.MatrixIndexes;
 import org.tugraz.sysds.runtime.matrix.operators.Operator;
-import org.tugraz.sysds.runtime.meta.DataCharacteristics;
 import scala.Tuple2;
-
-import java.util.ArrayList;
-
 
 public class UnaryFrameSPInstruction extends UnarySPInstruction {
     protected UnaryFrameSPInstruction(Operator op, CPOperand in, CPOperand out, String opcode, String instr) {
@@ -61,18 +48,12 @@ public class UnaryFrameSPInstruction extends UnarySPInstruction {
     @Override
     public void processInstruction(ExecutionContext ec) {
         SparkExecutionContext sec = (SparkExecutionContext)ec;
-
         //get input
         JavaPairRDD<Long, FrameBlock> in = sec.getFrameBinaryBlockRDDHandleForVariable(input1.getName() );
-        DataCharacteristics dcIn = sec.getDataCharacteristics(input1.getName());
-
-        DataCharacteristics dcOut = sec.getDataCharacteristics(output.getName());
-
         JavaPairRDD<Long,FrameBlock> out = in.mapToPair(new DetectSchemaUsingRows());
-
+        updateUnaryOutputDataCharacteristics(sec);
         sec.setRDDHandleForVariable(output.getName(), out);
         sec.addLineageRDD(output.getName(), input1.getName());
-
     }
 
     private static class DetectSchemaUsingRows implements PairFunction<Tuple2<Long, FrameBlock>, Long, FrameBlock>
@@ -88,7 +69,4 @@ public class UnaryFrameSPInstruction extends UnarySPInstruction {
             return new Tuple2<>(index, resultBlock);
         }
     }
-
 }
-
-
