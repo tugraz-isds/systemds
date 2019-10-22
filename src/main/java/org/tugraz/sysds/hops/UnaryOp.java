@@ -542,8 +542,6 @@ public class UnaryOp extends MultiThreadedHop
 		{
 			setDim1(1);
 			setDim2(input.getDim2());
-
-
 		}
 		else //general case
 		{

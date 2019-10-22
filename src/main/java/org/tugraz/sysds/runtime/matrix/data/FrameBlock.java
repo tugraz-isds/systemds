@@ -909,7 +909,6 @@ public class FrameBlock implements Writable, CacheBlock, Externalizable
 					ret._coldata[j-cl].set(0, ru-rl, _coldata[j], rl);
 			}
 		}
-		
 		return ret;
 	}
 	
@@ -1010,7 +1009,6 @@ public class FrameBlock implements Writable, CacheBlock, Externalizable
 			while( iter.hasNext() )
 				ret.appendRow(iter.next());
 		}
-		
 		return ret;
 	}
 
@@ -1612,12 +1610,9 @@ public class FrameBlock implements Writable, CacheBlock, Externalizable
 			return "Long";
 		else if (val.trim().matches("[-+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?"))
 			return "Double";
-
 		else if (val.trim().length() == 1)
 			return "Character";
-
 		else return "String";
-
 	}
 
 	public FrameBlock detectSchemaFromRow(double sampleFraction) {
@@ -1628,19 +1623,17 @@ public class FrameBlock implements Writable, CacheBlock, Externalizable
 
 		if (sample <= 0)
 			sample = rows;
-		System.out.println("this is sample " + sample + " rows " + rows + " sampleFrac " + sampleFraction + " condition " + (sample <= 0));
 
 		String[] schemaInfo = new String[cols];
-		Array obj = null;
 		ArrayList<String> cellType = new ArrayList<String>();
+		FrameBlock fb=null;
 		try {
 			for (int i = 0; i < cols; i++) {
-				obj = this.getColumn(i);
+				Array obj = this.getColumn(i);
 				for (int j = 0; j < sample; j++) {
 					int randomIndex = ThreadLocalRandom.current().nextInt(0, rows - 1);
 					cellType.add(j, isType(obj.get(randomIndex).toString()));
 				}
-
 				if (cellType.contains("String")) schemaInfo[i] = "STRING";
 				else if (cellType.contains("Double")) schemaInfo[i] = "FP64";
 				else if (cellType.contains("Long")) schemaInfo[i] = "INT64";
@@ -1648,32 +1641,16 @@ public class FrameBlock implements Writable, CacheBlock, Externalizable
 				else if (cellType.contains("Character")) schemaInfo[i] = "CHARACTER";
 				cellType.clear();
 			}
-			for (String s : schemaInfo) {
-				System.out.println("schema is " + s);
-			}
-
-			ValueType[] schemaStrings = new ValueType[this.getNumColumns()];
-			for (int i = 0; i < schemaStrings.length; i++)
-				schemaStrings[i] = ValueType.STRING;
-
-			String[][] st = new String[1][this.getNumColumns()];
-
-			for (int i = 0; i < schemaStrings.length; i++) {
-				st[0][i] = schemaInfo[i];
-			}
-			retBlock = new FrameBlock(schemaStrings, this.getColumnNames(), st);
-
-		} catch (NullPointerException e) {
-			System.out.println("null pointer exception");
-
-			for (String s : schemaInfo) {
-				System.out.println("schema is " + s);
-
-			}
+			ValueType[] outputSchema = UtilFunctions.nCopies(this.getNumColumns(), ValueType.STRING);
+			String[] dataOut = new String[this.getNumColumns()];
+			ValueType[] inputSchema = this.getSchema();
+			Arrays.setAll(dataOut, value ->  schemaInfo[value]);
+			fb= new FrameBlock(outputSchema);
+			fb.appendRow(dataOut);
 		}
-		return retBlock;
-
+		catch (NullPointerException e) {
+			System.out.println("null pointer exception");
+			}
+		return fb;
 	}
-
-
 }
