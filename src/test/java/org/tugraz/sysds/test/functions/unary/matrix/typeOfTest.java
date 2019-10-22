@@ -1,4 +1,6 @@
 /*
+ * Modifications Copyright 2019 Graz University of Technology
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,45 +18,39 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 package org.tugraz.sysds.test.functions.unary.matrix;
 
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.tugraz.sysds.api.DMLScript;
+import org.tugraz.sysds.common.Types;
 import org.tugraz.sysds.lops.LopProperties.ExecType;
+import org.tugraz.sysds.runtime.io.*;
+import org.tugraz.sysds.runtime.matrix.data.FrameBlock;
+import org.tugraz.sysds.runtime.matrix.data.InputInfo;
+import org.tugraz.sysds.runtime.matrix.data.OutputInfo;
+import org.tugraz.sysds.runtime.meta.MatrixCharacteristics;
+import org.tugraz.sysds.runtime.util.HDFSTool;
+import org.tugraz.sysds.runtime.util.UtilFunctions;
 import org.tugraz.sysds.test.AutomatedTestBase;
 import org.tugraz.sysds.test.TestConfiguration;
 import org.tugraz.sysds.test.TestUtils;
 
-public class typeOfTest extends AutomatedTestBase
-{
+public class typeOfTest extends AutomatedTestBase {
     private final static String TEST_NAME = "typeOf";
     private final static String TEST_DIR = "functions/unary/frame/";
     private static final String TEST_CLASS_DIR = TEST_DIR + typeOfTest.class.getSimpleName() + "/";
-    private static final String DATAPATH = SCRIPT_DIR+"functions/unary/frame/input/";
-    private static final String DATASET1 = "Adult_csv/adult2.csv";
-    private static final String DATASET2 = "Adult_csv/adult.csv";
 
-    private final static int rows = 120;
-    private final static int cols = 5;
+    private final static Types.ValueType[] schemaStrings = new Types.ValueType[]{Types.ValueType.STRING, Types.ValueType.STRING, Types.ValueType.STRING};
+    private final static Types.ValueType[] schemaMixed = new Types.ValueType[]{Types.ValueType.STRING, Types.ValueType.FP64, Types.ValueType.INT64, Types.ValueType.BOOLEAN};
+
+    private final static int rows = 50;
+
 
     private final static double sparsityDense = 0.7;
     private final static double sparsitySparse = 0.07;
-
-    @Override
-    public void setUp()
-    {
-        TestUtils.clearAssertionInformation();
-
-        addTestConfiguration(TEST_NAME,
-                new TestConfiguration(TEST_CLASS_DIR, TEST_NAME, new String[] { "Y" }) );
-
-        if (TEST_CACHE_ENABLED) {
-            setOutAndExpectedDeletionDisabled(true);
-        }
-    }
 
     @BeforeClass
     public static void init() {
@@ -68,43 +64,82 @@ public class typeOfTest extends AutomatedTestBase
         }
     }
 
+    private static void initFrameData(FrameBlock frame, double[][] data, Types.ValueType[] lschema) {
+        Object[] row1 = new Object[lschema.length];
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < lschema.length; j++)
+                data[i][j] = UtilFunctions.objectToDouble(lschema[j],
+                        row1[j] = UtilFunctions.doubleToObject(lschema[j], data[i][j]));
+            frame.appendRow(row1);
+
+        }
+    }
+
+    @Override
+    public void setUp() {
+        TestUtils.clearAssertionInformation();
+
+        addTestConfiguration(TEST_NAME,
+                new TestConfiguration(TEST_CLASS_DIR, TEST_NAME, new String[]{"B"}));
+
+        if (TEST_CACHE_ENABLED) {
+            setOutAndExpectedDeletionDisabled(true);
+        }
+    }
+
     @Test
     public void testTypeOfCP() {
-        runtypeOfTest( DATASET1, 120, 5, true, ExecType.CP  );
+        runtypeOfTest(schemaStrings, rows, schemaStrings.length, ExecType.CP);
     }
 
     @Test
     public void testTypeOfSpark() {
-        runtypeOfTest(DATASET1, 120, 5, true, ExecType.SPARK);
+        runtypeOfTest(schemaStrings, rows, schemaStrings.length, ExecType.SPARK);
     }
 
     @Test
-    public void testTypeOfCPD2() {
-        runtypeOfTest( DATASET2, 32561, 15, false, ExecType.CP   );
-    }
+    public void testTypeOfCPD2() { runtypeOfTest(schemaMixed, rows, schemaMixed.length, ExecType.CP); }
 
     @Test
     public void testTypeOfSparkD2() {
-        runtypeOfTest(DATASET2, 32561, 15, false, ExecType.SPARK);
+        runtypeOfTest(schemaMixed, rows, schemaMixed.length, ExecType.SPARK);
     }
 
-    private void runtypeOfTest( String dataset, int rows, int cols, boolean header, ExecType et  )
-    {
+    private void runtypeOfTest(Types.ValueType[] schema, int rows, int cols, ExecType et) {
 
         boolean sparkConfigOld = DMLScript.USE_LOCAL_SPARK_CONFIG;
-        if( et == ExecType.SPARK )
+        if (et == ExecType.SPARK)
             DMLScript.USE_LOCAL_SPARK_CONFIG = true;
         try {
             getAndLoadTestConfiguration(TEST_NAME);
-
-            /* This is for running the junit test the new way, i.e., construct the arguments directly */
             String HOME = SCRIPT_DIR + TEST_DIR;
             fullDMLScriptName = HOME + TEST_NAME + ".dml";
-            programArgs = new String[]{"-explain", "recompile_runtime", "-args", DATAPATH+dataset, String.valueOf(rows), String.valueOf(cols), String.valueOf(header).toUpperCase(),  output("schema.csv")};
+            programArgs = new String[]{"-explain", "-args", input("A"), String.valueOf(rows), String.valueOf(cols), output("B")};
+            //data generation
+            double[][] A = getRandomMatrix(rows, schema.length, -10, 10, 0.9, 2373);
+            FrameBlock frame1 = new FrameBlock(schema);
+            initFrameData(frame1, A, schema);
 
+            //write frame data to hdfs
+            FrameWriter writer = FrameWriterFactory.createFrameWriter(OutputInfo.CSVOutputInfo);
+            writer.writeFrameToHDFS(frame1, input("A"), rows, schema.length);
+            //write meta file
+            HDFSTool.writeMetaDataFile(input("A.mtd"), Types.ValueType.FP64, schema, Types.DataType.FRAME, new MatrixCharacteristics(rows, schema.length, 1000), OutputInfo.CSVOutputInfo);
+
+            //run testcase
             runTest(true, false, null, -1);
-        }
-        catch(Exception ex) {
+
+            //read frame data from hdfs (not via readers to test physical schema)
+            FrameReader reader = FrameReaderFactory.createFrameReader(InputInfo.BinaryBlockInputInfo);
+            FrameBlock frame2 = ((FrameReaderBinaryBlock) reader).readFirstBlock(output("B"));
+
+            //verify output schema
+            for (int i = 0; i < schema.length; i++) {
+                Assert.assertEquals("Wrong result: " + frame2.getSchema()[i] + ".",
+                        schema[i].toString(), frame2.get(0, i));
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
             throw new RuntimeException(ex);
         }
     }

@@ -1100,7 +1100,7 @@ public class DMLTranslator
 
 						if (source instanceof BuiltinFunctionExpression){
 							BuiltinFunctionExpression BuiltinSource = (BuiltinFunctionExpression)source;
-							if (BuiltinSource.getOpCode() == Builtins.TIME || BuiltinSource.getOpCode() == Builtins.TYPEOF  )
+							if (BuiltinSource.getOpCode() == Builtins.TIME)
 								sb.setSplitDag(true);
 						}
 
