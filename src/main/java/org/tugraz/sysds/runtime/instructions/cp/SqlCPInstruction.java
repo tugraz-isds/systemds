@@ -79,6 +79,7 @@ public class SqlCPInstruction extends CPInstruction {
 			
 			int[] dims = {rows, cols};
 			TensorBlock outBlock = new TensorBlock(schema, dims);
+			// TODO: perf
 			for (int row = 0; resultSet.next(); row++)
 				for (int i = 0; i < cols; i++)
 					setCell(outBlock, resultSet, schema[i], new int[]{row, i});
@@ -99,6 +100,7 @@ public class SqlCPInstruction extends CPInstruction {
 			case INT32: outBlock.set(ix, resultSet.getInt(sqlCol)); break;
 			case BOOLEAN: outBlock.set(ix, resultSet.getBoolean(sqlCol)); break;
 			case STRING: outBlock.set(ix, resultSet.getString(sqlCol)); break;
+			default: throw new DMLRuntimeException("Cell can not be set to valuetype " + valueType.name());
 		}
 	}
 	
