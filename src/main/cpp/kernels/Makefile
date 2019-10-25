@@ -27,7 +27,7 @@ SystemDS.o: SystemDS.cu
 	$(NVCC) $(CUDAFLAGS)  SystemDS.cu
 
 all: SystemDS.o
-	;
+
 
 clean:
 	rm -rf SystemDS.ptx
