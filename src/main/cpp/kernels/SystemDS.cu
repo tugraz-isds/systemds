@@ -1,4 +1,6 @@
 /*
+ * Modifications Copyright 2019 Graz University of Technology
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -892,6 +894,73 @@ extern "C" __global__ void rbind_f(float *A, float *B, float *C, int rowsA,
 }
 
 /**
+ * Cumulative Scan
+ * ToDo: cumulative scan documentation
+ * @param scanOp       Type of the functor object that implements the
+ * scan operation
+ */
+template <typename scanOp, typename T>
+__device__ void cumulative_scan(
+    T *g_idata,  ///< input data stored in device memory (of size n)
+    T *g_odata,  ///< output/temporary array stored in device memory (of size n)
+    unsigned int rows,  ///< rows in input and temporary/output arrays
+    unsigned int cols,  ///< columns in input and temporary/output arrays
+    scanOp        scan_op,  ///< Scan operation to perform (functor object)
+    T initialValue)    ///< initial value for the reduction variable
+{
+    extern __shared__ __align__(sizeof(T)) unsigned char my_sdata[];
+    T *sdata = reinterpret_cast<T *>(my_sdata);
+
+    unsigned int tid = threadIdx.x;
+//    unsigned int i = blockIdx.x * blockDim.x * 2 + threadIdx.x;
+//    unsigned int gridSize = blockDim.x * 2 * gridDim.x;
+
+    unsigned int n = rows * cols;
+    printf("cum_scan rows=%d, cols=cols, tid=%d", tid);
+    return;
+
+    int offset = 1;
+
+    sdata[2 * tid] = g_idata[2 * tid];
+    sdata[2 * tid + 1] = g_idata[2 * tid + 1];
+    __syncthreads();
+
+    for (int d = n>>1; d > 0; d >>= 1)                    // build sum in place up the tree
+    {
+        __syncthreads();
+        if (tid < d)
+        {
+            int ai = offset*(2*tid+1)-1;
+            int bi = offset*(2*tid+2)-1;
+            sdata[bi] += sdata[ai];
+        }
+        offset *= 2;
+    }
+
+    if(tid == 0)
+		sdata[n - 1] = 0;
+
+    for (int d = 1; d < n; d *= 2) // traverse down tree & build scan
+    {
+        offset >>= 1;
+        __syncthreads();
+        if (tid < d)
+        {
+             int ai = offset*(2*tid+1)-1;
+             int bi = offset*(2*tid+2)-1;
+             float t = sdata[ai];
+             sdata[ai] = sdata[bi];
+             sdata[bi] += t;
+
+        }
+    }
+    __syncthreads();
+
+    g_odata[2*tid] = sdata[2*tid]; // write results to device memory
+    g_odata[2*tid+1] = sdata[2*tid+1];
+}
+
+/**
  * Does a reduce operation over all elements of the array.
  * This method has been adapted from the Reduction sample in the NVIDIA CUDA
  * Samples (v8.0)
@@ -1034,7 +1103,8 @@ __device__ void reduce_row(
     AssignmentOp assignment_op,  ///< Operation to perform before assigning this
     /// to its final location in global memory for
     /// each row
-    T initialValue) {  ///< initial value for the reduction variable
+    T initialValue)
+    {  ///< initial value for the reduction variable
   // extern __shared__ T sdata[];
   extern __shared__ __align__(sizeof(T)) unsigned char my_sdata[];
   T *sdata = reinterpret_cast<T *>(my_sdata);
@@ -1195,6 +1265,34 @@ extern "C" __global__ void reduce_sum_d(double *g_idata, double *g_odata,
 extern "C" __global__ void reduce_sum_f(float *g_idata, float *g_odata,
                                         unsigned int n) {
   reduce_sum(g_idata, g_odata, n);
+}
+
+/**
+ * Do a cumulative summation over all columns of a matrix
+ * @param g_idata   input data stored in device memory (of size n)
+ * @param g_odata   output/temporary array stored in device memory (of size n)
+ * @param rows      number of rows in input matrix
+ * @param cols      number of columns in input matrix
+ */
+template <typename T>
+__device__ void cumulative_sum(T *g_idata, T *g_odata, unsigned int rows, unsigned int cols)
+{
+	printf("Executing CUDA cumulative_sum_d threadID=%d\n", threadIdx.x);
+
+	SumOp<T> op;
+	cumulative_scan<SumOp<T>, T>(g_idata, g_odata, rows, cols, op, (T)0.0);
+}
+
+extern "C" __global__ void cumulative_sum_d(double *g_idata, double *g_odata, unsigned int rows,
+        unsigned int cols)
+{
+  cumulative_sum(g_idata, g_odata, rows, cols);
+}
+
+extern "C" __global__ void cumulative_sum_f(float *g_idata, float *g_odata, unsigned int rows,
+        unsigned int cols)
+{
+  cumulative_sum(g_idata, g_odata, rows, cols);
 }
 
 /**
