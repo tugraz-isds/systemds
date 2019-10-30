@@ -2206,47 +2206,23 @@ public class LibMatrixCUDA {
 	 * @param outputName output matrix name
 	 * @return	the reduced value
 	 */
-	public static void cumulativeScan(ExecutionContext ec, GPUContext gCtx, String instName, MatrixObject in, String outputName) {
+	public static void cumulativeScan(ExecutionContext ec, GPUContext gCtx, String instName, String kernelFunction, MatrixObject in, String outputName) {
 		if(LOG.isTraceEnabled()) {
 			LOG.trace("GPU : cumulative scan for " + GPUInstruction.MISC_TIMER_CUMULATIVE_SCAN_KERNEL + ", GPUContext=" + gCtx);
 		}
 
-		String kernelFunction = "cumulative_sum";
+//		String kernelFunction = "cumulative_sum";
 		int rows = toInt(in.getNumRows());
 		int cols = toInt(in.getNumColumns());
 		int size = rows * cols;
 
+		int[] tmp = getKernelParamsForReduceByCol(gCtx, rows, cols);
+		int blocks = tmp[0], threads = tmp[1], sharedMem = tmp[2];
 
-		unaryOp(ec, gCtx, in, kernelFunction, 0, outputName, instName, GPUInstruction.MISC_TIMER_CUMULATIVE_SCAN_KERNEL);
-		return;
-
-//		int[] tmp = getKernelParamsForCumScan(gCtx, rows, cols);
-//		int blocks = tmp[0], threads = tmp[1], sharedMem = tmp[2];
-
-//		MatrixObject out = getDenseMatrixOutputForGPUInstruction(ec, instName, outputName, in.getNumRows(), in.getNumColumns());
-//		Pointer tempOut = gCtx.allocate(instName, size * sizeOfDataType);
-//		Pointer input = getDensePointer(gCtx, in, instName);
-//		Pointer output = getDensePointer(gCtx, out, instName);
-
-//		if(blocks == 1)
-//		{
-//			getCudaKernels(gCtx).launchKernel(kernelFunction, new ExecutionConfig(blocks, threads, sharedMem), input, input, rows, cols);
-//		}
-//		else {
-//			getCudaKernels(gCtx).launchKernel(kernelFunction, new ExecutionConfig(blocks, threads, sharedMem), input, tempOut, rows, cols);
-//			//cudaDeviceSynchronize;
-//
-//			int s = blocks;
-//			while (s > 1) {
-//				tmp = getKernelParamsForCumScan(gCtx, rows, cols);
-//				blocks = tmp[0];
-//				threads = tmp[1];
-//				sharedMem = tmp[2];
-//				getCudaKernels(gCtx).launchKernel(kernelFunction,
-//						new ExecutionConfig(blocks, threads, sharedMem), tempOut, tempOut, rows, cols);
-//				s = (s + (threads * 2 - 1)) / (threads * 2);
-//			}
-//		}
+		MatrixObject out = getDenseMatrixOutputForGPUInstruction(ec, instName, outputName, in.getNumRows(), in.getNumColumns());
+		Pointer input = getDensePointer(gCtx, in, instName);
+		Pointer output = getDensePointer(gCtx, out, instName);
+		getCudaKernels(gCtx).launchKernel(kernelFunction, new ExecutionConfig(blocks, threads, sharedMem), input, output, rows, cols);
 	}
 
 	/**
@@ -2300,8 +2276,7 @@ public class LibMatrixCUDA {
 			{
 				int[] tmp = getKernelParamsForReduceAll(gCtx, size);
 				int blocks = tmp[0], threads = tmp[1], sharedMem = tmp[2];
-				getCudaKernels(gCtx).launchKernel(kernel, new ExecutionConfig(blocks, threads, sharedMem),
-						input, output, size);
+				getCudaKernels(gCtx).launchKernel(kernel, new ExecutionConfig(blocks, threads, sharedMem), input, output, in1.getNumRows(), in1.getNumColumns());
 			}
 			else
 				getCudaKernels(gCtx).launchKernel(kernel, ExecutionConfig.getConfigForSimpleVectorOperations(size),

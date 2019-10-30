@@ -908,56 +908,21 @@ __device__ void cumulative_scan(
     scanOp        scan_op,  ///< Scan operation to perform (functor object)
     T initialValue)    ///< initial value for the reduction variable
 {
-    extern __shared__ __align__(sizeof(T)) unsigned char my_sdata[];
-    T *sdata = reinterpret_cast<T *>(my_sdata);
+//    extern __shared__ __align__(sizeof(T)) unsigned char my_sdata[];
+//    T *sdata = reinterpret_cast<T *>(my_sdata);
 
-    unsigned int tid = threadIdx.x;
-//    unsigned int i = blockIdx.x * blockDim.x * 2 + threadIdx.x;
-//    unsigned int gridSize = blockDim.x * 2 * gridDim.x;
+    unsigned int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-    unsigned int n = rows * cols;
-    printf("cum_scan rows=%d, cols=cols, tid=%d", tid);
-    return;
+	if (tid > cols)
+		return;
 
-    int offset = 1;
-
-    sdata[2 * tid] = g_idata[2 * tid];
-    sdata[2 * tid + 1] = g_idata[2 * tid + 1];
-    __syncthreads();
-
-    for (int d = n>>1; d > 0; d >>= 1)                    // build sum in place up the tree
-    {
-        __syncthreads();
-        if (tid < d)
-        {
-            int ai = offset*(2*tid+1)-1;
-            int bi = offset*(2*tid+2)-1;
-            sdata[bi] += sdata[ai];
-        }
-        offset *= 2;
-    }
-
-    if(tid == 0)
-		sdata[n - 1] = 0;
-
-    for (int d = 1; d < n; d *= 2) // traverse down tree & build scan
-    {
-        offset >>= 1;
-        __syncthreads();
-        if (tid < d)
-        {
-             int ai = offset*(2*tid+1)-1;
-             int bi = offset*(2*tid+2)-1;
-             float t = sdata[ai];
-             sdata[ai] = sdata[bi];
-             sdata[bi] += t;
-
-        }
-    }
-    __syncthreads();
-
-    g_odata[2*tid] = sdata[2*tid]; // write results to device memory
-    g_odata[2*tid+1] = sdata[2*tid+1];
+	T acc = initialValue;
+    g_odata[tid] = acc = g_idata[tid];
+    int n = rows * cols;
+	for (int i = tid + cols; i < n; i += cols)
+	{
+		g_odata[i] = acc = scan_op(acc, g_idata[i]);
+	}
 }
 
 /**
@@ -1277,8 +1242,6 @@ extern "C" __global__ void reduce_sum_f(float *g_idata, float *g_odata,
 template <typename T>
 __device__ void cumulative_sum(T *g_idata, T *g_odata, unsigned int rows, unsigned int cols)
 {
-	printf("Executing CUDA cumulative_sum_d threadID=%d\n", threadIdx.x);
-
 	SumOp<T> op;
 	cumulative_scan<SumOp<T>, T>(g_idata, g_odata, rows, cols, op, (T)0.0);
 }
@@ -1445,6 +1408,32 @@ extern "C" __global__ void reduce_col_max_f(float *g_idata, float *g_odata,
 }
 
 /**
+ * Do a cumulative maximum over all columns of a matrix
+ * @param g_idata   input data stored in device memory (of size n)
+ * @param g_odata   output/temporary array stored in device memory (of size n)
+ * @param rows      number of rows in input matrix
+ * @param cols      number of columns in input matrix
+ */
+template <typename T>
+__device__ void cumulative_max(T *g_idata, T *g_odata, unsigned int rows, unsigned int cols)
+{
+	MaxOp<T> op;
+	cumulative_scan<MaxOp<T>, T>(g_idata, g_odata, rows, cols, op, (T)0.0);
+}
+
+extern "C" __global__ void cumulative_max_d(double *g_idata, double *g_odata, unsigned int rows,
+        unsigned int cols)
+{
+  cumulative_max(g_idata, g_odata, rows, cols);
+}
+
+extern "C" __global__ void cumulative_max_f(float *g_idata, float *g_odata, unsigned int rows,
+        unsigned int cols)
+{
+  cumulative_max(g_idata, g_odata, rows, cols);
+}
+
+/**
  * Functor op for min operation
  */
 template <typename T>
@@ -1531,6 +1520,32 @@ extern "C" __global__ void reduce_col_min_f(float *g_idata, float *g_odata,
 }
 
 /**
+ * Do a cumulative minimum over all columns of a matrix
+ * @param g_idata   input data stored in device memory (of size n)
+ * @param g_odata   output/temporary array stored in device memory (of size n)
+ * @param rows      number of rows in input matrix
+ * @param cols      number of columns in input matrix
+ */
+template <typename T>
+__device__ void cumulative_min(T *g_idata, T *g_odata, unsigned int rows, unsigned int cols)
+{
+	MinOp<T> op;
+	cumulative_scan<MinOp<T>, T>(g_idata, g_odata, rows, cols, op, (T)0.0);
+}
+
+extern "C" __global__ void cumulative_min_d(double *g_idata, double *g_odata, unsigned int rows,
+        unsigned int cols)
+{
+  cumulative_min(g_idata, g_odata, rows, cols);
+}
+
+extern "C" __global__ void cumulative_min_f(float *g_idata, float *g_odata, unsigned int rows,
+        unsigned int cols)
+{
+  cumulative_min(g_idata, g_odata, rows, cols);
+}
+
+/**
  * Functor op for product operation
  */
 template <typename T>
@@ -1559,6 +1574,70 @@ extern "C" __global__ void reduce_prod_f(float *g_idata, float *g_odata,
                                          unsigned int n) {
   reduce_prod(g_idata, g_odata, n);
 }
+
+/**
+ * Do a cumulative product over all columns of a matrix
+ * @param g_idata   input data stored in device memory (of size n)
+ * @param g_odata   output/temporary array stored in device memory (of size n)
+ * @param rows      number of rows in input matrix
+ * @param cols      number of columns in input matrix
+ */
+template <typename T>
+__device__ void cumulative_prod(T *g_idata, T *g_odata, unsigned int rows, unsigned int cols)
+{
+	ProductOp<T> op;
+	cumulative_scan<ProductOp<T>, T>(g_idata, g_odata, rows, cols, op, (T)1.0);
+}
+
+extern "C" __global__ void cumulative_prod_d(double *g_idata, double *g_odata, unsigned int rows,
+        unsigned int cols)
+{
+  cumulative_prod(g_idata, g_odata, rows, cols);
+}
+
+extern "C" __global__ void cumulative_prod_f(float *g_idata, float *g_odata, unsigned int rows,
+        unsigned int cols)
+{
+  cumulative_prod(g_idata, g_odata, rows, cols);
+}
+
+/**
+ * Functor op for sum-product operation
+ */
+template <typename T>
+struct SumProductOp {
+  __device__ __forceinline__ T operator()(T a, T b, T sum) const
+  {
+	  return a + b * sum;
+  }
+};
+
+/**
+ * Do a cumulative sum-product over all columns of a matrix
+ * @param g_idata   input data stored in device memory (of size n)
+ * @param g_odata   output/temporary array stored in device memory (of size n)
+ * @param rows      number of rows in input matrix
+ * @param cols      number of columns in input matrix
+ */
+// ToDo: sum-product
+//template <typename T>
+//__device__ void cumulative_sum_prod(T *g_idata, T *g_odata, unsigned int rows, unsigned int cols)
+//{
+//	SumProductOp<T> op;
+//	cumulative_scan<SumProductOp<T>, T>(g_idata, g_odata, rows, cols, op, (T)0.0);
+//}
+//
+//extern "C" __global__ void cumulative_sum_prod_d(double *g_idata, double *g_odata, unsigned int rows,
+//        unsigned int cols)
+//{
+//  cumulative_sum_prod(g_idata, g_odata, rows, cols);
+//}
+//
+//extern "C" __global__ void cumulative_sum_prod_f(float *g_idata, float *g_odata, unsigned int rows,
+//        unsigned int cols)
+//{
+//  cumulative_sum_prod(g_idata, g_odata, rows, cols);
+//}
 
 /**
  * Functor op for mean operation

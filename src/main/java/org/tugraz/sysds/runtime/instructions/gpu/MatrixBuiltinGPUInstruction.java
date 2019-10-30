@@ -85,7 +85,16 @@ public class MatrixBuiltinGPUInstruction extends BuiltinUnaryGPUInstruction {
 			case "softmax":
 				LibMatrixCuDNN.softmax(ec, ec.getGPUContext(0), getExtendedOpcode(), mat, _output.getName()); break;
 			case "ucumk+":
-				LibMatrixCUDA.cumulativeScan(ec, ec.getGPUContext(0), getExtendedOpcode(), mat, _output.getName()); break;
+				LibMatrixCUDA.cumulativeScan(ec, ec.getGPUContext(0), getExtendedOpcode(), "cumulative_sum", mat, _output.getName()); break;
+			case "ucum*":
+				LibMatrixCUDA.cumulativeScan(ec, ec.getGPUContext(0), getExtendedOpcode(), "cumulative_prod", mat, _output.getName()); break;
+//			case "ucumk+*":
+//				LibMatrixCUDA.cumulativeScan(ec, ec.getGPUContext(0), getExtendedOpcode(), "cumulative_sum_prod", mat, _output.getName()); break;
+			case "ucummin":
+				LibMatrixCUDA.cumulativeScan(ec, ec.getGPUContext(0), getExtendedOpcode(), "cumulative_min", mat, _output.getName()); break;
+			case "ucummax":
+				LibMatrixCUDA.cumulativeScan(ec, ec.getGPUContext(0), getExtendedOpcode(), "cumulative_max", mat, _output.getName()); break;
+
 
 			default:
 				throw new DMLRuntimeException("Unsupported GPU operator:" + opcode);
