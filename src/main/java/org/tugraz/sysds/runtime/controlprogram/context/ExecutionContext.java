@@ -481,6 +481,18 @@ public class ExecutionContext {
 			throw new DMLRuntimeException("Variable '" + name + "' is not a list.");
 		return (ListObject) dat;
 	}
+	
+	private void getMatrixFromList(ListObject lo, List<MatrixObject> molist) {
+		List<Data> all = lo.getData();
+		for (Data e : all) {
+			if (e instanceof MatrixObject)
+				molist.add((MatrixObject)e);
+			else if (e instanceof ListObject)
+				getMatrixFromList((ListObject)e, molist);
+			else
+				throw new DMLRuntimeException("List must contain only matrices for Rbind/Cbind.");
+		}
+	}
 
 	public void releaseMatrixOutputForGPUInstruction(String varName) {
 		MatrixObject mo = getMatrixObject(varName);
@@ -529,6 +541,22 @@ public class ExecutionContext {
 		return Arrays.stream(inputs).filter(in -> in.isMatrix())
 			.map(in -> getMatrixInput(in.getName())).collect(Collectors.toList());
 	}
+	public List<MatrixBlock> getMatrixInputs(CPOperand[] inputs, boolean includeList) {
+		//ListObject lo = getListObject(inputs[0].getName());	
+		List<MatrixBlock> MBlist = Arrays.stream(inputs).filter(in -> in.isMatrix())
+			.map(in -> getMatrixInput(in.getName())).collect(Collectors.toList());
+
+		if (includeList) {
+			List<ListObject> LOlist = Arrays.stream(inputs).filter(in -> in.isList())
+				.map(in -> getListObject(in.getName())).collect(Collectors.toList());
+			List<MatrixObject> MOlist = new ArrayList<>();
+			for (ListObject lo : LOlist)
+				getMatrixFromList(lo, MOlist);
+			MBlist.addAll(MOlist.stream().map(mo -> mo.acquireRead()).collect(Collectors.toList()));
+		}
+
+		return MBlist;
+	}
 	
 	public List<ScalarObject> getScalarInputs(CPOperand[] inputs) {
 		return Arrays.stream(inputs).filter(in -> in.isScalar())
@@ -538,6 +566,21 @@ public class ExecutionContext {
 	public void releaseMatrixInputs(CPOperand[] inputs) {
 		Arrays.stream(inputs).filter(in -> in.isMatrix())
 			.forEach(in -> releaseMatrixInput(in.getName()));
+	}
+
+	public void releaseMatrixInputs(CPOperand[] inputs, boolean includeList) {
+		Arrays.stream(inputs).filter(in -> in.isMatrix())
+			.forEach(in -> releaseMatrixInput(in.getName()));
+
+		if (includeList) {
+			List<ListObject> LOlist = Arrays.stream(inputs).filter(in -> in.isList())
+				.map(in -> getListObject(in.getName())).collect(Collectors.toList());
+			List<MatrixObject> MOlist = new ArrayList<>();
+			for (ListObject lo : LOlist)
+				getMatrixFromList(lo, MOlist);
+
+			MOlist.stream().forEach(mo -> mo.release());
+		}
 	}
 	
 	/**

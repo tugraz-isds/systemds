@@ -749,6 +749,12 @@ public class BuiltinFunctionExpression extends DataIdentifier
 				checkValueTypeParam(getFirstExpr(), ValueType.STRING);
 				checkValueTypeParam(getSecondExpr(), ValueType.STRING);
 			}
+			// append (rbind/cbind) all the elements of a List
+			else if (getFirstExpr().getOutput().getDataType() == DataType.LIST) {
+				if (getAllExpr().length != 1)
+					raiseValidateError("Invalid number of arguments for "+getOpCode(), conditional);
+					checkDataTypeParam(getFirstExpr(), DataType.LIST);
+			}
 			//matrix append (rbind/cbind)
 			else {
 				if( getAllExpr().length < 2 )
@@ -759,6 +765,10 @@ public class BuiltinFunctionExpression extends DataIdentifier
 			
 			output.setDataType(id.getDataType());
 			output.setValueType(id.getValueType());
+			if (id.getDataType() == DataType.LIST) {
+				output.setDataType(DataType.MATRIX);
+				output.setValueType(ValueType.FP64);
+			}
 			
 			// set output dimensions and validate consistency
 			long m1rlen = getFirstExpr().getOutput().getDim1();
@@ -786,6 +796,12 @@ public class BuiltinFunctionExpression extends DataIdentifier
 					appendDim2 = (m2clen>=0) ? m2clen : appendDim2;
 				}
 			}
+			//TODO: calculate output dimensions of List 
+			if (getFirstExpr().getOutput().getDataType() == DataType.LIST && getAllExpr().length == 1) {
+				appendDim1 = -1;
+				appendDim2 = -1;
+			}
+
 			output.setDimensions(appendDim1, appendDim2);
 			output.setBlocksize (id.getBlocksize());
 			
