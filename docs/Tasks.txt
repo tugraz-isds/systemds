@@ -45,7 +45,7 @@ SYSTEMDS-40 Preprocessing builtins
 SYSTEMDS-50 I/O Formats
  * 51 Support for homogeneous JSON (local/distributed)
  * 52 Support for libsvm files (local/distributed) 
- * 
+ * 53 New sql data source (local, distributed)
 
 SYSTEMDS-60 Update SystemML improvements
  * 61 Take over cumulative aggregate improvements                     OK
@@ -99,6 +99,7 @@ SYSTEMDS-130 IPA and Size Propagation
  * 131 New IPA pass for function call forwarding                      OK
  * 132 Size propagation via data characteristics
  * 133 Hop Size Propagation for Tensors
+ * 134 Increased repretition and fixpoint detection
 
 SYSTEMDS-140 Distributed Tensor Operations
  * 141 Infrastructure for spark tensor operations
@@ -115,7 +116,7 @@ SYSTEMDS-160 Tensor Compiler/Runtime
  * 161 Local readers and writers for tensors (all formats)
  * 162 Spark binary tensor instructions
  
- SYSTEMDS-170 Lineage full and partial reuse 
+SYSTEMDS-170 Lineage full and partial reuse 
  * 171 Initial version of partial rewrites                            OK
  * 172 Parfor integration (blocked waiting for results)               OK
  * 173 Improved cost estimates                                        OK
@@ -124,3 +125,7 @@ SYSTEMDS-160 Tensor Compiler/Runtime
  * 176 Reuse rewrite for cbind/rbind-elementwise */+
  * 177 Reuse rewrite for aggregate                                    OK
  * 178 Compiler assisted reuse (eg. CV, lmCG)
+
+SYSTEMDS-180 New Builtin Functions II                                 OK
+ * 181 Builtin function for naive bayes                               OK
+ * 182 Builtin function for typeof (frame schema detection)           OK

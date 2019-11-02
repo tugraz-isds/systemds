@@ -113,6 +113,7 @@ public enum Builtins {
 	NCOL("ncol", false),
 	NORMALIZE("normalize", true),
 	NROW("nrow", false),
+	NAIVEBAYES("naivebayes", true, false),
 	OUTER("outer", false),
 	OUTLIER("outlier", true, false), //TODO parameterize opposite
 	PPRED("ppred", false),
@@ -150,6 +151,7 @@ public enum Builtins {
 	TAN("tan", false),
 	TANH("tanh", false),
 	TRACE("trace", false),
+	TYPEOF("typeOf", false),
 	VAR("var", false),
 	XOR("xor", false),
 	WINSORIZE("winsorize", true, false), //TODO parameterize w/ prob, min/max val
