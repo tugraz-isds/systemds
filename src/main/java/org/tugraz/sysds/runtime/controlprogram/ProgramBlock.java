@@ -45,6 +45,7 @@ import org.tugraz.sysds.runtime.instructions.cp.DoubleObject;
 import org.tugraz.sysds.runtime.instructions.cp.IntObject;
 import org.tugraz.sysds.runtime.instructions.cp.ScalarObject;
 import org.tugraz.sysds.runtime.instructions.cp.StringObject;
+import org.tugraz.sysds.runtime.instructions.fed.BinaryFEDInstruction;
 import org.tugraz.sysds.runtime.lineage.LineageCache;
 import org.tugraz.sysds.runtime.matrix.data.MatrixBlock;
 import org.tugraz.sysds.utils.Statistics;
@@ -203,6 +204,9 @@ public abstract class ProgramBlock implements ParseInfo
 
 			// pre-process instruction (inst patching, listeners, lineage)
 			Instruction tmp = currInst.preprocessInstruction( ec );
+			
+			// check if switch to federated instruction is possible
+			tmp = replaceWithFederated(tmp, ec);
 
 			// try to reuse instruction result from lineage cache
 			if( !LineageCache.reuse(tmp, ec) ) {
@@ -242,7 +246,13 @@ public abstract class ProgramBlock implements ParseInfo
 				throw new DMLRuntimeException(printBlockErrorLocation() + "Error evaluating instruction: " + currInst.toString() , e);
 		}
 	}
-
+	
+	private Instruction replaceWithFederated(Instruction tmp, ExecutionContext ec) {
+		// TODO other replacements
+		Instruction replaced = BinaryFEDInstruction.replaceWithFEDAlternative(tmp, ec);
+		return replaced;
+	}
+	
 	protected UpdateType[] prepareUpdateInPlaceVariables(ExecutionContext ec, long tid) {
 		if( _sb == null || _sb.getUpdateInPlaceVars().isEmpty() )
 			return null;

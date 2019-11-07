@@ -37,11 +37,14 @@ import org.tugraz.sysds.runtime.controlprogram.federated.FederatedData;
 import org.tugraz.sysds.runtime.controlprogram.federated.FederatedRange;
 import org.tugraz.sysds.runtime.controlprogram.federated.FederatedRequest;
 import org.tugraz.sysds.runtime.controlprogram.federated.FederatedResponse;
+import org.tugraz.sysds.runtime.functionobjects.Multiply;
+import org.tugraz.sysds.runtime.functionobjects.Plus;
 import org.tugraz.sysds.runtime.instructions.spark.data.RDDObject;
 import org.tugraz.sysds.runtime.io.FileFormatProperties;
 import org.tugraz.sysds.runtime.matrix.data.InputInfo;
 import org.tugraz.sysds.runtime.matrix.data.MatrixBlock;
 import org.tugraz.sysds.runtime.matrix.data.OutputInfo;
+import org.tugraz.sysds.runtime.matrix.operators.AggregateBinaryOperator;
 import org.tugraz.sysds.runtime.meta.DataCharacteristics;
 import org.tugraz.sysds.runtime.meta.MatrixCharacteristics;
 import org.tugraz.sysds.runtime.meta.MetaData;
@@ -52,9 +55,11 @@ import org.tugraz.sysds.runtime.util.IndexRange;
 
 import java.io.IOException;
 import java.lang.ref.SoftReference;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.CompletableFuture;
 
 
 /**
@@ -146,6 +151,7 @@ public class MatrixObject extends CacheableData<MatrixBlock>
 			// TODO support all value types
 			_fedMapping.put(t.getLeft(), t.getRight());
 		}
+		List<CompletableFuture<Void>> futures = new ArrayList<>();
 		for (Map.Entry<FederatedRange, FederatedData> entry : _fedMapping.entrySet()) {
 			FederatedRange range = entry.getKey();
 			FederatedData value = entry.getValue();
@@ -153,11 +159,121 @@ public class MatrixObject extends CacheableData<MatrixBlock>
 				long[] beginDims = range.getBeginDims();
 				long[] endDims = range.getEndDims();
 				long[] dims = getDataCharacteristics().getDims();
-				for (int i = 0; i < dims.length; i++)
+				for (int i = 0; i < dims.length; i++) {
 					dims[i] = endDims[i] - beginDims[i];
-				value.initFederatedData();
+				}
+				futures.add(value.initFederatedData());
 			}
 		}
+		for (CompletableFuture<Void> future : futures) {
+			try {
+				future.get();
+			}
+			catch (Exception e) {
+				throw new DMLRuntimeException("Could not federate matrix", e);
+			}
+		}
+		getDataCharacteristics().setNonZeros(getNumColumns() * getNumRows());
+	}
+	
+	/**
+	 * Performs a federated binary aggregation (currently only MV and VM is supported).
+	 * TODO other operations
+	 *
+	 * @param other the other matrix object (currently has to be a vector)
+	 * @param op the operation
+	 * @param swapParams if <code>this</code> and <code>other</code> should be swapped (other op this, instead of
+	 *                   this op other)
+	 * @return the resulting matrix object
+	 */
+	public MatrixObject federatedAggregateBinary(MatrixObject other, MatrixObject output, AggregateBinaryOperator op,
+			boolean swapParams) {
+		if( !(op.binaryFn instanceof Multiply && op.aggOp.increOp.fn instanceof Plus) )
+			throw new DMLRuntimeException("Only matrix-vector is supported for federated binary aggregation");
+		// create output matrix
+		MatrixBlock resultBlock;
+		// if we chang the order of parameters, so VM instead of MV, the output has different dimensions
+		if( swapParams ) {
+			output.getDataCharacteristics().setRows(1).setCols(getNumColumns());
+			resultBlock = new MatrixBlock(1, (int) getNumColumns(), false);
+		}
+		else {
+			output.getDataCharacteristics().setRows(getNumRows()).setCols(1);
+			resultBlock = new MatrixBlock((int) getNumRows(), 1, false);
+		}
+		List<CompletableFuture<Void>> joinFutures = new ArrayList<>();
+		MatrixBlock vector = other.acquireRead();
+		for (Map.Entry<FederatedRange, FederatedData> entry : _fedMapping.entrySet()) {
+			FederatedRange range = entry.getKey();
+			FederatedData fedData = entry.getValue();
+			if( !fedData.isInitialized() ) {
+				throw new DMLRuntimeException("Not all FederatedData was initialized for federated matrix");
+			}
+			int[] beginDimsInt = range.getBeginDimsInt();
+			int[] endDimsInt = range.getEndDimsInt();
+			// params for federated request
+			List<Object> params = new ArrayList<>();
+			// we broadcast the needed part of the small vector
+			MatrixBlock vectorSlice;
+			if( swapParams ) {
+				vectorSlice = new MatrixBlock(1, endDimsInt[0] - beginDimsInt[0], false);
+				vector.slice(0, 0, beginDimsInt[0], endDimsInt[0] - 1, vectorSlice);
+			}
+			else {
+				vectorSlice = new MatrixBlock(endDimsInt[1] - beginDimsInt[1], 1, false);
+				vector.slice(beginDimsInt[1], endDimsInt[1] - 1, 0, 0, vectorSlice);
+			}
+			params.add(vectorSlice);
+			params.add(!swapParams); // if is matrix vector multiplication true, otherwise false
+			CompletableFuture<FederatedResponse> future = fedData.executeFederatedOperation(
+					new FederatedRequest(FederatedRequest.FedMethod.MATVECMULT, params), true);
+			// use varId
+			CompletableFuture<Void> joinFuture = future.thenApply(idResponse -> {
+				if( !idResponse.isSuccessful() )
+					throw new DMLRuntimeException("An error occurred while trying to perform a federated vector-matrix multiplication: " +
+							idResponse.getErrorMessage());
+				long varID = (Long) idResponse.getData();
+				List<Object> paramId = new ArrayList<>();
+				// we want the variable with `varID` of last request (result of MATVECMULT)
+				paramId.add(varID);
+				// we execute the next operation, the read
+				return fedData.executeFederatedOperation(new FederatedRequest(FederatedRequest.FedMethod.TRANSFER,
+						paramId));
+			}).thenAccept(resultResponseFuture -> {
+				int[] beginDims = range.getBeginDimsInt();
+				try {
+					// we got a CompletableFuture<FederatedResponse>
+					FederatedResponse federatedResponse = resultResponseFuture.get();
+					MatrixBlock mb = (MatrixBlock) federatedResponse.getData();
+					// TODO performance optimizations
+					// TODO Improve Vector Matrix multiplication accuracy
+					// Add worker response to resultBlock
+					for (int r = 0; r < mb.getNumRows(); r++)
+						for (int c = 0; c < mb.getNumColumns(); c++) {
+							int resultRow = r + (swapParams ? 0 : beginDims[0]);
+							int resultColumn = c + (swapParams ? beginDims[1] : 0);
+							synchronized (resultBlock) {
+								resultBlock.quickSetValue(resultRow, resultColumn,
+										resultBlock.quickGetValue(resultRow, resultColumn) + mb.quickGetValue(r, c));
+							}
+						}
+				}
+				catch (Exception e) {
+					throw new DMLRuntimeException("Could not vector multiply federated matrix", e);
+				}
+			}).exceptionally(e -> {
+				throw new DMLRuntimeException("Federated binary operation failed: " + e.getMessage());
+			});
+			joinFutures.add(joinFuture);
+		}
+		other.release();
+		// wait for all data to be written to resultBlock
+		joinFutures.forEach(CompletableFuture::join);
+		long nnz = resultBlock.recomputeNonZeros();
+		output.acquireModify(resultBlock);
+		output.getDataCharacteristics().setNonZeros(nnz);
+		output.release();
+		return output;
 	}
 	
 	public boolean isFederated() {
@@ -166,39 +282,50 @@ public class MatrixObject extends CacheableData<MatrixBlock>
 	
 	@Override
 	public MatrixBlock acquireRead() {
-		if (!isFederated())
+		if( !isFederated() )
+			// forward call
 			return super.acquireRead();
-		
-		//obtain matrix block from remote sites
 		long[] dims = getDataCharacteristics().getDims();
+		// TODO sparse optimization
 		MatrixBlock result = new MatrixBlock((int) dims[0], (int) dims[1], false);
+		List<CompletableFuture<Void>> joinFutures = new ArrayList<>();
 		for (Map.Entry<FederatedRange, FederatedData> entry : _fedMapping.entrySet()) {
 			FederatedRange range = entry.getKey();
-			// TODO generalize for n dimensions
-			int[] beginDimsInt = range.getBeginDimsInt();
-			int[] endDimsInt = range.getEndDimsInt();
-			
 			FederatedData fd = entry.getValue();
-			MatrixBlock multRes;
+			
 			if( fd.isInitialized() ) {
 				FederatedRequest request = new FederatedRequest(FederatedRequest.FedMethod.TRANSFER);
-				FederatedResponse response = fd.executeFederatedOperation(request, true);
-				if( !response.isSuccessful() ) {
-					throw new DMLRuntimeException("Federated tensor multiplication failed: " + response.getErrorMessage());
-				}
-				multRes = (MatrixBlock) response.getData();
+				// Future we can later join on, so we can ensure all workers are finished
+				CompletableFuture<Void> joinFuture = fd.executeFederatedOperation(request, true)
+						.thenAccept(response -> {
+							// add result
+							int[] beginDimsInt = range.getBeginDimsInt();
+							int[] endDimsInt = range.getEndDimsInt();
+							if( !response.isSuccessful() ) {
+								throw new DMLRuntimeException("Federated matrix read failed: " +
+										response.getErrorMessage());
+							}
+							MatrixBlock multRes = (MatrixBlock) response.getData();
+							result.copy(beginDimsInt[0], endDimsInt[0] - 1, beginDimsInt[1], endDimsInt[1] - 1,
+									multRes, false);
+							result.setNonZeros(result.getNonZeros() + multRes.getNonZeros());
+						}).exceptionally(e -> {
+							throw new DMLRuntimeException("Federated matrix read failed: " + e.getMessage());
+						});
+				joinFutures.add(joinFuture);
 			}
 			else {
-				throw new DMLRuntimeException("Federated tensor operations only supported on federated tensorObjects");
+				throw new DMLRuntimeException("Federated matrix read only supported on initialized FederatedData");
 			}
-			result.copy(beginDimsInt[0], endDimsInt[0] - 1, beginDimsInt[1], endDimsInt[1] - 1, multRes, false);
 		}
-		
-		//keep obtained block in buffer pool 
-		//(release then works as with any other cachable data)
-		acquireModify(result);
-		
+		joinFutures.forEach(CompletableFuture::join);
 		return result;
+	}
+	
+	@Override
+	public void release() {
+		if (!isFederated())
+			super.release();
 	}
 	
 	public void setUpdateType(UpdateType flag) {
@@ -305,7 +432,7 @@ public class MatrixObject extends CacheableData<MatrixBlock>
 	 * However, since we currently only support row- and column-wise partitioning caching is not applied yet.
 	 * This could be changed once we also support column-block-wise and row-block-wise. Furthermore,
 	 * as we reject to partition vectors and support only full row or column indexing, no metadata (apart from
-	 * the partition flag) is required.  
+	 * the partition flag) is required.
 	 * 
 	 * @param pred index range
 	 * @return matrix block
@@ -372,7 +499,7 @@ public class MatrixObject extends CacheableData<MatrixBlock>
 					case COLUMN_BLOCK_WISE_N: 
 						rows = mc.getRows();
 						cols = _partitionSize;
-						break;	
+						break;
 					default:
 						throw new DMLRuntimeException("Unsupported partition format: "+_partitionFormat);
 				}
@@ -455,13 +582,13 @@ public class MatrixObject extends CacheableData<MatrixBlock>
 			case COLUMN_BLOCK_WISE_N:
 				sb.append(Lop.FILE_SEPARATOR);
 				sb.append((pred.colStart-1)/_partitionSize+1);
-				break;	
+				break;
 			default:
 				throw new DMLRuntimeException("MatrixObject not available to indexed read.");
 		}
 
 		return sb.toString();
-	}	
+	}
 	
 	
 
@@ -638,7 +765,7 @@ public class MatrixObject extends CacheableData<MatrixBlock>
 		
 		//note: the write of an RDD to HDFS might trigger
 		//lazy evaluation of pending transformations.				
-		long newnnz = SparkExecutionContext.writeRDDtoHDFS(rdd, fname, oinfo);	
+		long newnnz = SparkExecutionContext.writeRDDtoHDFS(rdd, fname, oinfo);
 		_metaData.getDataCharacteristics().setNonZeros(newnnz);
 	}
 }

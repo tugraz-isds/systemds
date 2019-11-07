@@ -29,6 +29,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.serialization.ClassResolvers;
 import io.netty.handler.codec.serialization.ObjectDecoder;
 import io.netty.handler.codec.serialization.ObjectEncoder;
+import org.apache.log4j.Logger;
 import org.tugraz.sysds.runtime.controlprogram.parfor.util.IDSequence;
 import org.tugraz.sysds.runtime.instructions.cp.Data;
 
@@ -36,6 +37,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class FederatedWorker {
+	protected static Logger log = Logger.getLogger(FederatedWorker.class);
 	
 	public int _port;
 	private IDSequence _seq = new IDSequence();
@@ -46,9 +48,7 @@ public class FederatedWorker {
 	}
 	
 	public void run() throws Exception {
-		//TODO modify logging to use actual logger not stdout,
-		//otherwise the stdout queue might fill up if nobody is reading from it
-		System.out.println("[Federated Worker] Setting up...");
+		log.debug("[Federated Worker] Setting up...");
 		EventLoopGroup bossGroup = new NioEventLoopGroup();
 		EventLoopGroup workerGroup = new NioEventLoopGroup();
 		try {
@@ -66,12 +66,12 @@ public class FederatedWorker {
 				})
 				.option(ChannelOption.SO_BACKLOG, 128)
 				.childOption(ChannelOption.SO_KEEPALIVE, true);
-			System.out.println("[Federated Worker] Starting server at port " + _port);
+			log.debug("[Federated Worker] Starting server at port " + _port);
 			ChannelFuture f = b.bind(_port).sync();
 			f.channel().closeFuture().sync();
 		}
 		finally {
-			System.out.println("[Federated Worker] Shutting down.");
+			log.debug("[Federated Worker] Shutting down.");
 			workerGroup.shutdownGracefully();
 			bossGroup.shutdownGracefully();
 		}

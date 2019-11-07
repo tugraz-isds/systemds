@@ -22,19 +22,26 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.log4j.Logger;
 import org.apache.wink.json4j.JSONObject;
 import org.tugraz.sysds.common.Types;
 import org.tugraz.sysds.conf.ConfigurationManager;
+import org.tugraz.sysds.hops.OptimizerUtils;
 import org.tugraz.sysds.parser.DataExpression;
 import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.controlprogram.caching.MatrixObject;
 import org.tugraz.sysds.runtime.controlprogram.caching.TensorObject;
 import org.tugraz.sysds.runtime.controlprogram.parfor.util.IDSequence;
+import org.tugraz.sysds.runtime.functionobjects.Multiply;
+import org.tugraz.sysds.runtime.functionobjects.Plus;
 import org.tugraz.sysds.runtime.instructions.cp.Data;
 import org.tugraz.sysds.runtime.instructions.cp.ListObject;
 import org.tugraz.sysds.runtime.io.IOUtilFunctions;
 import org.tugraz.sysds.runtime.matrix.data.InputInfo;
+import org.tugraz.sysds.runtime.matrix.data.MatrixBlock;
 import org.tugraz.sysds.runtime.matrix.data.OutputInfo;
+import org.tugraz.sysds.runtime.matrix.operators.AggregateBinaryOperator;
+import org.tugraz.sysds.runtime.matrix.operators.AggregateOperator;
 import org.tugraz.sysds.runtime.meta.MatrixCharacteristics;
 import org.tugraz.sysds.runtime.meta.MetaDataFormat;
 import org.tugraz.sysds.utils.JSONHelper;
@@ -50,6 +57,8 @@ import static org.tugraz.sysds.parser.DataExpression.FORMAT_TYPE_VALUE_MATRIXMAR
 import static org.tugraz.sysds.parser.DataExpression.FORMAT_TYPE_VALUE_TEXT;
 
 public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
+	protected static Logger log = Logger.getLogger(FederatedWorkerHandler.class);
+	
 	private final IDSequence _seq;
 	private Map<Long, Data> _vars;
 	
@@ -60,19 +69,16 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 	
 	@Override
 	public void channelRead(ChannelHandlerContext ctx, Object msg) {
-		//TODO modify logging to use actual logger not stdout,
-		//otherwise the stdout queue might fill up if nobody is reading from it
-		
 		//TODO could we modularize this method a bit?
-		System.out.println("[Federated Worker] Received: " + msg.getClass().getSimpleName());
+		log.debug("[Federated Worker] Received: " + msg.getClass().getSimpleName());
 		FederatedRequest request;
 		if( msg instanceof FederatedRequest )
 			request = (FederatedRequest) msg;
 		else
 			throw new DMLRuntimeException("FederatedWorkerHandler: Received object no instance of `FederatedRequest`.");
-		FederatedResponse response = null;
+		FederatedResponse response;
 		FederatedRequest.FedMethod method = request.getMethod();
-		System.out.println("[Federated Worker] Received command: " + method.name());
+		log.debug("[Federated Worker] Received command: " + method.name());
 		synchronized (_seq) {
 			switch (method) {
 				case READ:
@@ -80,60 +86,28 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 						// params: filename
 						checkNumParams(request.getNumParams(), 1);
 						String filename = (String) request.getParam(0);
-						MatrixCharacteristics mc = new MatrixCharacteristics();
-						mc.setBlocksize(ConfigurationManager.getBlocksize());
-						MatrixObject mo = new MatrixObject(Types.ValueType.FP64, filename);
-						OutputInfo oi = null;
-						InputInfo ii = null;
-						// read metadata
-						try {
-							String mtdname = DataExpression.getMTDFileName(filename);
-							Path path = new Path(mtdname);
-							try (FileSystem fs = IOUtilFunctions.getFileSystem(mtdname)) {
-								if( fs.exists(path) ) {
-									try (BufferedReader br = new BufferedReader(new InputStreamReader(fs.open(path)))) {
-										JSONObject mtd = JSONHelper.parse(br);
-										mc.setRows(mtd.getLong(DataExpression.READROWPARAM));
-										mc.setCols(mtd.getLong(DataExpression.READCOLPARAM));
-										String format = mtd.getString(DataExpression.FORMAT_TYPE);
-										if( format.equalsIgnoreCase(FORMAT_TYPE_VALUE_TEXT) ) {
-											oi = OutputInfo.TextCellOutputInfo;
-										}
-										else if( format.equalsIgnoreCase(FORMAT_TYPE_VALUE_BINARY) ) {
-											oi = OutputInfo.BinaryBlockOutputInfo;
-										}
-										else if( format.equalsIgnoreCase(FORMAT_TYPE_VALUE_MATRIXMARKET) ) {
-											oi = OutputInfo.MatrixMarketOutputInfo;
-										}
-										else if( format.equalsIgnoreCase(FORMAT_TYPE_VALUE_LIBSVM) ) {
-											oi = OutputInfo.LIBSVMOutputInfo;
-										}
-										else {
-											response = new FederatedResponse(FederatedResponse.Type.ERROR,
-													"Could not figure out correct file format form metadata file");
-											break;
-										}
-										ii = OutputInfo.getMatchingInputInfo(oi);
-									}
-								}
-							}
-						}
-						catch (Exception ex) {
-							throw new DMLRuntimeException(ex);
-						}
-						MetaDataFormat mdf = new MetaDataFormat(mc, oi, ii);
-						mo.setMetaData(mdf);
-						
-						long id = _seq.getNextID();
-						_vars.put(id, mo);
-						response = new FederatedResponse(FederatedResponse.Type.SUCCESS, id);
+						response = readMatrix(filename);
 					}
 					catch (DMLRuntimeException exception) {
 						response = new FederatedResponse(FederatedResponse.Type.ERROR,
 								ExceptionUtils.getFullStackTrace(exception));
 					}
-					finally {
-						ctx.writeAndFlush(response);
+					break;
+				
+				case MATVECMULT:
+					try {
+						// params: vector, isMatVecMult, varID
+						int numParams = request.getNumParams();
+						checkNumParams(numParams, 3);
+						MatrixBlock vector = (MatrixBlock) request.getParam(0);
+						boolean isMatVecMult = (Boolean) request.getParam(1);
+						long varID = (Long) request.getParam(2);
+						
+						response = executeMatVecMult(varID, vector, isMatVecMult);
+					}
+					catch (Exception exception) {
+						response = new FederatedResponse(FederatedResponse.Type.ERROR,
+								ExceptionUtils.getFullStackTrace(exception));
 					}
 					break;
 				
@@ -142,41 +116,134 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 					int numParams = request.getNumParams();
 					checkNumParams(numParams, 1);
 					long varID = (Long) request.getParam(0);
-					Data dataObject = _vars.get(varID);
-					switch (dataObject.getDataType()) {
-						case TENSOR:
-							response = new FederatedResponse(FederatedResponse.Type.SUCCESS,
-									((TensorObject) dataObject).acquireReadAndRelease());
-							break;
-						case MATRIX:
-							response = new FederatedResponse(FederatedResponse.Type.SUCCESS,
-									((MatrixObject) dataObject).acquireReadAndRelease());
-							break;
-						case LIST:
-							response = new FederatedResponse(FederatedResponse.Type.SUCCESS,
-									((ListObject) dataObject).getData());
-							break;
-						// TODO rest of the possible datatypes
-						default:
-							response = new FederatedResponse(FederatedResponse.Type.ERROR,
-									"FederatedWorkerHandler: Not possible to send datatype " + dataObject.getDataType().name());
-					}
-					ctx.writeAndFlush(response);
+					response = getVariableData(varID);
 					break;
+				
 				case SHUTDOWN:
-					System.out.println("[Federated Worker] Shutting down server...");
+					log.debug("[Federated Worker] Shutting down server...");
 					ctx.close();
 					response = new FederatedResponse(FederatedResponse.Type.SUCCESS_EMPTY);
 					break;
 				
 				default:
 					String message = String.format("[Federated Worker] Method %s is not supported.", request.getMethod());
-					System.out.println(message);
 					response = new FederatedResponse(FederatedResponse.Type.ERROR, message);
 			}
+			if (!response.isSuccessful())
+				log.error("[Federated Worker] Method " + request.getMethod() + " failed: " +
+						response.getErrorMessage());
 			ctx.writeAndFlush(response);
 			ctx.close();
 		}
+		
+	}
+	
+	private FederatedResponse getVariableData(long varID) {
+		FederatedResponse response;
+		Data dataObject = _vars.get(varID);
+		switch (dataObject.getDataType()) {
+			case TENSOR:
+				response = new FederatedResponse(FederatedResponse.Type.SUCCESS,
+						((TensorObject) dataObject).acquireReadAndRelease());
+				break;
+			case MATRIX:
+				response = new FederatedResponse(FederatedResponse.Type.SUCCESS,
+						((MatrixObject) dataObject).acquireReadAndRelease());
+				break;
+			case LIST:
+				response = new FederatedResponse(FederatedResponse.Type.SUCCESS,
+						((ListObject) dataObject).getData());
+				break;
+			// TODO rest of the possible datatypes
+			default:
+				response = new FederatedResponse(FederatedResponse.Type.ERROR,
+						"FederatedWorkerHandler: Not possible to send datatype " + dataObject.getDataType().name());
+		}
+		return response;
+	}
+	
+	private FederatedResponse executeMatVecMult(long varID, MatrixBlock vector, boolean isMatVecMult) {
+		MatrixObject matTo = (MatrixObject) _vars.get(varID);
+		MatrixBlock matBlock1 = matTo.acquireRead();
+		// TODO other datatypes
+		AggregateBinaryOperator ab_op = new AggregateBinaryOperator(Multiply.getMultiplyFnObject(),
+				new AggregateOperator(0, Plus.getPlusFnObject()));
+		MatrixBlock result;
+		if( isMatVecMult ) {
+			result = matBlock1.aggregateBinaryOperations(matBlock1, vector, new MatrixBlock(),
+					ab_op);
+		}
+		else {
+			result = vector.aggregateBinaryOperations(vector, matBlock1, new MatrixBlock(), ab_op);
+		}
+		return createMatrixObject(result);
+	}
+	
+	private FederatedResponse readMatrix(String filename) {
+		MatrixCharacteristics mc = new MatrixCharacteristics();
+		mc.setBlocksize(ConfigurationManager.getBlocksize());
+		MatrixObject mo = new MatrixObject(Types.ValueType.FP64, filename);
+		OutputInfo oi = null;
+		InputInfo ii = null;
+		// read metadata
+		try {
+			String mtdname = DataExpression.getMTDFileName(filename);
+			Path path = new Path(mtdname);
+			try (FileSystem fs = IOUtilFunctions.getFileSystem(mtdname)) {
+				if( fs.exists(path) ) {
+					try (BufferedReader br = new BufferedReader(new InputStreamReader(fs.open(path)))) {
+						JSONObject mtd = JSONHelper.parse(br);
+						if (mtd == null)
+							return new FederatedResponse(FederatedResponse.Type.ERROR, "Could not parse metadata file");
+						mc.setRows(mtd.getLong(DataExpression.READROWPARAM));
+						mc.setCols(mtd.getLong(DataExpression.READCOLPARAM));
+						String format = mtd.getString(DataExpression.FORMAT_TYPE);
+						if( format.equalsIgnoreCase(FORMAT_TYPE_VALUE_TEXT) ) {
+							oi = OutputInfo.TextCellOutputInfo;
+						}
+						else if( format.equalsIgnoreCase(FORMAT_TYPE_VALUE_BINARY) ) {
+							oi = OutputInfo.BinaryBlockOutputInfo;
+						}
+						else if( format.equalsIgnoreCase(FORMAT_TYPE_VALUE_MATRIXMARKET) ) {
+							oi = OutputInfo.MatrixMarketOutputInfo;
+						}
+						else if( format.equalsIgnoreCase(FORMAT_TYPE_VALUE_LIBSVM) ) {
+							oi = OutputInfo.LIBSVMOutputInfo;
+						}
+						else {
+							return new FederatedResponse(FederatedResponse.Type.ERROR,
+									"Could not figure out correct file format from metadata file");
+						}
+						ii = OutputInfo.getMatchingInputInfo(oi);
+					}
+				}
+			}
+		}
+		catch (Exception ex) {
+			throw new DMLRuntimeException(ex);
+		}
+		MetaDataFormat mdf = new MetaDataFormat(mc, oi, ii);
+		mo.setMetaData(mdf);
+		mo.acquireRead();
+		mo.refreshMetaData();
+		mo.release();
+		
+		long id = _seq.getNextID();
+		_vars.put(id, mo);
+		return new FederatedResponse(FederatedResponse.Type.SUCCESS, id);
+	}
+	
+	private FederatedResponse createMatrixObject(MatrixBlock result) {
+		MatrixObject resTo = new MatrixObject(Types.ValueType.FP64, OptimizerUtils.getUniqueTempFileName());
+		MetaDataFormat metadata = new MetaDataFormat(new MatrixCharacteristics(result.getNumRows(),
+				result.getNumColumns()),
+				OutputInfo.BinaryTensorBlockOutputInfo, InputInfo.BinaryTensorBlockInputInfo);
+		resTo.setMetaData(metadata);
+		resTo.acquireModify(result);
+		resTo.release();
+		long result_var = _seq.getNextID();
+		_vars.put(result_var, resTo);
+		return new FederatedResponse(FederatedResponse.Type.SUCCESS, result_var);
 	}
 	
 	private static void checkNumParams(int actual, int... expected) {
@@ -184,7 +251,8 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 			if( actual == valid )
 				return;
 		}
-		throw new DMLRuntimeException("FederatedWorkerHandler: Received wrong amount of params: expected=" + Arrays.toString(expected) + ", actual=" + actual);
+		throw new DMLRuntimeException("FederatedWorkerHandler: Received wrong amount of params: expected=" +
+				Arrays.toString(expected) + ", actual=" + actual);
 	}
 	
 	@Override
