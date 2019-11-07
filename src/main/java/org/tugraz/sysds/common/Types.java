@@ -38,13 +38,16 @@ public class Types
 	 * Data types (tensor, matrix, scalar, frame, object, unknown).
 	 */
 	public enum DataType {
-		TENSOR, MATRIX, SCALAR, FRAME, LIST, UNKNOWN;
+		FEDERATED, TENSOR, MATRIX, SCALAR, FRAME, LIST, UNKNOWN;
 		
 		public boolean isMatrix() {
 			return this == MATRIX;
 		}
 		public boolean isTensor() {
 			return this == TENSOR;
+		}
+		public boolean isFederated() {
+			return this == FEDERATED;
 		}
 		public boolean isFrame() {
 			return this == FRAME;

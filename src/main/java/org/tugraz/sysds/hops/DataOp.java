@@ -26,6 +26,7 @@ import org.tugraz.sysds.common.Types.ValueType;
 import org.tugraz.sysds.conf.CompilerConfig.ConfigType;
 import org.tugraz.sysds.conf.ConfigurationManager;
 import org.tugraz.sysds.lops.Data;
+import org.tugraz.sysds.lops.Federated;
 import org.tugraz.sysds.lops.Lop;
 import org.tugraz.sysds.lops.LopProperties.ExecType;
 import org.tugraz.sysds.lops.LopsException;
@@ -305,6 +306,10 @@ public class DataOp extends Hop
 				
 			case SQLREAD:
 				l = new Sql(inputLops, getDataType(), getValueType());
+				break;
+				
+			case FEDERATED:
+				l = new Federated(inputLops, getDataType(), getValueType());
 				break;
 				
 			default:

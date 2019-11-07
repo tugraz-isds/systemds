@@ -34,6 +34,7 @@ import org.tugraz.sysds.lops.Lop;
 import org.tugraz.sysds.lops.UnaryCP;
 import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.controlprogram.caching.CacheableData;
+import org.tugraz.sysds.runtime.controlprogram.caching.FederatedObject;
 import org.tugraz.sysds.runtime.controlprogram.caching.FrameObject;
 import org.tugraz.sysds.runtime.controlprogram.caching.MatrixObject;
 import org.tugraz.sysds.runtime.controlprogram.caching.MatrixObject.UpdateType;
@@ -556,6 +557,12 @@ public class VariableCPInstruction extends CPInstruction implements LineageTrace
 				ec.setVariable(getInput1().getName(), obj);
 
 				// TODO update
+			}
+			else if( getInput1().getDataType() == DataType.FEDERATED ) {
+				// TODO add new information
+				// TODO metadata
+				CacheableData<?> obj = new FederatedObject();
+				ec.setVariable(getInput1().getName(), obj);
 			}
 			else if( getInput1().getDataType() == DataType.FRAME ) {
 				String fname = getInput2().getName();
