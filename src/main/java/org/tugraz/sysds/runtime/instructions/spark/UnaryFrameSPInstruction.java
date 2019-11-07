@@ -22,6 +22,7 @@
 package org.tugraz.sysds.runtime.instructions.spark;
 
 import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
 import org.tugraz.sysds.common.Types;
 import org.tugraz.sysds.lops.Lop;
@@ -51,7 +52,9 @@ public class UnaryFrameSPInstruction extends UnarySPInstruction {
         //get input
         JavaPairRDD<Long, FrameBlock> in = sec.getFrameBinaryBlockRDDHandleForVariable(input1.getName() );
         JavaPairRDD<Long,FrameBlock> out = in.mapToPair(new DetectSchemaUsingRows());
+        FrameBlock outFrame = out.reduce(new MegreFrame())._2;
         updateUnaryOutputDataCharacteristics(sec);
+        sec.setFrameOutput(output.getName(), outFrame);
         sec.setRDDHandleForVariable(output.getName(), out);
         sec.addLineageRDD(output.getName(), input1.getName());
     }
@@ -67,6 +70,15 @@ public class UnaryFrameSPInstruction extends UnarySPInstruction {
             FrameBlock resultBlock = new FrameBlock(arg0._2.detectSchemaFromRow(Lop.SAMPLE_FRACTION));
             long index = 1;
             return new Tuple2<>(index, resultBlock);
+        }
+    }
+
+    private static class MegreFrame implements Function2<Tuple2<Long, FrameBlock>, Tuple2<Long, FrameBlock>, Tuple2<Long, FrameBlock>> {
+
+        @Override
+        public Tuple2<Long, FrameBlock> call(Tuple2<Long, FrameBlock> arg0, Tuple2<Long, FrameBlock> arg1) throws Exception {
+            FrameBlock mergedFrame = new FrameBlock(FrameBlock.mergeSchema(arg0._2, arg1._2));
+            return new Tuple2<>(1L, mergedFrame);
         }
     }
 }

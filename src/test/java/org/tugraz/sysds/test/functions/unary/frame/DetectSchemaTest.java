@@ -42,7 +42,7 @@ public class DetectSchemaTest extends AutomatedTestBase {
     private static final String TEST_CLASS_DIR = TEST_DIR + DetectSchemaTest.class.getSimpleName() + "/";
 
     private final static int rows = 120;
-    private final static Types.ValueType[] schemaStrings = {Types.ValueType.INT64, Types.ValueType.BOOLEAN, Types.ValueType.FP64, Types.ValueType.STRING};
+    private final static Types.ValueType[] schemaStrings = {Types.ValueType.INT32, Types.ValueType.BOOLEAN, Types.ValueType.FP32, Types.ValueType.STRING};
     private final static Types.ValueType[] schemaDoubles = new Types.ValueType[]{Types.ValueType.FP64, Types.ValueType.FP64};
     private final static Types.ValueType[] schemaMixed = new Types.ValueType[]{Types.ValueType.INT64, Types.ValueType.FP64, Types.ValueType.INT64, Types.ValueType.BOOLEAN};
 
@@ -126,10 +126,9 @@ public class DetectSchemaTest extends AutomatedTestBase {
             FrameBlock frame2 = readDMLFrameFromHDFS("B", InputInfo.BinaryBlockInputInfo);
 
             //verify output schema
-            Types.ValueType[] schemaExpected = schema;
-            for (int i = 0; i < schemaExpected.length; i++) {
+            for (int i = 0; i < schema.length; i++) {
                 Assert.assertEquals("Wrong result: " + frame2.getSchema()[i] + ".",
-                        schemaExpected[i].toString(), frame2.get(0, i).toString());
+                        schema[i].toString(), frame2.get(0, i).toString());
             }
         } catch (Exception ex) {
             throw new RuntimeException(ex);
@@ -158,17 +157,29 @@ public class DetectSchemaTest extends AutomatedTestBase {
                         data[i][j] = (tmp2[i] = (Boolean) UtilFunctions.doubleToObject(vt, data[i][j], false)) ? 1 : 0;
                     frame1.appendColumn(tmp2);
                     break;
-                case INT64:
-                    long[] tmp3 = new long[rows];
+                case INT32:
+                    int[] tmp3 = new int[rows];
                     for (int i = 0; i < rows; i++)
-                        data[i][j] = tmp3[i] = (Long) UtilFunctions.doubleToObject(vt, data[i][j], false);
+                        data[i][j] = tmp3[i] = (Integer) UtilFunctions.doubleToObject(Types.ValueType.INT32, data[i][j], false);
                     frame1.appendColumn(tmp3);
                     break;
-                case FP64:
-                    double[] tmp4 = new double[rows];
+                case INT64:
+                    long[] tmp4 = new long[rows];
                     for (int i = 0; i < rows; i++)
-                        tmp4[i] = (Double) UtilFunctions.doubleToObject(vt, data[i][j], false);
+                        data[i][j] = tmp4[i] = (Long) UtilFunctions.doubleToObject(Types.ValueType.INT64, data[i][j], false);
                     frame1.appendColumn(tmp4);
+                    break;
+                case FP32:
+                    double[] tmp5 = new double[rows];
+                    for (int i = 0; i < rows; i++)
+                        tmp5[i] = (Float) UtilFunctions.doubleToObject(vt, data[i][j], false);
+                    frame1.appendColumn(tmp5);
+                    break;
+                case FP64:
+                    double[] tmp6 = new double[rows];
+                    for (int i = 0; i < rows; i++)
+                        tmp6[i] = (Double) UtilFunctions.doubleToObject(vt, data[i][j], false);
+                    frame1.appendColumn(tmp6);
                     break;
                 default:
                     throw new RuntimeException("Unsupported value type: " + vt);
@@ -181,10 +192,11 @@ public class DetectSchemaTest extends AutomatedTestBase {
     private static void initFrameDataDouble(FrameBlock frame, double[][] data, Types.ValueType[] lschema) {
         Object[] row1 = new Object[lschema.length];
         for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < lschema.length; j++)
+            for (int j = 0; j < lschema.length; j++) {
                 data[i][j] = UtilFunctions.objectToDouble(lschema[j],
                         row1[j] = UtilFunctions.doubleToObject(lschema[j], data[i][j]));
-            frame.appendRow(row1);
+            }
+                frame.appendRow(row1);
         }
     }
 
