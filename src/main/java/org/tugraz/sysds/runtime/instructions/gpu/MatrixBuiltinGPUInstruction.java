@@ -24,6 +24,7 @@ package org.tugraz.sysds.runtime.instructions.gpu;
 import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.controlprogram.caching.MatrixObject;
 import org.tugraz.sysds.runtime.controlprogram.context.ExecutionContext;
+import org.tugraz.sysds.runtime.controlprogram.parfor.stat.Timing;
 import org.tugraz.sysds.runtime.instructions.cp.CPOperand;
 import org.tugraz.sysds.runtime.matrix.data.LibMatrixCUDA;
 import org.tugraz.sysds.runtime.matrix.data.LibMatrixCuDNN;
@@ -40,11 +41,12 @@ public class MatrixBuiltinGPUInstruction extends BuiltinUnaryGPUInstruction {
 	@Override
 	public void processInstruction(ExecutionContext ec) {
 		GPUStatistics.incrementNoOfExecutedGPUInst();
-		
+
 		String opcode = getOpcode();
 		MatrixObject mat = getMatrixInputForGPUInstruction(ec, _input.getName());
 		ec.setMetaData(_output.getName(), mat.getNumRows(), mat.getNumColumns());
 
+		Timing time = new Timing(true);
 		switch(opcode) {
 			case "exp":
 				LibMatrixCUDA.exp(ec, ec.getGPUContext(0), getExtendedOpcode(), mat, _output.getName()); break;
@@ -88,8 +90,8 @@ public class MatrixBuiltinGPUInstruction extends BuiltinUnaryGPUInstruction {
 				LibMatrixCUDA.cumulativeScan(ec, ec.getGPUContext(0), getExtendedOpcode(), "cumulative_sum", mat, _output.getName()); break;
 			case "ucum*":
 				LibMatrixCUDA.cumulativeScan(ec, ec.getGPUContext(0), getExtendedOpcode(), "cumulative_prod", mat, _output.getName()); break;
-//			case "ucumk+*":
-//				LibMatrixCUDA.cumulativeScan(ec, ec.getGPUContext(0), getExtendedOpcode(), "cumulative_sum_prod", mat, _output.getName()); break;
+			case "ucumk+*":
+				LibMatrixCUDA.cumulativeSumProd(ec, ec.getGPUContext(0), getExtendedOpcode(), "cumulative_sum_prod", mat, _output.getName()); break;
 			case "ucummin":
 				LibMatrixCUDA.cumulativeScan(ec, ec.getGPUContext(0), getExtendedOpcode(), "cumulative_min", mat, _output.getName()); break;
 			case "ucummax":
@@ -99,7 +101,15 @@ public class MatrixBuiltinGPUInstruction extends BuiltinUnaryGPUInstruction {
 			default:
 				throw new DMLRuntimeException("Unsupported GPU operator:" + opcode);
 		}
+
+		if(LOG.isTraceEnabled())
+		{
+			double duration = time.stop();
+			LOG.trace("processInstruction() " + getExtendedOpcode() + " executed in " + duration + "ms.");
+		}
+
 		ec.releaseMatrixInputForGPUInstruction(_input.getName());
 		ec.releaseMatrixOutputForGPUInstruction(_output.getName());
+
 	}
 }

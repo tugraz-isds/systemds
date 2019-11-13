@@ -142,7 +142,8 @@ public abstract class GPUInstruction extends Instruction {
 	public final static String MISC_TIMER_SPARSE_IM2COL_KERNEL=            "nnsim2c"; // time spent in sparse im2col cuda kernel
 	public final static String MISC_TIMER_DENSE_REORG_KNPQ_KERNEL=         "nndrknpq"; // time spent in dense reorg_knpq cuda kernel
 	// cumulative operators
-	public final static String MISC_TIMER_CUMULATIVE_SCAN_KERNEL =  	   "cumk"; // time spent in cumulative row cuda kernel
+	public final static String MISC_TIMER_CUMULATIVE_SCAN_KERNEL =  	   "cumk"; // time spent in cumulative scan cuda kernel
+	public final static String MISC_TIMER_CUMULATIVE_SUMPROD_KERNEL =  	   "cumSumProdk"; // time spent in cumulative sum-product cuda kernel
 
 	protected GPUINSTRUCTION_TYPE _gputype;
 	protected Operator _optr;
