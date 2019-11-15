@@ -40,6 +40,8 @@ import org.tugraz.sysds.runtime.util.DataConverter;
 import org.tugraz.sysds.runtime.util.SortUtils;
 import org.tugraz.sysds.runtime.util.UtilFunctions;
 
+import scala.NotImplementedError;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -116,7 +118,10 @@ public class LibMatrixReorg
 				return diag(in, out);
 			case SORT:
 				SortIndex ix = (SortIndex) op.fn;
-				return sort(in, out, ix.getCols(), ix.getDecreasing(), ix.getIndexReturn());
+				if (op.getNumThreads() > 1)
+					return sort(in, out, ix.getCols(), ix.getDecreasing(), ix.getIndexReturn(), op.getNumThreads());
+				else
+					return sort(in, out, ix.getCols(), ix.getDecreasing(), ix.getIndexReturn());
 			default:
 				throw new DMLRuntimeException("Unsupported reorg operator: "+op.fn);
 		}
@@ -400,6 +405,22 @@ public class LibMatrixReorg
 		}
 		
 		return out;
+	}
+
+	/**
+	 * 
+	 * @param in Input matrix to sort
+	 * @param out Output matrix where the sorted input is inserted to
+	 * @param by The Ordering parameter
+	 * @param desc A boolean, specifying if it should be descending order.
+	 * @param ixret A boolean, specifying if the return should be the sorted indexes.
+	 * @param k Number of parallel threads
+	 * @return
+	 */
+	public static MatrixBlock sort(MatrixBlock in, MatrixBlock out, int[] by, boolean desc, boolean ixret, int k) {
+		throw new NotImplementedError("Not Implemented");
+		
+		//return out;
 	}
 	
 	/**
