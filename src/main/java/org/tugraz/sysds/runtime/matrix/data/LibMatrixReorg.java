@@ -409,9 +409,12 @@ public class LibMatrixReorg
 				//compute actual transpose and check for errors
 				// sort smaller blocks.
 				ArrayList<SortTask> tasks = new ArrayList<>();
-				//int blklen = PAR_NUMCELL_THRESHOLD_SORT; //(int)(Math.ceil((double)rlen/k))
-				int blklen = (int)(Math.ceil((double)rlen/k));
-				blklen += (blklen%8 != 0)?8-blklen%8:0;
+				int blklen = 10; 
+				
+				//int blklen = PAR_NUMCELL_THRESHOLD_SORT; 
+				//int blklen = (int)(Math.ceil((double)rlen/k));
+				//blklen += (blklen%8 != 0)?8-blklen%8:0;
+				System.out.println(blklen);
 				for( int i=0; i*blklen<rlen; i++ ){
 					
 					int start = i*blklen;
@@ -422,7 +425,7 @@ public class LibMatrixReorg
 				List<Future<Object>> taskret = pool.invokeAll(tasks);
 				pool.shutdown();
 				for( Future<Object> task : taskret )
-				task.get();
+					task.get();
 				//System.out.println("Sort Small Block: " + time_internal.stop());
 
 				mergeSortedBlocks(blklen, vix, values, k);
@@ -474,14 +477,6 @@ public class LibMatrixReorg
 		}
 				
 		return out;
-
-		//try {
-		//	ExecutorService pool = CommonThreadPool.get(k);
-		//	
-		//	return sort(in,out,by,desc,ixret);
-		//} catch(Exception ex) {
-		//	throw new DMLRuntimeException(ex);
-		//}
 	}
 	
 	/**
@@ -2204,7 +2199,7 @@ public class LibMatrixReorg
 
 		int vlen = values.length;
 		int mergeBlockSize = blockLength * 2;
-		if (mergeBlockSize <= vlen){
+		if (mergeBlockSize <= vlen + blockLength){
 			try {
 				
 				ExecutorService pool = CommonThreadPool.get(k);
@@ -2485,45 +2480,6 @@ public class LibMatrixReorg
 
 	}
 
-
-	private static class Node {
-		private final int _index;
-		private final double _value;
-		private final Node _next;
-
-		protected Node(){
-			_value = 0.0;
-			_index = -1;
-			_next = null;	
-		}
-		protected Node(int index, double value){
-			_value = value;
-			_index = index;
-			_next = null;
-		}
-
-		protected Node(int index, double value, Node node){
-			_value = value;
-			_index = index;
-			_next = node;
-		}
-
-		Node insert(int index, double value){
-			Node next = new Node(index,value, this);
-			return next;
-		}
-
-		int getIndex(){
-			return _index;
-		}
-		double getValue(){
-			return _value;
-		}
-		Node getNext(){
-			return _next;
-		}
-	}
-
 	private static class MergeTask implements Callable<Object>
 	{
 		private final int _start;
@@ -2542,38 +2498,43 @@ public class LibMatrixReorg
 
 		@Override
 		public Long call(){
-			Node node = new Node();
+			//Node node = new Node();
 			int middle = _start + _blockSize;
 			if (middle == _end) return 1l;
-			int pointl = _start;
-			int pointr = middle;
-
-
-			for (int i=0; i< _end - _start; i++){
-				if (pointl >= middle){
-					node = node.insert(_indexes[pointr],_values[pointr]);
-					pointr++;
-				} else if (pointr >= _end){
-					node = node.insert(_indexes[pointl],_values[pointl]);
-					pointl++;
-				} else if (_values[pointl] < _values[pointr]){
-					node = node.insert(_indexes[pointl],_values[pointl]);
-					pointl++;
+			int pointlIndex = middle -1;
+			int positionToAssign = _end - 1;
+			
+			int[] rhsCopy = new int[_end-middle];
+			double[] rhsCopyV = new double[_end-middle];
+			for(int i = middle ; i < _end ; i++){
+				rhsCopy[i-middle] = _indexes[i];
+				rhsCopyV[i-middle] = _values[i];
+			}
+			int pointrIndex = _end - middle - 1;
+			
+			int tmpI;
+			double tmpD;
+			while (positionToAssign >= _start && pointrIndex >= 0) {
+				if  ( pointrIndex < 0 ||
+					( pointlIndex >= _start && _values[pointlIndex] > rhsCopyV[pointrIndex])
+					){
+					// SWAP!
+					tmpI = _indexes[pointlIndex];
+					tmpD = _values[pointlIndex];
+					_values[pointlIndex] = _values[positionToAssign];
+					_indexes[pointlIndex] = _indexes[positionToAssign];
+					_values[positionToAssign] = tmpD;
+					_indexes[positionToAssign] = tmpI;
+					pointlIndex--;
+					positionToAssign--;
 				} else {
-					node = node.insert(_indexes[pointr],_values[pointr]);
-					pointr++;
-				} 
+					_values[positionToAssign] = rhsCopyV[pointrIndex];
+					_indexes[positionToAssign] = rhsCopy[pointrIndex];
+					positionToAssign--;
+					pointrIndex--;
+				}
 			}
 
-			for (int i= _end - 1 ; i > _start -1; i--){
-				_indexes[i] = node.getIndex();
-				_values[i] = node.getValue();
-				node = node.getNext();
-			}
-
-
-
-			//throw new NotImplementedError("Missing merge of blocks!");
 			return 1l;
 		}
 	}
