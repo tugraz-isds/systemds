@@ -20,10 +20,13 @@
 #-------------------------------------------------------------
 
 NVCC=nvcc
+GCC=gcc-8
 
 # set the CUDA-supported version of gcc through -ccbin
-#CUDAFLAGS= -ptx -c -arch=sm_30 --std c++11 -ccbin gcc-8
-CUDAFLAGS= -ptx -c --std c++11 -ccbin gcc-8 -m64 -gencode arch=compute_60,code=sm_60
+CUDAFLAGS= -ptx -c -arch=sm_30 --std c++11 -ccbin $(GCC)
+
+# Flags for compilation on recent Ubuntu + P100
+#CUDAFLAGS= -ptx -c --std c++11 -ccbin gcc-8 -m64 -gencode arch=compute_60,code=sm_60
 
 # Use these flags for precise math
 #CUDAFLAGS= -ptx -c -arch=sm_30 -ftz=false -prec-div=true -prec-sqrt=true
