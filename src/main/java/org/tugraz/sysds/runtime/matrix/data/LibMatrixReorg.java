@@ -24,6 +24,7 @@ package org.tugraz.sysds.runtime.matrix.data;
 
 import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.controlprogram.caching.MatrixObject.UpdateType;
+//import org.tugraz.sysds.runtime.controlprogram.parfor.stat.Timing;
 import org.tugraz.sysds.runtime.data.DenseBlock;
 import org.tugraz.sysds.runtime.data.DenseBlockFactory;
 import org.tugraz.sysds.runtime.data.SparseBlock;
@@ -40,7 +41,6 @@ import org.tugraz.sysds.runtime.util.DataConverter;
 import org.tugraz.sysds.runtime.util.SortUtils;
 import org.tugraz.sysds.runtime.util.UtilFunctions;
 
-import scala.NotImplementedError;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -55,6 +55,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
+
 
 /**
  * MB:
@@ -73,6 +74,9 @@ public class LibMatrixReorg
 {
 	//minimum number of elements for multi-threaded execution
 	public static final long PAR_NUMCELL_THRESHOLD = 1024*1024; //1M
+	
+	// SORTING threshold
+	public static final int PAR_NUMCELL_THRESHOLD_SORT = 1024;
 	
 	//allow shallow dense/sparse copy for unchanged data (which is 
 	//safe due to copy-on-write and safe update-in-place handling)
@@ -105,7 +109,6 @@ public class LibMatrixReorg
 
 	public static MatrixBlock reorg( MatrixBlock in, MatrixBlock out, ReorgOperator op ) {
 		ReorgType type = getReorgType(op);
-		
 		switch( type ) {
 			case TRANSPOSE:
 				if( op.getNumThreads() > 1 )
@@ -313,13 +316,29 @@ public class LibMatrixReorg
 	}
 
 	public static MatrixBlock sort(MatrixBlock in, MatrixBlock out, int[] by, boolean desc, boolean ixret) {
+		return sort(in,out,by,desc,ixret,1);
+	}
+
+	/**
+	 * 
+	 * @param in Input matrix to sort
+	 * @param out Output matrix where the sorted input is inserted to
+	 * @param by The Ordering parameter
+	 * @param desc A boolean, specifying if it should be descending order.
+	 * @param ixret A boolean, specifying if the return should be the sorted indexes.
+	 * @param k Number of parallel threads
+	 * @return
+	 */
+	public static MatrixBlock sort(MatrixBlock in, MatrixBlock out, int[] by, boolean desc, boolean ixret, int k) {
 		//meta data gathering and preparation
+		//Timing time = new Timing(true);
+
 		boolean sparse = in.isInSparseFormat();
 		int rlen = in.rlen;
 		int clen = in.clen;
 		out.sparse = (in.sparse && !ixret);
 		out.nonZeros = ixret ? rlen : in.nonZeros;
-		
+				
 		//step 1: error handling
 		if( !isValidSortByList(by, clen) )
 			throw new DMLRuntimeException("Sort configuration issue: invalid orderby columns: "
@@ -345,12 +364,15 @@ public class LibMatrixReorg
 			if( in.isEmptyBlock(false) ) { //EMPTY INPUT BLOCK
 				out.allocateDenseBlock(false); //single block
 				double[] c = out.getDenseBlockValues();
+				// create a list containing the indexes of each element in in.
 				for( int i=0; i<rlen; i++ )
 					c[i] = i+1; //seq(1,n)
 				return out;
 			}
 		}
-		
+
+		//System.out.println("setup: " + time.stop());
+		//time = new Timing(true);
 		//step 3: index vector sorting
 		
 		//create index vector and extract values
@@ -361,23 +383,70 @@ public class LibMatrixReorg
 			values[i] = in.quickGetValue(i, by[0]-1);
 		}
 		
-		//sort index vector on extracted data (unstable)
-		SortUtils.sortByValue(0, rlen, values, vix);
-		
-		//sort by secondary columns if required (in-place)
-		if( by.length > 1 )
-			sortBySecondary(0, rlen, values, vix, in, by, 1);
-		
-		//flip order if descending requested (note that this needs to happen
-		//before we ensure stable outputs, hence we also flip values)
-		if(desc) {
-			sortReverseDense(vix);
-			sortReverseDense(values);
-		}
-		
-		//final pass to ensure stable output
-		sortIndexesStable(0, rlen, values, vix, in, by, 1);
+		// step 4: split the data into number of blocks of PAR_NUMCELL_THRESHOLD_SORT (1024) elements.
+		if (k == 1 || rlen < PAR_NUMCELL_THRESHOLD_SORT){ // There is no parallel
+			//sort index vector on extracted data (unstable)
+			SortUtils.sortByValue(0, rlen, values, vix);
+			
+			//sort by secondary columns if required (in-place)
+			if( by.length > 1 )
+				sortBySecondary(0, rlen, values, vix, in, by, 1);
+			
+			//flip order if descending requested (note that this needs to happen
+			//before we ensure stable outputs, hence we also flip values)
+			if(desc) {
+				sortReverseDense(vix);
+				sortReverseDense(values);
+			}
+					
+			//final pass to ensure stable output
+			sortIndexesStable(0, rlen, values, vix, in, by, 1);
+			
+		} else {
+			try {
+				//Timing time_internal = new Timing(true);
+				ExecutorService pool = CommonThreadPool.get(k);
+				//compute actual transpose and check for errors
+				// sort smaller blocks.
+				ArrayList<SortTask> tasks = new ArrayList<>();
+				//int blklen = PAR_NUMCELL_THRESHOLD_SORT; //(int)(Math.ceil((double)rlen/k))
+				int blklen = (int)(Math.ceil((double)rlen/k));
+				blklen += (blklen%8 != 0)?8-blklen%8:0;
+				for( int i=0; i*blklen<rlen; i++ ){
+					
+					int start = i*blklen;
+					int stop = Math.min(rlen , i*blklen + blklen);
+					
+					tasks.add(new SortTask(start, stop, vix, values));
+				}
+				List<Future<Object>> taskret = pool.invokeAll(tasks);
+				pool.shutdown();
+				for( Future<Object> task : taskret )
+				task.get();
+				//System.out.println("Sort Small Block: " + time_internal.stop());
 
+				mergeSortedBlocks(blklen, vix, values, k);
+			}
+			catch(Exception ex) {
+				throw new DMLRuntimeException(ex);
+			}
+
+			//sort by secondary columns if required (in-place)
+			if( by.length > 1 )
+				sortBySecondary(0, rlen, values, vix, in, by, 1);
+			
+			//flip order if descending requested (note that this needs to happen
+			//before we ensure stable outputs, hence we also flip values)
+			if(desc) {
+				sortReverseDense(vix);
+				sortReverseDense(values);
+			}
+			//final pass to ensure stable output
+			sortIndexesStable(0, rlen, values, vix, in, by, 1);
+		}
+
+		//System.out.println("SortDone: " + time.stop());
+		
 		//step 4: create output matrix (guaranteed non-empty, see step 2)
 		if( !ixret ) {
 			//copy input data in sorted order into result
@@ -403,24 +472,16 @@ public class LibMatrixReorg
 			for( int i=0; i<rlen; i++ )
 				c.set(i, 0, vix[i]+1);
 		}
-		
+				
 		return out;
-	}
 
-	/**
-	 * 
-	 * @param in Input matrix to sort
-	 * @param out Output matrix where the sorted input is inserted to
-	 * @param by The Ordering parameter
-	 * @param desc A boolean, specifying if it should be descending order.
-	 * @param ixret A boolean, specifying if the return should be the sorted indexes.
-	 * @param k Number of parallel threads
-	 * @return
-	 */
-	public static MatrixBlock sort(MatrixBlock in, MatrixBlock out, int[] by, boolean desc, boolean ixret, int k) {
-		throw new NotImplementedError("Not Implemented");
-		
-		//return out;
+		//try {
+		//	ExecutorService pool = CommonThreadPool.get(k);
+		//	
+		//	return sort(in,out,by,desc,ixret);
+		//} catch(Exception ex) {
+		//	throw new DMLRuntimeException(ex);
+		//}
 	}
 	
 	/**
@@ -2135,6 +2196,43 @@ public class LibMatrixReorg
 			a[rlen - i - 1] = tmp;
 		}
 	}
+
+	// Method to merge all blocks of a specified length.
+	private static void mergeSortedBlocks(int blockLength, int[] valueIndexes, double[] values, int k){
+		// Check if the blocklength is bigger than the size of the values
+		// if it is smaller then merge the blocks, if not you are done merging
+
+		int vlen = values.length;
+		int mergeBlockSize = blockLength * 2;
+		if (mergeBlockSize <= vlen){
+			try {
+				
+				ExecutorService pool = CommonThreadPool.get(k);
+				// sort smaller blocks.
+				ArrayList<MergeTask> tasks = new ArrayList<>();
+				
+				for( int i=0; i*mergeBlockSize<vlen; i++ ){
+					int start = i*mergeBlockSize;
+					if (start + blockLength < vlen){
+						int stop = Math.min(vlen , (i+1)*mergeBlockSize);
+						tasks.add(new MergeTask(start, stop, blockLength, valueIndexes, values));
+					}
+				}
+				List<Future<Object>> taskret = pool.invokeAll(tasks);
+				pool.shutdown();
+				for( Future<Object> task : taskret )
+					task.get();
+							//final pass to ensure stable output
+
+			
+				
+				mergeSortedBlocks(mergeBlockSize, valueIndexes, values, k);
+			}
+			catch(Exception ex) {
+				throw new DMLRuntimeException(ex);
+			}
+		} 
+	}
 	
 	private static void sortBySecondary(int rl, int ru, double[] values, int[] vix, MatrixBlock in, int[] by, int off) {
 		//find runs of equal values in current offset and index range
@@ -2360,6 +2458,123 @@ public class LibMatrixReorg
 		@Override
 		public Long call() {
 			return rexpandColumns(_in, _out, _max, _cast, _ignore, _rl, _ru);
+		}
+	}
+
+	private static class SortTask implements Callable<Object>
+	{
+		private final int _start;
+		private final int _end;
+		private final int[] _indexes;
+		private final double[] _values;
+
+
+		protected SortTask(int start, int end, int[] indexes, double[] values){
+			_start = start;
+			_end = end;
+			_indexes = indexes;
+			_values = values;
+			
+		}
+
+		@Override
+		public Long call(){
+			SortUtils.sortByValue(_start, _end, _values, _indexes);
+			return 1l;
+		}
+
+	}
+
+
+	private static class Node {
+		private final int _index;
+		private final double _value;
+		private final Node _next;
+
+		protected Node(){
+			_value = 0.0;
+			_index = -1;
+			_next = null;	
+		}
+		protected Node(int index, double value){
+			_value = value;
+			_index = index;
+			_next = null;
+		}
+
+		protected Node(int index, double value, Node node){
+			_value = value;
+			_index = index;
+			_next = node;
+		}
+
+		Node insert(int index, double value){
+			Node next = new Node(index,value, this);
+			return next;
+		}
+
+		int getIndex(){
+			return _index;
+		}
+		double getValue(){
+			return _value;
+		}
+		Node getNext(){
+			return _next;
+		}
+	}
+
+	private static class MergeTask implements Callable<Object>
+	{
+		private final int _start;
+		private final int _end;
+		private final int _blockSize;
+		private final int[] _indexes;
+		private final double[] _values;
+
+		protected MergeTask(int start, int end, int blockSize, int[] indexes, double[] values){
+			_start = start;
+			_end = end;
+			_blockSize = blockSize;
+			_indexes = indexes;
+			_values = values;
+		}
+
+		@Override
+		public Long call(){
+			Node node = new Node();
+			int middle = _start + _blockSize;
+			if (middle == _end) return 1l;
+			int pointl = _start;
+			int pointr = middle;
+
+
+			for (int i=0; i< _end - _start; i++){
+				if (pointl >= middle){
+					node = node.insert(_indexes[pointr],_values[pointr]);
+					pointr++;
+				} else if (pointr >= _end){
+					node = node.insert(_indexes[pointl],_values[pointl]);
+					pointl++;
+				} else if (_values[pointl] < _values[pointr]){
+					node = node.insert(_indexes[pointl],_values[pointl]);
+					pointl++;
+				} else {
+					node = node.insert(_indexes[pointr],_values[pointr]);
+					pointr++;
+				} 
+			}
+
+			for (int i= _end - 1 ; i > _start -1; i--){
+				_indexes[i] = node.getIndex();
+				_values[i] = node.getValue();
+				node = node.getNext();
+			}
+
+
+
+			//throw new NotImplementedError("Missing merge of blocks!");
+			return 1l;
 		}
 	}
 }
