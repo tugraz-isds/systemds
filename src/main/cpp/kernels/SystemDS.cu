@@ -36,43 +36,56 @@
  * [1] https://stackoverflow.com/a/49224531/12055283
  */
 template<typename T>
-__device__ T* shared_memory_proxy() {
+__device__ T* shared_memory_proxy()
+{
 	// do we need an __align__() here? I don't think so...
 	extern __shared__ unsigned char memory[];
 	return reinterpret_cast<T*>(memory);
 }
 
-struct float2Accessor {
-	__device__  static float2 get(float* array, unsigned int idx) {
+struct float2Accessor
+{
+	__device__  static float2 get(float* array, unsigned int idx)
+	{
 		return *reinterpret_cast<float2*>(&array[idx]);
 	}
 
-	__device__  static float2 init() {
+	__device__  static float2 make(float x, float y)
+	{
+		return make_float2(x, y);
+	}
+
+	__device__  static float2 init()
+	{
 		return make_float2(0.0f, 0.0f);
 	}
 
-	__device__ static void put(float* array, unsigned int idx, float val_x,
-			float val_y) {
-//		  array[idx] = reinterpret_cast<float*>(&float2(val_x, val_y));
-		float2 *arrayf = reinterpret_cast<float2*>(&array[0]);
-		arrayf[idx] = make_float2(val_x, val_y);
+	__device__ static void put(float* array, unsigned int idx, float val_x, float val_y)
+    {
+		*(reinterpret_cast<float2*>(array + idx)) = make_float2(val_x, val_y);
 	}
 };
 
-struct double2Accessor {
-	__device__  static double2 get(double* array, unsigned int idx) {
+struct double2Accessor
+{
+	__device__  static double2 get(double* array, unsigned int idx)
+	{
 		return *(reinterpret_cast<double2*>(&array[idx]));
 	}
 
-	__device__  static double2 init() {
+	__device__  static double2 init()
+	{
 		return make_double2(0.0, 0.0);
 	}
 
-	__device__ static void put(double* array, unsigned int idx, double val_x,
-			double val_y) {
-//	  array[idx] = reinterpret_cast<double*>(&double2(val_x, val_y));
-		double2 *arrayd = reinterpret_cast<double2*>(&array[0]);
-		arrayd[idx] = make_double2(val_x, val_y);
+	__device__  static double2 make(double x, double y)
+	{
+		return make_double2(x, y);
+	}
+
+	__device__ static void put(double* array, unsigned int idx, double val_x, double val_y)
+    {
+        *(reinterpret_cast<double2*>(array + idx )) = make_double2(val_x, val_y);
 	}
 };
 
@@ -942,13 +955,12 @@ __device__ void cumulative_scan(T *g_idata, // input data stored in device memor
 		unsigned int cols,  // columns in input and temporary/output arrays
 		unsigned int block_height, // number of rows processed per block
 		scanOp scan_op)  // Scan operation to perform (functor object)
-		{
+{
 	// check if the current thread is within row-length
 	if (blockIdx.x * blockDim.x + threadIdx.x > cols - 1)
 		return;
 
-	unsigned int offset = blockIdx.y * cols * block_height
-			+ blockIdx.x * blockDim.x;
+	unsigned int offset = blockIdx.y * cols * block_height + blockIdx.x * blockDim.x;
 	unsigned int idx = offset + threadIdx.x;
 
 	T acc;
@@ -963,8 +975,7 @@ __device__ void cumulative_scan(T *g_idata, // input data stored in device memor
 
 	// write out accumulated block offset
 	if (block_height < rows)
-		g_tdata[blockIdx.y * cols + blockIdx.x * blockDim.x + threadIdx.x] =
-				acc;
+		g_tdata[blockIdx.y * cols + blockIdx.x * blockDim.x + threadIdx.x] = acc;
 }
 
 template<typename scanOp, typename T>
@@ -974,17 +985,14 @@ __device__ void cumulative_scan_apply_block_results(T *g_idata, // input data st
 		unsigned int cols,  // columns in input and temporary/output arrays
 		unsigned int block_height, // number of rows processed per block
 		scanOp scan_op)  // Scan operation to perform (functor object)
-		{
+{
 	// check if the current thread is within row-length
 	if (blockIdx.x * blockDim.x + threadIdx.x > cols - 1)
 		return;
 
-	unsigned int d_offset = (blockIdx.y + 1) * cols * block_height
-			+ blockIdx.x * blockDim.x;
+	unsigned int d_offset = (blockIdx.y + 1) * cols * block_height + blockIdx.x * blockDim.x;
 	unsigned int d_idx = d_offset + threadIdx.x;
-	unsigned int s_idx = blockIdx.y * cols + blockIdx.x * blockDim.x
-			+ threadIdx.x;
-
+	unsigned int s_idx = blockIdx.y * cols + blockIdx.x * blockDim.x + threadIdx.x;
 	unsigned int last_idx = min(block_height * cols, rows * cols);
 	T offset = g_idata[s_idx];
 
@@ -1810,149 +1818,101 @@ __device__ void cumulative_sum_prod(T *g_idata, ///< input data stored in device
 		T *g_tiData,  // data input to final stage from intermediate stage
 		T *g_toData,  // temporary data produced by cascading thread blocks
 		unsigned int rows,  ///< rows in input and temporary/output arrays
-		unsigned int block_height,
-		uint offset)
+		unsigned int block_height, // number of rows in a block
+		uint phase, // up and down sweep are implemented in this one kernel for now. phase indicates what to do.
+		bool verbose = false)
 {
-//    unsigned int tid = blockIdx.x * blockDim.x + threadIdx.x;
-
 	uint idx = blockIdx.x * block_height;
 
 	if (idx > rows - 1)
 		return;
 
-	unsigned int n = min(idx + block_height, rows);
+	uint n = min(idx + block_height, rows);
 	auto value = Vec2Accessor::init();
 
-//    if(idx > 1000)
-//    	printf("idx: %d\n", idx);
-
-//	if ( (g_tiData != nullptr && offset != 0 && blockIdx.x != 0)  ||
-//			(g_tiData != nullptr && offset != 2) )
-//	if ((offset == 3 && blockIdx.x != 0) || (offset == 2))
-	if(offset > 1)
+	if(phase > 1)
 	{
-//		T a = Vec2Accessor::get(g_tiData, blockIdx.x).x;
 		int read_idx = (blockIdx.x - 1) * 2;
 		T a = 0.0;
 		if(read_idx >= 0)
 			a = g_tiData[read_idx];
-//		idx = (blockIdx.x + 1) * block_height;
-//		value = Vec2Accessor::get(g_idata, (idx + block_height) * 2);
 
-//		value = make_double2(g_idata[idx], g_idata[idx + 1]);
-		value = make_double2(g_idata[2*idx], g_idata[2*idx + 1]);
-		printf("In: blockIdx.x: %d, 2*idx: %d, val_x: %f, val_y: %f, a: %f, phase=%d\n",
-				blockIdx.x, 2*idx, value.x, value.y, a, offset);
+		value = Vec2Accessor::get(g_idata, idx * 2);
+
+		if(verbose)
+		    printf("In: blockIdx.x: %d, 2*idx: %d, val_x: %f, val_y: %f, a: %f, phase=%d\n",
+				blockIdx.x, 2*idx, value.x, value.y, a, phase);
+
 		value.x = value.x + value.y * a;
 		n = min(idx + block_height, rows);
-	} else {
-		value = make_double2(g_idata[2 * idx], g_idata[2 * idx + 1]);
-		printf("Read: blockIdx.x: %d, 2 * idx: %d, val_x: %f, val_y: %f, n: %d, phase=%d\n",
-				blockIdx.x, 2 * idx, value.x, value.y, n, offset);
-//		value = Vec2Accessor::get(g_idata, 2 * idx);
+	}
+	else
+	{
+		value = Vec2Accessor::get(g_idata, 2 * idx);
+
+        if(verbose)
+		    printf("Read: blockIdx.x: %d, 2 * idx: %d, val_x: %f, val_y: %f, n: %d, phase=%d\n",
+				blockIdx.x, 2 * idx, value.x, value.y, n, phase);
 	}
 
 	T sumprod = value.x;
 	T prod = value.y;
 
-//	if(offset == 1 || offset == 2)
-	if(offset == 2)
+	if(phase == 2)
 	{
-		g_odata[idx * 2] = value.x;
-		g_odata[idx * 2 + 1] = value.y;
+		Vec2Accessor::put(g_odata, 2 * idx, sumprod, prod);
 	}
-	else if (offset == 3)
+	else if (phase == 3)
 		g_odata[idx] = value.x;
 
-//	printf("Out[i=0]: blockIdx.x: %d, idx: %d, val: %f, %f, n: %d\n",
-//			blockIdx.x, idx, value.x, value.y, n);
-
-	if(offset > 1)
-	printf("Out[i=0]: blockIdx.x: %d, idx: %d, sumprod: %f, prod: %f, n: %d, phase=%d\n",
-			blockIdx.x, idx, sumprod, prod, n, offset);
+	if(phase > 1 && verbose)
+	    printf("Out[i=0]: blockIdx.x: %d, idx: %d, sumprod: %f, prod: %f, n: %d, phase=%d\n",
+			blockIdx.x, idx, sumprod, prod, n, phase);
 
 	for (int i = idx + 1; i < n; ++i)
 	{
-//		value = Vec2Accessor::get(g_idata, 2 * i);
-		value = make_double2(g_idata[2 * i], g_idata[2 * i + 1]);
+		value = Vec2Accessor::get(g_idata, 2 * i);
+
 		prod = prod * value.y;
 		sumprod = value.x + value.y * sumprod;
-//		if(offset == 1 || offset == 2)
-		if(offset == 2)
-		{
-//			g_odata[i] = sumprod;
-//			Vec2Accessor::put(g_odata, 2 * i, sumprod, prod);
 
-//			g_odata[i * 2] = value.x;
-//			g_odata[i * 2 + 1] = value.y;
-			g_odata[i * 2] = sumprod;
-			g_odata[i * 2 + 1] = prod;
-		}
-		else if (offset == 3)
+		if(phase == 2)
+			Vec2Accessor::put(g_odata, 2 * i, sumprod, prod);
+		else if (phase == 3)
 			g_odata[i] = sumprod;
-//		if(offset > 1)
-			printf("Loop[i=%d]: blockIdx.x: %d, read_i: %d, sumprod: %f, prod: %f, n: %d, phase=%d\n",
-				i, blockIdx.x, i * 2, sumprod, prod, n, offset);
 
+        if(verbose)
+			printf("Loop[i=%d]: blockIdx.x: %d, read_i: %d, sumprod: %f, prod: %f, n: %d, phase=%d\n",
+				i, blockIdx.x, i * 2, sumprod, prod, n, phase);
 	}
 
+    // up sweep (0/1)
 	// write out accumulated block offset
 	if (g_toData != nullptr)
 	{
-//		Vec2Accessor::put(g_toData, blockIdx.x * 2, sumprod, prod);
 		uint write_idx = blockIdx.x * 2;
-		if(blockIdx.x < gridDim.x-1)
+		if(blockIdx.x < gridDim.x - 1)
 		{
-//			g_toData[blockIdx.x * 2] = sumprod;
-//			g_toData[blockIdx.x * 2 + 1] = prod;
-			g_toData[write_idx] = sumprod;
-			g_toData[write_idx + 1] = prod;
+            Vec2Accessor::put(g_toData, write_idx, sumprod, prod);
 
-			printf("Carry: blockIdx.x: %d, write_idx: %d, sumprod: %f, prod: %f, n: %d, phase=%d\n",
-					blockIdx.x, write_idx, sumprod, prod, n, offset);
-
-			printf("just written: blockIdx.x=%d, val_x=%f, val_y=%f\n", blockIdx.x, g_toData[write_idx], g_toData[write_idx + 1]);
-		}
+            if(verbose)
+			    printf("Carry: blockIdx.x: %d, write_idx: %d, sumprod: %f, prod: %f, n: %d, phase=%d\n",
+		    	    blockIdx.x, write_idx, sumprod, prod, n, phase);
+        }
 	}
 }
 
-/**
- * Functor op for sum-product operation
- */
-//template <typename T>
-//struct SumProductOp {
-//  __device__ __forceinline__ T operator()(T a, T b, T sum) const
-//  {
-//	  return a + b * sum;
-//  }
-//};
-/**
- * Do a cumulative sum-product over all columns of a matrix
- * @param g_idata   input data stored in device memory (of size n)
- * @param g_odata   output/temporary array stored in device memory (of size n)
- * @param rows      number of rows in input matrix
- * @param cols      number of columns in input matrix
- */
-// ToDo: sum-product
-//template <typename T>
-//__device__ void cumulative_sum_prod(T *g_idata, T *g_odata, unsigned int rows, unsigned int cols)
-//{
-//	SumProductOp<T> op;
-//	cumulative_scan3<SumProductOp<T>, T>(g_idata, g_odata, rows, cols, op, (T)0.0);
-//}
-extern "C" __global__ void cumulative_sum_prod_d(double *g_idata,
-		double *g_odata, double *g_tiData, double *g_toData, unsigned int rows,
-		unsigned int block_height, uint offset) {
-//	printf("cumsumprod threadIdx.x=%d", threadIdx.x);
-	cumulative_sum_prod<double, double2Accessor>(g_idata, g_odata, g_tiData,
-			g_toData, rows, block_height, offset);
+extern "C" __global__ void cumulative_sum_prod_d(double *g_idata, double *g_odata, double *g_tiData, double *g_toData,
+            unsigned int rows, unsigned int block_height, uint offset)
+{
+	cumulative_sum_prod<double, double2Accessor>(g_idata, g_odata, g_tiData, g_toData, rows, block_height, offset);
 }
 
-//extern "C" __global__ void cumulative_sum_prod_f(float *g_idata, float *g_odata, float *g_tiData,
-//		float *g_toData, unsigned int rows, unsigned int block_height)
-//{
-//  cumulative_sum_prod<float, float2Accessor>(g_idata, g_odata, g_tiData, g_toData, rows, block_height);
-//}
+extern "C" __global__ void cumulative_sum_prod_f(float *g_idata, float *g_odata, float *g_tiData,
+		float *g_toData, unsigned int rows, unsigned int block_height, uint offset)
+{
+  cumulative_sum_prod<float, float2Accessor>(g_idata, g_odata, g_tiData, g_toData, rows, block_height, offset);
+}
 
 /**
  * Functor op for mean operation

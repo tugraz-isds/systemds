@@ -2257,11 +2257,11 @@ public class LibMatrixCUDA
 	 * @param kernelFunction The name of the cuda kernel to call
 	 * @param in input matrix
 	 * @param outputName output matrix name
-	 * @return	the reduced value
 	 */
 	public static void cumulativeScan(ExecutionContext ec, GPUContext gCtx, String instName, String kernelFunction, MatrixObject in, String outputName)
 	{
-		if(LOG.isTraceEnabled()) {
+		if(LOG.isTraceEnabled())
+		{
 			LOG.trace("GPU : cumulative scan (" + GPUInstruction.MISC_TIMER_CUMULATIVE_SCAN_KERNEL + ") for instruction " + instName +
 					" , GPUContext=" + gCtx);
 		}
@@ -2286,52 +2286,25 @@ public class LibMatrixCUDA
 			// storage for last value of each block
 			Pointer blk_res = gCtx.allocate(instName, cols * blocks_y * sizeOfDataType);
 
-			if(LOG.isTraceEnabled())
-			{
-				cudaDeviceSynchronize();
-				duration = time.stop();
-				alloc_duration = duration;
-				LOG.trace("allocation of temporary buffer (" + cols * blocks_y * sizeOfDataType +
-						" bytes) executed in " + duration + "ms.");
-				time.start();
-			}
+			alloc_duration = printKernelTiming(time, "allocation of temporary buffer (" + cols * blocks_y * sizeOfDataType +
+					" bytes)", alloc_duration, 0);
 
 			getCudaKernels(gCtx).launchKernel(kernelFunction, new ExecutionConfig(blocks_x, blocks_y, threads_x,
 					1, sharedMem), input, output, blk_res, rows, cols, block_height);
 
-			if(LOG.isTraceEnabled())
-			{
-				cudaDeviceSynchronize();
-				duration = time.stop();
-				total_duration = duration;
-				LOG.trace("uop kernel function " + kernelFunction + " executed in " + duration + "ms.");
-				time.start();
-			}
+			total_duration = printKernelTiming(time, kernelFunction, total_duration, 0);
 
 			getCudaKernels(gCtx).launchKernel(kernelFunction, new ExecutionConfig(blocks_x, 1, threads_x,
 					1, sharedMem), blk_res, blk_res, 0, blocks_y, cols, blocks_y);
 
-			if(LOG.isTraceEnabled())
-			{
-				cudaDeviceSynchronize();
-				duration = time.stop();
-				total_duration += duration;
-				LOG.trace("uop kernel function " + kernelFunction + " executed in " + duration + "ms.");
-				time.start();
-			}
+			total_duration = printKernelTiming(time, kernelFunction, total_duration, 0);
 
 			getCudaKernels(gCtx).launchKernel(kernelFunction + "_process_block_results", new ExecutionConfig(blocks_x,
 							blocks_y - 1, threads_x, 1, 0), blk_res, output, rows,
 							cols, block_height);
-			if(LOG.isTraceEnabled())
-			{
-				cudaDeviceSynchronize();
-				duration = time.stop();
-				total_duration += duration;
-				LOG.trace("uop kernel function " + "cumulative_scan_process_block_results" + " executed in " + duration + "ms.");
-				LOG.trace("total kernel execution time: " + total_duration + "ms.");
-				time.start();
-			}
+
+			total_duration = printKernelTiming(time, "cumulative_scan_process_block_results", total_duration, 0);
+			if(LOG.isTraceEnabled()) { LOG.trace("total kernel execution time: " + total_duration + "ms."); }
 
 			gCtx.cudaFreeHelper(instName, blk_res, DMLScript.EAGER_CUDA_FREE);
 			if(LOG.isTraceEnabled())
@@ -2340,7 +2313,7 @@ public class LibMatrixCUDA
 				duration = time.stop();
 				alloc_duration += duration;
 				LOG.trace("freeing of temporary buffer " + " executed in " + duration + "ms.");
-				LOG.trace("total memory allocation execution time: " + alloc_duration + "ms.");
+				LOG.trace("total memory mgmt execution time: " + alloc_duration + "ms.");
 				LOG.trace("total execution time (kernel + mem): " + (total_duration + alloc_duration) + "ms.");
 			}
 		}
@@ -2365,6 +2338,32 @@ public class LibMatrixCUDA
 	}
 
 	/**
+	 * Utility method to print kernel timings
+	 * @param time a Timing object
+	 * @param kernelFunction Name of the executed kernel function
+	 * @param total_duration Sum of all execution times
+	 * @param cascade_blocks Number of blocks in the timed iteration of the cascade
+	 * @return accumulated time
+	 */
+	private static double printKernelTiming(Timing time, String kernelFunction, double total_duration, int cascade_blocks)
+	{
+		if (LOG.isTraceEnabled())
+		{
+			cudaDeviceSynchronize();
+			double duration = time.stop();
+			total_duration += duration;
+			if(cascade_blocks > 0)
+				LOG.trace("uop kernel function " + kernelFunction + " (cascading_blocks=" + cascade_blocks + ") executed in " + duration + "ms.");
+			else
+				LOG.trace("uop kernel function " + kernelFunction + " executed in " + duration + "ms.");
+			time.start();
+			return total_duration;
+		}
+		else
+			return 0.0;
+	};
+
+	/**
 	 * Cumulative scan
 	 * @param ec valid execution context
 	 * @param gCtx a valid {@link GPUContext}
@@ -2372,29 +2371,29 @@ public class LibMatrixCUDA
 	 * @param kernelFunction The name of the cuda kernel to call
 	 * @param in input matrix
 	 * @param outputName output matrix name
-	 * @return	the reduced value
 	 */
-	public static void cumulativeSumProduct(ExecutionContext ec, GPUContext gCtx, String instName, String kernelFunction, MatrixObject in, String outputName) {
-		if(LOG.isTraceEnabled()) {
+	public static void cumulativeSumProduct(ExecutionContext ec, GPUContext gCtx, String instName, String kernelFunction,
+											MatrixObject in, String outputName)
+	{
+
+		if(LOG.isTraceEnabled())
+		{
 			LOG.trace("GPU : cumulative sum product for " + GPUInstruction.MISC_TIMER_CUMULATIVE_SCAN_KERNEL + ", GPUContext=" + gCtx);
 		}
 
 		Timing time = new Timing(false);
-		double duration = 0, total_duration = 0;
 
+		double total_duration = 0, alloc_duration = 0;
 		int rows = toInt(in.getNumRows());
-
-        double levels4 =  (Math.log((double)rows) / Math.log(4.0));
-		double levels2 =  (Math.log((double)rows) / Math.log(2.0));
-        double levels1 =  Math.log((double)rows);
-
-        ArrayList<Pointer> intermediate_buffers = new ArrayList<>();
-
         if(LOG.isTraceEnabled()) { time.start(); }
-		if(rows > 8)
+
+		if(rows > 128)
 		{
 			final int MAX_BLOCKS = getMaxBlocks(gCtx);
-			int block_height = 2;
+			ArrayList<Pointer> intermediate_buffers = new ArrayList<>();
+			ArrayList<Integer> cb_list = new ArrayList<Integer>();
+
+			int block_height = 64;
 			int blocks = (rows + block_height - 1) / block_height;
 			if(blocks > MAX_BLOCKS)
 			{
@@ -2404,103 +2403,86 @@ public class LibMatrixCUDA
 			}
 
 			int threads = 1;
-			MatrixObject out = getDenseMatrixOutputForGPUInstruction(ec, instName, outputName, in.getNumRows(), 1);
-
-//			Pointer blk_res = gCtx.allocate(instName, 2 * blocks * sizeOfDataType);
-//            intermediate_buffers.add(blk_res);
             int cascade_blocks = (blocks + block_height - 1) / block_height;
-//			int cascade_blocks = (blocks - 1) / block_height;
-            int cascade_blocks1 = cascade_blocks;
-            int levels = 0;
-            while(cascade_blocks1 >= 1) {
-                intermediate_buffers.add(gCtx.allocate(instName, 2 * block_height * cascade_blocks1 * sizeOfDataType));
-                cascade_blocks1 = (cascade_blocks1 + block_height - 2) / block_height;
-//                cascade_blocks1 = cascade_blocks1 == 1 ? 0 : (cascade_blocks1 + block_height - 1) / block_height;
-//				cascade_blocks1 = cascade_blocks1 / block_height;
+            cb_list.add(cascade_blocks);
 
-				levels++;
+            long total_mem_size = 0;
+			while( cascade_blocks > 0)
+            {
+            	long buf_size = 2 * block_height * cascade_blocks * sizeOfDataType;
+            	total_mem_size += buf_size;
+                intermediate_buffers.add(gCtx.allocate(instName, buf_size));
+                cascade_blocks = (cascade_blocks + block_height - 2) / block_height;
+                if(cascade_blocks > 0)
+					cb_list.add(cascade_blocks);
             }
+			alloc_duration = printKernelTiming(time, "allocation of temporary buffer (" + total_mem_size +
+					" bytes)", alloc_duration, 0);
+			cascade_blocks = blocks;
 
+			MatrixObject out = getDenseMatrixOutputForGPUInstruction(ec, instName, outputName, in.getNumRows(), 1);
 			Pointer input = getDensePointer(gCtx, in, instName);
 			Pointer output = getDensePointer(gCtx, out, instName);
 
 			if(LOG.isTraceEnabled()) {
-
 				LOG.trace("Launch configuration for cumulative aggregate: blocks=" + blocks +
 						" block_height=" + block_height + " threads=" + threads);
 			}
 
 			getCudaKernels(gCtx).launchKernel(kernelFunction, new ExecutionConfig(blocks, threads), input,
-					output, 0, intermediate_buffers.get(0), rows, block_height, 0);
+					0, 0, intermediate_buffers.get(0), rows, block_height, 0);
 
-            int i = 0;
-//            while (cascade_blocks > 0) {
-			while(i < intermediate_buffers.size() - 1)
+            int cascade_level = 0;
+
+			while(cascade_level < intermediate_buffers.size() - 1)
 			{
-                if (LOG.isTraceEnabled()) {
-                    cudaDeviceSynchronize();
-                    duration = time.stop();
-                    total_duration += duration;
-                    LOG.trace("uop kernel function " + kernelFunction + " (cascading_blocks=" + cascade_blocks + ") executed in " + duration + "ms.");
-                    time.start();
-                }
-
-                // ToDo: fix cascade
-                getCudaKernels(gCtx).launchKernel(kernelFunction, new ExecutionConfig(cascade_blocks, threads), intermediate_buffers.get(i),
-                        intermediate_buffers.get(i), 0, intermediate_buffers.get(i+1), rows / ((i+1) * block_height), block_height, 1);
-//                cascade_blocks = cascade_blocks == 1 ? 0 : (cascade_blocks + block_height - 1) / block_height;
-//				cascade_blocks = cascade_blocks / block_height;
-				cascade_blocks = (cascade_blocks + block_height - 2) / block_height;
-
-				i++;
+				total_duration = printKernelTiming(time, kernelFunction, total_duration, cascade_blocks);
+				cascade_blocks = cb_list.get(cascade_level);
+                getCudaKernels(gCtx).launchKernel(kernelFunction, new ExecutionConfig(cascade_blocks, threads),
+						intermediate_buffers.get(cascade_level), intermediate_buffers.get(cascade_level), 0,
+						intermediate_buffers.get(cascade_level+1), rows / ((cascade_level+1) * block_height), block_height, 1);
+				cascade_level++;
             }
 
-//            for(int j = levels; j > 1; j--) {
-//                while (cascade_blocks < blocks) {
-			cascade_blocks = (blocks + block_height -1) / block_height;
-
-			while (i > 0) {
-                    if (LOG.isTraceEnabled()) {
-                        cudaDeviceSynchronize();
-                        duration = time.stop();
-                        total_duration += duration;
-                        LOG.trace("uop kernel function " + kernelFunction + " (cascading_blocks=" + cascade_blocks + ") executed in " + duration + "ms.");
-                        time.start();
-                    }
-
-                    // ToDo: fix cascade
-                    getCudaKernels(gCtx).launchKernel(kernelFunction, new ExecutionConfig(cascade_blocks, threads),
-							intermediate_buffers.get(i - 1), intermediate_buffers.get(i - 1), intermediate_buffers.get(i),
-							0, rows / ((i) * block_height), block_height, 2);
-                    cascade_blocks = cascade_blocks * block_height;
-                    i--;
-            }
-
-			if(LOG.isTraceEnabled())
+			while (cascade_level > 0)
 			{
-				cudaDeviceSynchronize();
-				duration = time.stop();
-				total_duration += duration;
-				LOG.trace("uop kernel function " + kernelFunction + " executed in " + duration + "ms.");
-				time.start();
+				total_duration = printKernelTiming(time, kernelFunction, total_duration, cascade_blocks);
+				cascade_level--;
+				cascade_blocks = cb_list.get(cascade_level);
+
+				getCudaKernels(gCtx).launchKernel(kernelFunction, new ExecutionConfig(cascade_blocks, threads),
+						intermediate_buffers.get(cascade_level), intermediate_buffers.get(cascade_level),
+						intermediate_buffers.get(cascade_level+1), 0, rows / ((cascade_level+1) * block_height), block_height, 2);
 			}
+
+			total_duration = printKernelTiming(time, kernelFunction, total_duration, cascade_blocks);
 			getCudaKernels(gCtx).launchKernel(kernelFunction, new ExecutionConfig(blocks, threads), input,
 					output, intermediate_buffers.get(0), 0, rows, block_height, 3);
+			if(LOG.isTraceEnabled())
+			{
+				cudaDeviceSynchronize();
+				double duration = time.stop();
+				total_duration += duration;
+				LOG.trace("final cascade ("+ kernelFunction + ", cascading_blocks=" + blocks + ") executed in " + duration + "ms.");
+				LOG.trace("total kernel execution time: " + total_duration + "ms.");
+				time.start();
+			}
+
+			for(int j = 0; j < intermediate_buffers.size(); ++j)
+			    gCtx.cudaFreeHelper(instName, intermediate_buffers.get(j), DMLScript.EAGER_CUDA_FREE);
 
 			if(LOG.isTraceEnabled())
 			{
 				cudaDeviceSynchronize();
-				duration = time.stop();
-				total_duration += duration;
-				LOG.trace("uop kernel function " + kernelFunction + " executed in " + duration + "ms.");
-				LOG.trace("total kernel execution time: " + total_duration + "ms.");
+				double duration = time.stop();
+				alloc_duration += duration;
+				LOG.trace("freeing of temporary buffer " + " executed in " + duration + "ms.");
+				LOG.trace("total memory mgmt execution time: " + alloc_duration + "ms.");
+				LOG.trace("total execution time (kernel + mem): " + (total_duration + alloc_duration) + "ms.");
 			}
-
-			for(int j = 0; j < levels; ++j)
-			    gCtx.cudaFreeHelper(instName, intermediate_buffers.get(j), DMLScript.EAGER_CUDA_FREE);
-
 		}
-		else {
+		else
+		{
 			MatrixObject out = getDenseMatrixOutputForGPUInstruction(ec, instName, outputName, in.getNumRows(), 1);
 			Pointer input = getDensePointer(gCtx, in, instName);
 			Pointer output = getDensePointer(gCtx, out, instName);
@@ -2510,7 +2492,7 @@ public class LibMatrixCUDA
 			if(LOG.isTraceEnabled())
 			{
 				cudaDeviceSynchronize();
-				duration = time.stop();
+				double duration = time.stop();
 				total_duration += duration;
 				LOG.trace("uop kernel function " + kernelFunction + " executed in " + duration + "ms.");
 				LOG.trace("total kernel execution time: " + total_duration + "ms.");
