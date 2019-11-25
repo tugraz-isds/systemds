@@ -21,10 +21,10 @@
 
 F = read($1, data_type="frame", format="csv");
 
-spec = "{ids: false, hash: [ zipcode, district, view ]}";
+spec = "{ids: false, hash: [ zipcode, district, view ], K: 100}";
 [X, M] = transformencode(target=F, spec=spec);
 
-spec2 = "{ids: false, hash: [ district ]}";
+spec2 = "{ids: false, hash: [ district ], K: 100}";
 X2 = transformapply(target=F[,2], spec=spec2, meta=M);
 
 R = as.matrix(sum(X[,2]==X2));

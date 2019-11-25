@@ -11,9 +11,13 @@ public class EncoderFeatureHash extends EncoderRecode {
     private Long K;
 
     public EncoderFeatureHash(JSONObject parsedSpec, String[] colnames, int clen) throws JSONException {
-        super(parsedSpec, colnames, clen);
-        this.K = 1000L; //TODO: Make this k configurable by the user. 
-    }
+		super(parsedSpec, colnames, clen);
+        this.K = getK(parsedSpec); 
+	}
+	
+	private Long getK(JSONObject parsedSpec) throws JSONException {
+		return parsedSpec.getLong("K");
+	}
 
     /**
 	 * Put the code into the map with the provided key. The code depends on the type of encoder. 
