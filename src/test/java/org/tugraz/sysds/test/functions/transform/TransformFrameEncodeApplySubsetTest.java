@@ -32,6 +32,7 @@ public class TransformFrameEncodeApplySubsetTest extends AutomatedTestBase
 {
 	private final static String TEST_NAME1 = "TransformFrameEncodeApplySubset1";
 	private final static String TEST_NAME2 = "TransformFrameEncodeApplySubset2";
+	private final static String TEST_NAME3 = "TransformFrameEncodeApplySubsetHash1";
 	
 	private final static String TEST_DIR = "functions/transform/";
 	private final static String TEST_CLASS_DIR = TEST_DIR + TransformFrameEncodeApplySubsetTest.class.getSimpleName() + "/";
@@ -44,6 +45,7 @@ public class TransformFrameEncodeApplySubsetTest extends AutomatedTestBase
 		TestUtils.clearAssertionInformation();
 		addTestConfiguration(TEST_NAME1, new TestConfiguration(TEST_CLASS_DIR, TEST_NAME1, new String[] { "y" }) );
 		addTestConfiguration(TEST_NAME2, new TestConfiguration(TEST_CLASS_DIR, TEST_NAME2, new String[] { "y" }) );
+		addTestConfiguration(TEST_NAME3, new TestConfiguration(TEST_CLASS_DIR, TEST_NAME3, new String[] { "y" }) );
 	}
 	
 	@Test
@@ -74,6 +76,11 @@ public class TransformFrameEncodeApplySubsetTest extends AutomatedTestBase
 	@Test
 	public void testHomesRecodeColnames2HybridCSV() {
 		runTransformTest(TEST_NAME2, ExecMode.HYBRID, "csv", true);
+	}
+
+	@Test
+	public void testHomesHashColnames2SingleNodeCSV() {
+		runTransformTest(TEST_NAME3, ExecMode.SINGLE_NODE, "csv", true);
 	}
 	
 	private void runTransformTest(String testname, ExecMode rt, String ofmt, boolean colnames)
