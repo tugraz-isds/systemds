@@ -82,6 +82,16 @@ public class TransformFrameEncodeApplySubsetTest extends AutomatedTestBase
 	public void testHomesHashColnames2SingleNodeCSV() {
 		runTransformTest(TEST_NAME3, ExecMode.SINGLE_NODE, "csv", true);
 	}
+
+	@Test
+	public void testHomesHashColnames2SparkCSV() {
+		runTransformTest(TEST_NAME3, ExecMode.SPARK, "csv", true);
+	}
+
+	@Test
+	public void testHomesHashColnames2HybridCSV() {
+		runTransformTest(TEST_NAME3, ExecMode.HYBRID, "csv", true);
+	}
 	
 	private void runTransformTest(String testname, ExecMode rt, String ofmt, boolean colnames)
 	{

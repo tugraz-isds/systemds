@@ -56,18 +56,25 @@ public class EncoderFactory
 			List<Encoder> lencoders = new ArrayList<>();
 		
 			//prepare basic id lists (recode, dummycode, pass-through)
-			List<Integer> rcIDs = Arrays.asList(ArrayUtils.toObject(
+			List<Integer> rcIDs = null;
+			if(jSpec.containsKey(TfUtils.TXMETHOD_RECODE)) {
+				rcIDs = Arrays.asList(ArrayUtils.toObject(
 					TfMetaUtils.parseJsonIDList(jSpec, colnames, TfUtils.TXMETHOD_RECODE)));
-			List<Integer> haIDs = Arrays.asList(ArrayUtils.toObject(
+			} else if (jSpec.containsKey(TfUtils.TXMETHOD_HASH)) {
+				rcIDs = Arrays.asList(ArrayUtils.toObject(
 					TfMetaUtils.parseJsonIDList(jSpec, colnames, TfUtils.TXMETHOD_HASH)));
+			}
+			//List<Integer> haIDs = Arrays.asList(ArrayUtils.toObject(
+			//		TfMetaUtils.parseJsonIDList(jSpec, colnames, TfUtils.TXMETHOD_HASH)));
+
 			List<Integer> dcIDs = Arrays.asList(ArrayUtils.toObject(
 					TfMetaUtils.parseJsonIDList(jSpec, colnames, TfUtils.TXMETHOD_DUMMYCODE))); 
 			List<Integer> binIDs = TfMetaUtils.parseBinningColIDs(jSpec, colnames);
 			//note: any dummycode column requires recode as preparation, unless it follows binning
 			rcIDs = new ArrayList<Integer>(
 				CollectionUtils.union(rcIDs, CollectionUtils.subtract(dcIDs, binIDs)));
-			haIDs = new ArrayList<Integer>(
-				CollectionUtils.union(haIDs, CollectionUtils.subtract(dcIDs, binIDs)));
+			//haIDs = new ArrayList<Integer>(
+			//	CollectionUtils.union(haIDs, CollectionUtils.subtract(dcIDs, binIDs)));
 			List<Integer> ptIDs = new ArrayList<Integer>(CollectionUtils.subtract(
 					CollectionUtils.subtract(UtilFunctions.getSeqList(1, clen, 1), rcIDs), binIDs));
 			List<Integer> oIDs = Arrays.asList(ArrayUtils.toObject(
@@ -77,15 +84,20 @@ public class EncoderFactory
 			
 			//create individual encoders
 			if( !rcIDs.isEmpty() ) {
-				EncoderRecode ra = new EncoderRecode(jSpec, colnames, clen);
+				EncoderRecode ra;
+				if (jSpec.containsKey(TfUtils.TXMETHOD_RECODE)){
+					ra = new EncoderRecode(jSpec, colnames, clen);
+				} else if (jSpec.containsKey(TfUtils.TXMETHOD_HASH)){
+					ra = new EncoderFeatureHash(jSpec, colnames, clen);
+				} else throw new DMLRuntimeException("Encoder not recognized but rcIDS are set");
 				ra.setColList(ArrayUtils.toPrimitive(rcIDs.toArray(new Integer[0])));
 				lencoders.add(ra);
 			}
-			if( !haIDs.isEmpty() ) {
-				EncoderRecode ra = new EncoderRecode(jSpec, colnames, clen);
-				ra.setColList(ArrayUtils.toPrimitive(haIDs.toArray(new Integer[0])));
-				lencoders.add(ra);
-			}
+			/*if( !haIDs.isEmpty() ) {
+				EncoderFeatureHash ha = new EncoderFeatureHash(jSpec, colnames, clen);
+				ha.setColList(ArrayUtils.toPrimitive(haIDs.toArray(new Integer[0])));
+				lencoders.add(ha);
+			}*/
 			if( !ptIDs.isEmpty() )
 				lencoders.add(new EncoderPassThrough(
 					ArrayUtils.toPrimitive(ptIDs.toArray(new Integer[0])), clen));

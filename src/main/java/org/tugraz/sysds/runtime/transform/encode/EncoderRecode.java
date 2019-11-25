@@ -39,23 +39,12 @@ public class EncoderRecode extends Encoder
 	//recode maps and custom map for partial recode maps 
 	private HashMap<Integer, HashMap<String, Long>> _rcdMaps  = new HashMap<>();
 	private HashMap<Integer, HashSet<Object>> _rcdMapsPart = null;
-
-	private String encoderType = TfUtils.TXMETHOD_RECODE; 
-	private Long K;
 	
 	public EncoderRecode(JSONObject parsedSpec, String[] colnames, int clen)
 		throws JSONException 
 	{
 		super(null, clen);
-		
-		if( parsedSpec.containsKey(TfUtils.TXMETHOD_RECODE)) {
-			this.encoderType = TfUtils.TXMETHOD_RECODE;
-			_colList = TfMetaUtils.parseJsonIDList(parsedSpec, colnames, TfUtils.TXMETHOD_RECODE);
-		} else if ( parsedSpec.containsKey(TfUtils.TXMETHOD_HASH)) {
-			this.encoderType = TfUtils.TXMETHOD_HASH;
-			_colList = TfMetaUtils.parseJsonIDList(parsedSpec, colnames, TfUtils.TXMETHOD_HASH);
-			this.K = 10L; //TODO: Make this k configurable by the user. 
-		}
+		_colList = TfMetaUtils.parseJsonIDList(parsedSpec, colnames, TfUtils.TXMETHOD_RECODE);
 	}
 	
 	public HashMap<Integer, HashMap<String,Long>> getCPRecodeMaps() { 
@@ -112,15 +101,9 @@ public class EncoderRecode extends Encoder
 	 * @param map column map
 	 * @param key key for the new entry
 	 */
-	private void putCode(HashMap<String,Long> map, String key) {
-		if(this.encoderType == TfUtils.TXMETHOD_HASH){
-			// hash
-			map.put(key, (key.hashCode() % this.K));
-		}
-		if(this.encoderType == TfUtils.TXMETHOD_RECODE){
-			//recode
-			map.put(key, Long.valueOf(map.size()+1));
-		}
+	
+	protected void putCode(HashMap<String,Long> map, String key) {
+		map.put(key, Long.valueOf(map.size()+1));
 	}
 
 	public void buildPartial(FrameBlock in) {
