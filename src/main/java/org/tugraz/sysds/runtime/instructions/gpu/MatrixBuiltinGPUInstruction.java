@@ -110,6 +110,5 @@ public class MatrixBuiltinGPUInstruction extends BuiltinUnaryGPUInstruction {
 
 		ec.releaseMatrixInputForGPUInstruction(_input.getName());
 		ec.releaseMatrixOutputForGPUInstruction(_output.getName());
-
 	}
 }

@@ -43,6 +43,10 @@ __device__ T* shared_memory_proxy()
 	return reinterpret_cast<T*>(memory);
 }
 
+/**
+*  Class for correctly addressing vectorized data arrays in a templated kernel
+*  float version
+*/
 struct float2Accessor
 {
 	__device__  static float2 get(float* array, unsigned int idx)
@@ -66,6 +70,10 @@ struct float2Accessor
 	}
 };
 
+/**
+*  Class for correctly addressing vectorized data arrays in a templated kernel
+*  double version
+*/
 struct double2Accessor
 {
 	__device__  static double2 get(double* array, unsigned int idx)
@@ -942,32 +950,31 @@ extern "C" __global__ void rbind_f(float *A, float *B, float *C, int rowsA,
 }
 
 /**
- * Cumulative Scan
- * ToDo: cumulative scan documentation
- * @param scanOp       Type of the functor object that implements the
- * scan operation
+ * Cumulative Scan - Applies <scanOp> to accumulate values over columns of an input matrix
+ * @param scanOp - Type of the functor object that implements the scan operation
  */
 template<typename scanOp, typename T>
 __device__ void cumulative_scan(T *g_idata, // input data stored in device memory
 		T *g_odata,  // output array stored in device memory
 		T *g_tdata,  // temporary data produced by cascading thread blocks
-		unsigned int rows,  // rows in input and temporary/output arrays
-		unsigned int cols,  // columns in input and temporary/output arrays
-		unsigned int block_height, // number of rows processed per block
+		uint rows,  // rows in input and temporary/output arrays
+		uint cols,  // columns in input and temporary/output arrays
+		uint block_height, // number of rows processed per block
 		scanOp scan_op)  // Scan operation to perform (functor object)
 {
 	// check if the current thread is within row-length
 	if (blockIdx.x * blockDim.x + threadIdx.x > cols - 1)
 		return;
 
-	unsigned int offset = blockIdx.y * cols * block_height + blockIdx.x * blockDim.x;
-	unsigned int idx = offset + threadIdx.x;
+	uint offset = blockIdx.y * cols * block_height + blockIdx.x * blockDim.x;
+	uint idx = offset + threadIdx.x;
 
+    // initial accumulator value
 	T acc;
 	g_odata[idx] = acc = g_idata[idx];
 
 	// loop through <block_height> number of items colwise
-	unsigned int last_idx = min(idx + block_height * cols, rows * cols);
+	uint last_idx = min(idx + block_height * cols, rows * cols);
 
 	// loop from 2nd  value
 	for (int i = idx + cols; i < last_idx; i += cols)
@@ -978,22 +985,26 @@ __device__ void cumulative_scan(T *g_idata, // input data stored in device memor
 		g_tdata[blockIdx.y * cols + blockIdx.x * blockDim.x + threadIdx.x] = acc;
 }
 
+/**
+ * Cumulative Scan - Applies intermediate thread block results to final output
+ * @param scanOp - Type of the functor object that implements the scan operation
+ */
 template<typename scanOp, typename T>
 __device__ void cumulative_scan_apply_block_results(T *g_idata, // input data stored in device memory
 		T *g_odata,  // output array stored in device memory
-		unsigned int rows,  // rows in input and temporary/output arrays
-		unsigned int cols,  // columns in input and temporary/output arrays
-		unsigned int block_height, // number of rows processed per block
+		uint rows,  // rows in input and temporary/output arrays
+		uint cols,  // columns in input and temporary/output arrays
+		uint block_height, // number of rows processed per block
 		scanOp scan_op)  // Scan operation to perform (functor object)
 {
 	// check if the current thread is within row-length
 	if (blockIdx.x * blockDim.x + threadIdx.x > cols - 1)
 		return;
 
-	unsigned int d_offset = (blockIdx.y + 1) * cols * block_height + blockIdx.x * blockDim.x;
-	unsigned int d_idx = d_offset + threadIdx.x;
-	unsigned int s_idx = blockIdx.y * cols + blockIdx.x * blockDim.x + threadIdx.x;
-	unsigned int last_idx = min(block_height * cols, rows * cols);
+	uint d_offset = (blockIdx.y + 1) * cols * block_height + blockIdx.x * blockDim.x;
+	uint d_idx = d_offset + threadIdx.x;
+	uint s_idx = blockIdx.y * cols + blockIdx.x * blockDim.x + threadIdx.x;
+	uint last_idx = min(block_height * cols, rows * cols);
 	T offset = g_idata[s_idx];
 
 	for (int i = 0; i < last_idx; i += cols)
@@ -1027,10 +1038,7 @@ __device__ void reduce(T *g_idata, ///< input data stored in device memory (of s
 		unsigned int n,  ///< size of the input and temporary/output arrays
 		ReductionOp reduction_op, ///< Reduction operation to perform (functor object)
 		T initialValue)    ///< initial value for the reduction variable
-		{
-	// extern __shared__ T sdata[];
-//  extern __shared__ __align__(sizeof(T)) unsigned char my_sdata[];
-//  T *sdata = reinterpret_cast<T *>(my_sdata);
+{
 	auto sdata = shared_memory_proxy<T>();
 
 	// perform first level of reduction,
@@ -1142,10 +1150,8 @@ __device__ void reduce_row(T *g_idata, ///< input data stored in device memory (
 		AssignmentOp assignment_op, ///< Operation to perform before assigning this
 		/// to its final location in global memory for
 		/// each row
-		T initialValue) {  ///< initial value for the reduction variable
-	// extern __shared__ T sdata[];
-//  extern __shared__ __align__(sizeof(T)) unsigned char my_sdata[];
-//  T *sdata = reinterpret_cast<T *>(my_sdata);
+		T initialValue)  ///< initial value for the reduction variable
+{
 	auto sdata = shared_memory_proxy<T>();
 
 	// one block per row
@@ -1241,16 +1247,14 @@ __device__ void reduce_row(T *g_idata, ///< input data stored in device memory (
  */
 template<typename ReductionOp, typename AssignmentOp, typename T>
 __device__ void reduce_col(T *g_idata, ///< input data stored in device memory (of size rows*cols)
-		T *g_odata,  ///< output/temporary array store in device memory (of size
-		/// rows*cols)
+		T *g_odata,  ///< output/temporary array store in device memory (of size rows*cols)
 		unsigned int rows,  ///< rows in input and temporary/output arrays
 		unsigned int cols,  ///< columns in input and temporary/output arrays
 		ReductionOp reduction_op, ///< Reduction operation to perform (functor object)
 		AssignmentOp assignment_op, ///< Operation to perform before assigning this
-		/// to its final location in global memory for
-		/// each column
+		/// to its final location in global memory for each column
 		T initialValue)  ///< initial value for the reduction variable
-		{
+{
 	unsigned int global_tid = blockIdx.x * blockDim.x + threadIdx.x;
 	if (global_tid >= cols) {
 		return;
@@ -1318,22 +1322,27 @@ extern "C" __global__ void reduce_sum_f(float *g_idata, float *g_odata,
  * @param cols      number of columns in input matrix
  */
 template<typename T>
-__device__ void cumulative_sum(T *g_idata, T *g_odata, T *g_tdata,
-		unsigned int rows, unsigned int cols, unsigned int block_height) {
+__device__ void cumulative_sum(T *g_idata, T *g_odata, T *g_tdata, uint rows, uint cols, uint block_height)
+{
 	SumOp<T> op;
-	cumulative_scan<SumOp<T>, T>(g_idata, g_odata, g_tdata, rows, cols,
-			block_height, op);
+	cumulative_scan<SumOp<T>, T>(g_idata, g_odata, g_tdata, rows, cols, block_height, op);
 }
 
-extern "C" __global__ void cumulative_sum_d(double *g_idata, double *g_odata,
-		double* g_tdata, unsigned int rows, unsigned int cols,
-		unsigned int block_height) {
+/**
+ * Cumulative sum instantiation for double
+ */
+extern "C" __global__ void cumulative_sum_d(double *g_idata, double *g_odata, double* g_tdata, uint rows,
+    uint cols, uint block_height)
+{
 	cumulative_sum(g_idata, g_odata, g_tdata, rows, cols, block_height);
 }
 
-extern "C" __global__ void cumulative_sum_f(float *g_idata, float *g_odata,
-		float* g_tdata, unsigned int rows, unsigned int cols,
-		unsigned int block_height) {
+/**
+ * Cumulative sum instantiation for float
+ */
+extern "C" __global__ void cumulative_sum_f(float *g_idata, float *g_odata, float* g_tdata, uint rows,
+    uint cols, uint block_height)
+{
 	cumulative_sum(g_idata, g_odata, g_tdata, rows, cols, block_height);
 }
 
@@ -1347,25 +1356,28 @@ extern "C" __global__ void cumulative_sum_f(float *g_idata, float *g_odata,
  * @param block_height number of rows processed per block
  */
 template<typename T>
-__device__ void cumulative_sum_process_block_results(T *g_idata, T *g_odata,
-		unsigned int rows, unsigned int cols, unsigned int block_height) {
+__device__ void cumulative_sum_process_block_results(T *g_idata, T *g_odata, uint rows, uint cols, uint block_height)
+{
 	SumOp<T> op;
-	cumulative_scan_apply_block_results<SumOp<T>, T>(g_idata, g_odata, rows,
-			cols, block_height, op);
+	cumulative_scan_apply_block_results<SumOp<T>, T>(g_idata, g_odata, rows, cols, block_height, op);
 }
 
-extern "C" __global__ void cumulative_sum_process_block_results_d(
-		double *g_idata, double *g_odata, unsigned int rows, unsigned int cols,
-		unsigned int block_height) {
-	cumulative_sum_process_block_results(g_idata, g_odata, rows, cols,
-			block_height);
+/**
+ * Cumulative sum block results instantiation for double
+ */
+extern "C" __global__ void cumulative_sum_process_block_results_d(double *g_idata, double *g_odata, uint rows, uint cols,
+		uint block_height)
+{
+	cumulative_sum_process_block_results(g_idata, g_odata, rows, cols, block_height);
 }
 
-extern "C" __global__ void cumulative_sum_process_block_results_f(
-		float *g_idata, float *g_odata, unsigned int rows, unsigned int cols,
-		unsigned int block_height) {
-	cumulative_sum_process_block_results(g_idata, g_odata, rows, cols,
-			block_height);
+/**
+ * Cumulative sum block results instantiation for float
+ */
+extern "C" __global__ void cumulative_sum_process_block_results_f(float *g_idata, float *g_odata, uint rows, uint cols,
+		uint block_height)
+{
+	cumulative_sum_process_block_results(g_idata, g_odata, rows, cols, block_height);
 }
 
 /**
@@ -1521,22 +1533,28 @@ extern "C" __global__ void reduce_col_max_f(float *g_idata, float *g_odata,
  * @param block_height number of rows processed per block
  */
 template<typename T>
-__device__ void cumulative_max(T *g_idata, T *g_odata, T *g_tdata,
-		unsigned int rows, unsigned int cols, unsigned int block_height) {
+__device__ void cumulative_max(T *g_idata, T *g_odata, T *g_tdata, uint rows, uint cols, uint block_height)
+{
 	MaxOp<T> op;
-	cumulative_scan<MaxOp<T>, T>(g_idata, g_odata, g_tdata, rows, cols,
-			block_height, op);
+	cumulative_scan<MaxOp<T>, T>(g_idata, g_odata, g_tdata, rows, cols, block_height, op);
 }
 
-extern "C" __global__ void cumulative_max_d(double *g_idata, double *g_odata,
-		double *g_tdata, unsigned int rows, unsigned int cols,
-		unsigned int block_height) {
+/**
+ * Cumulative max instantiation for double
+ */
+extern "C"
+__global__ void cumulative_max_d(double *g_idata, double *g_odata, double *g_tdata, uint rows, uint cols,
+    uint block_height)
+{
 	cumulative_max(g_idata, g_odata, g_tdata, rows, cols, block_height);
 }
 
-extern "C" __global__ void cumulative_max_f(float *g_idata, float *g_odata,
-		float *g_tdata, unsigned int rows, unsigned int cols,
-		unsigned int block_height) {
+/**
+ * Cumulative max instantiation for float
+ */
+extern "C"
+__global__ void cumulative_max_f(float *g_idata, float *g_odata, float *g_tdata, uint rows, uint cols, uint block_height)
+{
 	cumulative_max(g_idata, g_odata, g_tdata, rows, cols, block_height);
 }
 
@@ -1550,25 +1568,30 @@ extern "C" __global__ void cumulative_max_f(float *g_idata, float *g_odata,
  * @param block_height number of rows processed per block
  */
 template<typename T>
-__device__ void cumulative_max_process_block_results(T *g_idata, T *g_odata,
-		unsigned int rows, unsigned int cols, unsigned int block_height) {
+__device__ void cumulative_max_process_block_results(T *g_idata, T *g_odata, uint rows, uint cols, uint block_height)
+{
 	MaxOp<T> op;
-	cumulative_scan_apply_block_results<MaxOp<T>, T>(g_idata, g_odata, rows,
-			cols, block_height, op);
+	cumulative_scan_apply_block_results<MaxOp<T>, T>(g_idata, g_odata, rows, cols, block_height, op);
 }
 
-extern "C" __global__ void cumulative_max_process_block_results_d(
-		double *g_idata, double *g_odata, unsigned int rows, unsigned int cols,
-		unsigned int block_height) {
-	cumulative_max_process_block_results(g_idata, g_odata, rows, cols,
-			block_height);
+/**
+ * Cumulative max block results instantiation for double
+ */
+extern "C"
+__global__ void cumulative_max_process_block_results_d(double *g_idata, double *g_odata, uint rows, uint cols,
+    uint block_height)
+{
+	cumulative_max_process_block_results(g_idata, g_odata, rows, cols, block_height);
 }
 
-extern "C" __global__ void cumulative_max_process_block_results_f(
-		float *g_idata, float *g_odata, unsigned int rows, unsigned int cols,
-		unsigned int block_height) {
-	cumulative_max_process_block_results(g_idata, g_odata, rows, cols,
-			block_height);
+/**
+ * Cumulative max block results instantiation for float
+ */
+extern "C"
+__global__ void cumulative_max_process_block_results_f(float *g_idata, float *g_odata, uint rows, uint cols,
+    uint block_height)
+{
+	cumulative_max_process_block_results(g_idata, g_odata, rows, cols, block_height);
 }
 
 /**
@@ -1656,7 +1679,7 @@ extern "C" __global__ void reduce_col_min_f(float *g_idata, float *g_odata,
 }
 
 /**
- * Do a cumulative product over all columns of a matrix
+ * Do a cumulative minimum over all columns of a matrix
  * @param g_idata   input data stored in device memory (of size rows x cols)
  * @param g_odata   output/temporary array stored in device memory (of size rows x cols)
  * @param g_tdata temporary accumulated block offsets
@@ -1665,22 +1688,28 @@ extern "C" __global__ void reduce_col_min_f(float *g_idata, float *g_odata,
  * @param block_height number of rows processed per block
  */
 template<typename T>
-__device__ void cumulative_min(T *g_idata, T *g_odata, T *g_tdata,
-		unsigned int rows, unsigned int cols, unsigned int block_height) {
+__device__ void cumulative_min(T *g_idata, T *g_odata, T *g_tdata, uint rows, uint cols, uint block_height)
+{
 	MinOp<T> op;
-	cumulative_scan<MinOp<T>, T>(g_idata, g_odata, g_tdata, rows, cols,
-			block_height, op);
+	cumulative_scan<MinOp<T>, T>(g_idata, g_odata, g_tdata, rows, cols, block_height, op);
 }
 
-extern "C" __global__ void cumulative_min_d(double *g_idata, double *g_odata,
-		double *g_tdata, unsigned int rows, unsigned int cols,
-		unsigned int block_height) {
+/**
+ * Cumulative min instantiation for double
+ */
+extern "C"
+__global__ void cumulative_min_d(double *g_idata, double *g_odata, double *g_tdata, uint rows, uint cols,
+    uint block_height)
+{
 	cumulative_min(g_idata, g_odata, g_tdata, rows, cols, block_height);
 }
 
-extern "C" __global__ void cumulative_min_f(float *g_idata, float *g_odata,
-		float *g_tdata, unsigned int rows, unsigned int cols,
-		unsigned int block_height) {
+/**
+ * Cumulative min instantiation for float
+ */
+extern "C"
+__global__ void cumulative_min_f(float *g_idata, float *g_odata, float *g_tdata, uint rows, uint cols, uint block_height)
+{
 	cumulative_min(g_idata, g_odata, g_tdata, rows, cols, block_height);
 }
 
@@ -1694,25 +1723,30 @@ extern "C" __global__ void cumulative_min_f(float *g_idata, float *g_odata,
  * @param block_height number of rows processed per block
  */
 template<typename T>
-__device__ void cumulative_min_process_block_results(T *g_idata, T *g_odata,
-		unsigned int rows, unsigned int cols, unsigned int block_height) {
+__device__ void cumulative_min_process_block_results(T *g_idata, T *g_odata, uint rows, uint cols, uint block_height)
+{
 	MinOp<T> op;
-	cumulative_scan_apply_block_results<MinOp<T>, T>(g_idata, g_odata, rows,
-			cols, block_height, op);
+	cumulative_scan_apply_block_results<MinOp<T>, T>(g_idata, g_odata, rows, cols, block_height, op);
 }
 
-extern "C" __global__ void cumulative_min_process_block_results_d(
-		double *g_idata, double *g_odata, unsigned int rows, unsigned int cols,
-		unsigned int block_height) {
-	cumulative_min_process_block_results(g_idata, g_odata, rows, cols,
-			block_height);
+/**
+ * Cumulative min block results instantiation for double
+ */
+extern "C"
+__global__ void cumulative_min_process_block_results_d(double *g_idata, double *g_odata, uint rows, uint cols,
+		uint block_height)
+{
+	cumulative_min_process_block_results(g_idata, g_odata, rows, cols, block_height);
 }
 
-extern "C" __global__ void cumulative_min_process_block_results_f(
-		float *g_idata, float *g_odata, unsigned int rows, unsigned int cols,
-		unsigned int block_height) {
-	cumulative_min_process_block_results(g_idata, g_odata, rows, cols,
-			block_height);
+/**
+ * Cumulative min block results instantiation for float
+ */
+extern "C"
+__global__ void cumulative_min_process_block_results_f(float *g_idata, float *g_odata, uint rows, uint cols,
+		uint block_height)
+{
+	cumulative_min_process_block_results(g_idata, g_odata, rows, cols, block_height);
 }
 
 /**
@@ -1737,12 +1771,14 @@ __device__ void reduce_prod(T *g_idata, T *g_odata, unsigned int n) {
 	reduce<ProductOp<T>, T>(g_idata, g_odata, n, op, (T) 1.0);
 }
 
-extern "C" __global__ void reduce_prod_d(double *g_idata, double *g_odata,
+extern "C"
+__global__ void reduce_prod_d(double *g_idata, double *g_odata,
 		unsigned int n) {
 	reduce_prod(g_idata, g_odata, n);
 }
 
-extern "C" __global__ void reduce_prod_f(float *g_idata, float *g_odata,
+extern "C"
+__global__ void reduce_prod_f(float *g_idata, float *g_odata,
 		unsigned int n) {
 	reduce_prod(g_idata, g_odata, n);
 }
@@ -1757,22 +1793,28 @@ extern "C" __global__ void reduce_prod_f(float *g_idata, float *g_odata,
  * @param block_height number of rows processed per block
  */
 template<typename T>
-__device__ void cumulative_prod(T *g_idata, T *g_odata, T *g_tdata,
-		unsigned int rows, unsigned int cols, unsigned int block_height) {
+__device__ void cumulative_prod(T *g_idata, T *g_odata, T *g_tdata, uint rows, uint cols, uint block_height)
+{
 	ProductOp<T> op;
-	cumulative_scan<ProductOp<T>, T>(g_idata, g_odata, g_tdata, rows, cols,
-			block_height, op);
+	cumulative_scan<ProductOp<T>, T>(g_idata, g_odata, g_tdata, rows, cols, block_height, op);
 }
 
-extern "C" __global__ void cumulative_prod_d(double *g_idata, double *g_odata,
-		double* g_tdata, unsigned int rows, unsigned int cols,
-		unsigned int block_height) {
+/**
+ * Cumulative product instantiation for double
+ */
+extern "C"
+__global__ void cumulative_prod_d(double *g_idata, double *g_odata, double* g_tdata, uint rows, uint cols,
+    uint block_height)
+{
 	cumulative_prod(g_idata, g_odata, g_tdata, rows, cols, block_height);
 }
 
-extern "C" __global__ void cumulative_prod_f(float *g_idata, float *g_odata,
-		float* g_tdata, unsigned int rows, unsigned int cols,
-		unsigned int block_height) {
+/**
+ * Cumulative product instantiation for float
+ */
+extern "C"
+__global__ void cumulative_prod_f(float *g_idata, float *g_odata, float* g_tdata, uint rows, uint cols, uint block_height)
+{
 	cumulative_prod(g_idata, g_odata, g_tdata, rows, cols, block_height);
 }
 
@@ -1786,50 +1828,61 @@ extern "C" __global__ void cumulative_prod_f(float *g_idata, float *g_odata,
  * @param block_height number of rows processed per block
  */
 template<typename T>
-__device__ void cumulative_prod_process_block_results(T *g_idata, T *g_odata,
-		unsigned int rows, unsigned int cols, unsigned int block_height) {
+__device__ void cumulative_prod_process_block_results(T *g_idata, T *g_odata, uint rows, uint cols, uint block_height)
+{
 	ProductOp<T> op;
-	cumulative_scan_apply_block_results<ProductOp<T>, T>(g_idata, g_odata, rows,
-			cols, block_height, op);
-}
-
-extern "C" __global__ void cumulative_prod_process_block_results_d(
-		double *g_idata, double *g_odata, unsigned int rows, unsigned int cols,
-		unsigned int block_height) {
-	cumulative_prod_process_block_results(g_idata, g_odata, rows, cols,
-			block_height);
-}
-
-extern "C" __global__ void cumulative_prod_process_block_results_f(
-		float *g_idata, float *g_odata, unsigned int rows, unsigned int cols,
-		unsigned int block_height) {
-	cumulative_prod_process_block_results(g_idata, g_odata, rows, cols,
-			block_height);
+	cumulative_scan_apply_block_results<ProductOp<T>, T>(g_idata, g_odata, rows, cols, block_height, op);
 }
 
 /**
- * Cumulative Sum Product
- * ToDo: cumulative scan documentation
- * scan operation
+ * Cumulative product block results instantiation for double
+ */
+extern "C"
+__global__ void cumulative_prod_process_block_results_d(double *g_idata, double *g_odata, uint rows, uint cols,
+    uint block_height)
+{
+	cumulative_prod_process_block_results(g_idata, g_odata, rows, cols, block_height);
+}
+
+/**
+ * Cumulative product block results instantiation for float
+ */
+extern "C"
+__global__ void cumulative_prod_process_block_results_f(float *g_idata, float *g_odata, uint rows, uint cols,
+    uint block_height)
+{
+	cumulative_prod_process_block_results(g_idata, g_odata, rows, cols, block_height);
+}
+
+/**
+ * Cumulative Sum-Product
+ * Applies column-wise x_n = x_n + y_n * sum with sum = x_n-1 on a two column matrix in a down-up-sweep cascade of
+ * thread blocks.
+ * ToDo: Put phases of sum-prod into separate kernels
  */
 template<typename T, typename Vec2Accessor>
 __device__ void cumulative_sum_prod(T *g_idata, ///< input data stored in device memory (of size n)
 		T *g_odata, ///< output/temporary array stored in device memory (of size n)
 		T *g_tiData,  // data input to final stage from intermediate stage
 		T *g_toData,  // temporary data produced by cascading thread blocks
-		unsigned int rows,  ///< rows in input and temporary/output arrays
-		unsigned int block_height, // number of rows in a block
-		uint phase, // up and down sweep are implemented in this one kernel for now. phase indicates what to do.
-		bool verbose = false)
+		uint rows,  ///< rows in input and temporary/output arrays
+		uint block_height, // number of rows in a block
+		uint phase, // up and down sweep are implemented in this one kernel for now. <phase> indicates what to do.
+		// phase 0: initial down-sweep; 1: subsequent down-sweeps of the cascade;
+		//       2: subsequent up-sweeps; 3: final up-sweep
+		bool verbose = false) // toggle printf output (for debugging purposes)
 {
 	uint idx = blockIdx.x * block_height;
 
+    // return if thread of (last) block is out of bounds
+    // ToDo: should not happen - remove after checking
 	if (idx > rows - 1)
 		return;
 
 	uint n = min(idx + block_height, rows);
 	auto value = Vec2Accessor::init();
 
+    // if up-sweep, fetch initial value from intermediate block results
 	if(phase > 1)
 	{
 		int read_idx = (blockIdx.x - 1) * 2;
@@ -1846,7 +1899,7 @@ __device__ void cumulative_sum_prod(T *g_idata, ///< input data stored in device
 		value.x = value.x + value.y * a;
 		n = min(idx + block_height, rows);
 	}
-	else
+	else // fetch initial value from input
 	{
 		value = Vec2Accessor::get(g_idata, 2 * idx);
 
@@ -1858,10 +1911,9 @@ __device__ void cumulative_sum_prod(T *g_idata, ///< input data stored in device
 	T sumprod = value.x;
 	T prod = value.y;
 
+    // write to one or two column output in up-sweep
 	if(phase == 2)
-	{
 		Vec2Accessor::put(g_odata, 2 * idx, sumprod, prod);
-	}
 	else if (phase == 3)
 		g_odata[idx] = value.x;
 
@@ -1869,6 +1921,7 @@ __device__ void cumulative_sum_prod(T *g_idata, ///< input data stored in device
 	    printf("Out[i=0]: blockIdx.x: %d, idx: %d, sumprod: %f, prod: %f, n: %d, phase=%d\n",
 			blockIdx.x, idx, sumprod, prod, n, phase);
 
+    // loop over 2nd to n rows of thread block
 	for (int i = idx + 1; i < n; ++i)
 	{
 		value = Vec2Accessor::get(g_idata, 2 * i);
@@ -1876,6 +1929,7 @@ __device__ void cumulative_sum_prod(T *g_idata, ///< input data stored in device
 		prod = prod * value.y;
 		sumprod = value.x + value.y * sumprod;
 
+        // write subsequent row results of that block to one or two column output in up-sweep
 		if(phase == 2)
 			Vec2Accessor::put(g_odata, 2 * i, sumprod, prod);
 		else if (phase == 3)
@@ -1886,8 +1940,8 @@ __device__ void cumulative_sum_prod(T *g_idata, ///< input data stored in device
 				i, blockIdx.x, i * 2, sumprod, prod, n, phase);
 	}
 
-    // up sweep (0/1)
-	// write out accumulated block offset
+    // down sweep (phase 0/1)
+	// write out accumulated block offset to intermediate buffer
 	if (g_toData != nullptr)
 	{
 		uint write_idx = blockIdx.x * 2;
@@ -1902,14 +1956,21 @@ __device__ void cumulative_sum_prod(T *g_idata, ///< input data stored in device
 	}
 }
 
-extern "C" __global__ void cumulative_sum_prod_d(double *g_idata, double *g_odata, double *g_tiData, double *g_toData,
-            unsigned int rows, unsigned int block_height, uint offset)
+/**
+ * Cumulative sum-product instantiation for double
+ */
+extern "C"
+__global__ void cumulative_sum_prod_d(double *g_idata, double *g_odata, double *g_tiData, double *g_toData, uint rows,
+    uint block_height, uint offset)
 {
 	cumulative_sum_prod<double, double2Accessor>(g_idata, g_odata, g_tiData, g_toData, rows, block_height, offset);
 }
 
-extern "C" __global__ void cumulative_sum_prod_f(float *g_idata, float *g_odata, float *g_tiData,
-		float *g_toData, unsigned int rows, unsigned int block_height, uint offset)
+/**
+ * Cumulative sum-product instantiation for float
+ */
+extern "C" __global__ void cumulative_sum_prod_f(float *g_idata, float *g_odata, float *g_tiData, float *g_toData,
+    uint rows, uint block_height, uint offset)
 {
   cumulative_sum_prod<float, float2Accessor>(g_idata, g_odata, g_tiData, g_toData, rows, block_height, offset);
 }
