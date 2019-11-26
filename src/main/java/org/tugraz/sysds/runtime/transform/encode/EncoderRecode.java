@@ -101,7 +101,6 @@ public class EncoderRecode extends Encoder
 	 * @param map column map
 	 * @param key key for the new entry
 	 */
-	
 	protected void putCode(HashMap<String,Long> map, String key) {
 		map.put(key, Long.valueOf(map.size()+1));
 	}
