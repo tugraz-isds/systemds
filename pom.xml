@@ -64,6 +64,10 @@
 		</repository>
 	</repositories>
 
+	<scm>
+		<developerConnection>scm:git:https://github.com/tugraz-isds/systemds.git</developerConnection>
+	</scm>
+
 	<build>
 
 		<!-- Adds scripts to main jar, in-memory jar, sources jar, and standalone 
@@ -96,6 +100,11 @@
 		</resources>
 
 		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-release-plugin</artifactId>
+				<version>2.5.3</version>
+			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-dependency-plugin</artifactId>
