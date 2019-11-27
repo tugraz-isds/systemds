@@ -317,40 +317,6 @@
 			</plugin>
 
 			<plugin>
-				<artifactId>maven-assembly-plugin</artifactId>
-				<configuration>
-					<tarLongFileMode>gnu</tarLongFileMode>
-				</configuration>
-				<executions>
-					<execution>
-						<id>create-main-jar</id>
-						<phase>package</phase>
-						<goals>
-							<goal>single</goal>
-						</goals>
-						<configuration>
-							<descriptors>
-								<descriptor>src/assembly/jar.xml</descriptor>
-							</descriptors>
-							<appendAssemblyId>false</appendAssemblyId>
-							<archive>
-								<manifest>
-									<mainClass>org.tugraz.sysds.api.DMLScript</mainClass>
-								</manifest>
-								<manifestEntries>
-									<Build-Time>${maven.build.timestamp}</Build-Time>
-									<Group-Id>${project.groupId}</Group-Id>
-									<Artifact-Id>${project.artifactId}</Artifact-Id>
-									<Version>${project.version}</Version>
-									<Minimum-Recommended-Spark-Version>${spark.version}</Minimum-Recommended-Spark-Version>
-								</manifestEntries>
-							</archive>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-
-			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-antrun-plugin</artifactId>
 				<executions>
@@ -646,60 +612,6 @@
 			<id>distribution</id>
 			<build>
 				<plugins>
-					<plugin>
-						<artifactId>maven-assembly-plugin</artifactId>
-						<configuration>
-							<tarLongFileMode>gnu</tarLongFileMode>
-						</configuration>
-						<executions>
-							<execution>
-								<id>create-source-distribution</id>
-								<phase>package</phase>
-								<goals>
-									<goal>single</goal>
-								</goals>
-								<configuration>
-									<descriptors>
-										<descriptor>src/assembly/source.xml</descriptor>
-									</descriptors>
-								</configuration>
-							</execution>
-
-							<execution>
-								<id>create-binary-distribution</id>
-								<phase>package</phase>
-								<goals>
-									<goal>single</goal>
-								</goals>
-								<configuration>
-									<descriptors>
-										<descriptor>src/assembly/bin.xml</descriptor>
-									</descriptors>
-								</configuration>
-							</execution>
-							<execution>
-								<id>create-extra-jar</id>
-								<phase>package</phase>
-								<goals>
-									<goal>single</goal>
-								</goals>
-								<configuration>
-									<descriptors>
-										<descriptor>src/assembly/extra.xml</descriptor>
-									</descriptors>
-									<archive>
-										<manifestEntries>
-											<Build-Time>${maven.build.timestamp}</Build-Time>
-											<Artifact-Id>${project.artifactId}-extra</Artifact-Id>
-											<Version>${project.version}</Version>
-										</manifestEntries>
-									</archive>
-									<classifier>extra</classifier>
-								</configuration>
-							</execution>
-						</executions>
-					</plugin>
-
 					<plugin>
 						<artifactId>maven-gpg-plugin</artifactId>
 						<version>1.6</version>
