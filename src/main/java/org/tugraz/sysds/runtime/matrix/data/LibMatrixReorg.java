@@ -330,9 +330,9 @@ public class LibMatrixReorg
 	 * @return
 	 */
 	public static MatrixBlock sort(MatrixBlock in, MatrixBlock out, int[] by, boolean desc, boolean ixret, int k) {
-		//meta data gathering and preparation
 		//Timing time = new Timing(true);
-
+		
+		//meta data gathering and preparation
 		boolean sparse = in.isInSparseFormat();
 		int rlen = in.rlen;
 		int clen = in.clen;
@@ -353,7 +353,8 @@ public class LibMatrixReorg
 			if( !sparse && clen == 1 ) { //DENSE COLUMN VECTOR
 				//in-place quicksort, unstable (no indexes needed)
 				out.copy( in ); //dense (always single block)
-				Arrays.sort(out.getDenseBlockValues());
+				Arrays.parallelSort(out.getDenseBlockValues());
+				
 				if( desc )
 					sortReverseDense(out);
 				return out;
@@ -371,8 +372,6 @@ public class LibMatrixReorg
 			}
 		}
 
-		//System.out.println("setup: " + time.stop());
-		//time = new Timing(true);
 		//step 3: index vector sorting
 		
 		//create index vector and extract values
@@ -387,34 +386,15 @@ public class LibMatrixReorg
 		if (k == 1 || rlen < PAR_NUMCELL_THRESHOLD_SORT){ // There is no parallel
 			//sort index vector on extracted data (unstable)
 			SortUtils.sortByValue(0, rlen, values, vix);
-			
-			//sort by secondary columns if required (in-place)
-			if( by.length > 1 )
-				sortBySecondary(0, rlen, values, vix, in, by, 1);
-			
-			//flip order if descending requested (note that this needs to happen
-			//before we ensure stable outputs, hence we also flip values)
-			if(desc) {
-				sortReverseDense(vix);
-				sortReverseDense(values);
-			}
-					
-			//final pass to ensure stable output
-			sortIndexesStable(0, rlen, values, vix, in, by, 1);
-			
 		} else {
 			try {
-				//Timing time_internal = new Timing(true);
 				ExecutorService pool = CommonThreadPool.get(k);
-				//compute actual transpose and check for errors
-				// sort smaller blocks.
+
 				ArrayList<SortTask> tasks = new ArrayList<>();
-				int blklen = 10; 
+				//int blklen = 10; 
 				
-				//int blklen = PAR_NUMCELL_THRESHOLD_SORT; 
-				//int blklen = (int)(Math.ceil((double)rlen/k));
-				//blklen += (blklen%8 != 0)?8-blklen%8:0;
-				System.out.println(blklen);
+				// sort smaller blocks.
+				int blklen = (int)(Math.ceil((double)rlen/k));
 				for( int i=0; i*blklen<rlen; i++ ){
 					
 					int start = i*blklen;
@@ -426,29 +406,29 @@ public class LibMatrixReorg
 				pool.shutdown();
 				for( Future<Object> task : taskret )
 					task.get();
-				//System.out.println("Sort Small Block: " + time_internal.stop());
 
 				mergeSortedBlocks(blklen, vix, values, k);
 			}
 			catch(Exception ex) {
 				throw new DMLRuntimeException(ex);
 			}
-
-			//sort by secondary columns if required (in-place)
-			if( by.length > 1 )
-				sortBySecondary(0, rlen, values, vix, in, by, 1);
-			
-			//flip order if descending requested (note that this needs to happen
-			//before we ensure stable outputs, hence we also flip values)
-			if(desc) {
-				sortReverseDense(vix);
-				sortReverseDense(values);
-			}
-			//final pass to ensure stable output
-			sortIndexesStable(0, rlen, values, vix, in, by, 1);
 		}
 
-		//System.out.println("SortDone: " + time.stop());
+
+		//sort by secondary columns if required (in-place)
+		if( by.length > 1 )
+			sortBySecondary(0, rlen, values, vix, in, by, 1);
+				
+		//flip order if descending requested (note that this needs to happen
+		//before we ensure stable outputs, hence we also flip values)
+		if(desc) {
+			sortReverseDense(vix);
+			sortReverseDense(values);
+		}
+						
+		//final pass to ensure stable output
+		sortIndexesStable(0, rlen, values, vix, in, by, 1);
+		
 		
 		//step 4: create output matrix (guaranteed non-empty, see step 2)
 		if( !ixret ) {
@@ -2498,12 +2478,18 @@ public class LibMatrixReorg
 
 		@Override
 		public Long call(){
-			//Node node = new Node();
+			// Find the middle index of the two merge blocks
 			int middle = _start + _blockSize;
+			// Early return if edge case
 			if (middle == _end) return 1l;
+			
+			// Pointer left side merge.
 			int pointlIndex = middle -1;
+			// Pointer to merge index.
 			int positionToAssign = _end - 1;
 			
+			// Make copy of entire right side so that we use left side directly as output.
+			// Results in worst case (and most cases) allocation of extra array of half input size. 
 			int[] rhsCopy = new int[_end-middle];
 			double[] rhsCopyV = new double[_end-middle];
 			for(int i = middle ; i < _end ; i++){
@@ -2512,19 +2498,14 @@ public class LibMatrixReorg
 			}
 			int pointrIndex = _end - middle - 1;
 			
-			int tmpI;
-			double tmpD;
+			//int tmpI;
+			//double tmpD;
 			while (positionToAssign >= _start && pointrIndex >= 0) {
 				if  ( pointrIndex < 0 ||
 					( pointlIndex >= _start && _values[pointlIndex] > rhsCopyV[pointrIndex])
 					){
-					// SWAP!
-					tmpI = _indexes[pointlIndex];
-					tmpD = _values[pointlIndex];
-					_values[pointlIndex] = _values[positionToAssign];
-					_indexes[pointlIndex] = _indexes[positionToAssign];
-					_values[positionToAssign] = tmpD;
-					_indexes[positionToAssign] = tmpI;
+					_values[positionToAssign] = _values[pointlIndex];
+					_indexes[positionToAssign] = _indexes[pointlIndex];
 					pointlIndex--;
 					positionToAssign--;
 				} else {
