@@ -1,4 +1,4 @@
-// Generated from org/tugraz/sysds/parser/dml/Dml.g4 by ANTLR 4.5.3
+// Generated from org\tugraz\sysds\parser\dml\Dml.g4 by ANTLR 4.5.3
 package org.tugraz.sysds.parser.dml;
 
 /*
