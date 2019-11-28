@@ -50,7 +50,7 @@ public class TfUtils implements Serializable
 	//transform methods
 	public static final String TXMETHOD_IMPUTE    = "impute";
 	public static final String TXMETHOD_RECODE    = "recode";
-	public static final String TXMETHOD_HASH	  = "hash";
+	public static final String TXMETHOD_HASH      = "hash";
 	public static final String TXMETHOD_BIN       = "bin";
 	public static final String TXMETHOD_DUMMYCODE = "dummycode";
 	public static final String TXMETHOD_SCALE     = "scale";
