@@ -20,7 +20,6 @@
 package org.tugraz.sysds.runtime.controlprogram.paramserv.rpc;
 
 import java.io.IOException;
-import java.lang.InterruptedException;
 import java.util.Collections;
 
 import org.apache.spark.SparkConf;
@@ -51,7 +50,7 @@ public class PSRpcFactory {
 		return context.createServer(host, 0, Collections.emptyList());	// bind rpc to an ephemeral port
 	}
 
-	public static SparkPSProxy createSparkPSProxy(SparkConf conf, int port, LongAccumulator aRPC) throws IOException, InterruptedException {
+	public static SparkPSProxy createSparkPSProxy(SparkConf conf, int port, LongAccumulator aRPC) throws IOException {
 		long rpcTimeout = conf.contains("spark.rpc.askTimeout") ?
 			conf.getTimeAsMs("spark.rpc.askTimeout") :
 			conf.getTimeAsMs("spark.network.timeout", "120s");
