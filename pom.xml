@@ -42,14 +42,14 @@
 	<properties>
 		<hadoop.version>2.6.0</hadoop.version>
 		<antlr.version>4.5.3</antlr.version>
-		<spark.version>2.4.4</spark.version>
-		<scala.version>2.11.12</scala.version>
+		<spark.version>2.1.0</spark.version>
+		<scala.version>2.11.8</scala.version>
 		<scala.binary.version>2.11</scala.binary.version>
 		<scala.test.version>2.2.6</scala.test.version>
 		<maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss z</maven.build.timestamp.format>
 		<enableGPU>false</enableGPU>
 		<jcuda.scope>provided</jcuda.scope>
-		<jcuda.version>10.1.0</jcuda.version>
+		<jcuda.version>0.9.0d</jcuda.version>
 		<integrationTestExtraJVMArgs />
 	</properties>
 
@@ -98,7 +98,6 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-dependency-plugin</artifactId>
-				<version>3.1.1</version>
 				<executions>
 					<execution>
 						<id>unpack</id>
@@ -205,20 +204,29 @@
 			<plugin>
 				<groupId>net.alchim31.maven</groupId>
 				<artifactId>scala-maven-plugin</artifactId>
-				<version>4.2.0</version>
+				<version>3.2.2</version>
 				<executions>
 					<execution>
-            			<goals>
-              				<goal>compile</goal>
-              				<goal>testCompile</goal>
-            			</goals>
-          			</execution>
+						<id>eclipse-add-source</id>
+						<goals>
+							<goal>add-source</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>scala-compile-first</id>
+						<phase>process-resources</phase>
+						<goals>
+							<goal>compile</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>scala-test-compile-first</id>
+						<phase>process-test-resources</phase>
+						<goals>
+							<goal>testCompile</goal>
+						</goals>
+					</execution>
 				</executions>
-				<configuration>        
-					<source>1.8</source>
-        			<target>1.8</target>
-          			<scalaVersion>${scala.version}</scalaVersion>
-        		</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -313,7 +321,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
-				<version>3.0.0-M3</version>
+				<version>2.18</version><!--$NO-MVN-MAN-VER$ -->
 				<configuration>
 
 					<!-- STDERR/STDOUT to individual .txt files instead of console -->
@@ -557,7 +565,7 @@
 		<profile>
 			<id>scala-2.10</id>
 			<properties>
-				<scala.version>2.10.7</scala.version>
+				<scala.version>2.10.5</scala.version>
 				<scala.binary.version>2.10</scala.binary.version>
 			</properties>
 		</profile>
@@ -565,7 +573,7 @@
 		<profile>
 			<id>scala-2.11</id>
 			<properties>
-				<scala.version>2.11.12</scala.version>
+				<scala.version>2.11.8</scala.version>
 				<scala.binary.version>2.11</scala.binary.version>
 			</properties>
 		</profile>
@@ -635,7 +643,7 @@
 											<pluginExecutionFilter>
 												<groupId>org.apache.maven.plugins</groupId>
 												<artifactId>maven-dependency-plugin</artifactId>
-												<versionRange>[3.1.1,)</versionRange>
+												<versionRange>[2.10,)</versionRange>
 												<goals>
 													<goal>copy-dependencies</goal>
 												</goals>
@@ -649,7 +657,7 @@
 											<pluginExecutionFilter>
 												<groupId>net.alchim31.maven</groupId>
 												<artifactId>scala-maven-plugin</artifactId>
-												<versionRange>[4.2.0,)</versionRange>
+												<versionRange>[3.2.2,)</versionRange>
 												<goals>
 													<goal>add-source</goal>
 													<goal>compile</goal>
