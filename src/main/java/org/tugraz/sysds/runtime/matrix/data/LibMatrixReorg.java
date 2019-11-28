@@ -41,7 +41,6 @@ import org.tugraz.sysds.runtime.util.DataConverter;
 import org.tugraz.sysds.runtime.util.SortUtils;
 import org.tugraz.sysds.runtime.util.UtilFunctions;
 
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -55,7 +54,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
-
 
 /**
  * MB:
@@ -320,14 +318,13 @@ public class LibMatrixReorg
 	}
 
 	/**
-	 * 
 	 * @param in Input matrix to sort
 	 * @param out Output matrix where the sorted input is inserted to
 	 * @param by The Ordering parameter
 	 * @param desc A boolean, specifying if it should be descending order.
 	 * @param ixret A boolean, specifying if the return should be the sorted indexes.
 	 * @param k Number of parallel threads
-	 * @return
+	 * @return The sorted out matrix.
 	 */
 	public static MatrixBlock sort(MatrixBlock in, MatrixBlock out, int[] by, boolean desc, boolean ixret, int k) {
 		//Timing time = new Timing(true);
@@ -353,8 +350,10 @@ public class LibMatrixReorg
 			if( !sparse && clen == 1 ) { //DENSE COLUMN VECTOR
 				//in-place quicksort, unstable (no indexes needed)
 				out.copy( in ); //dense (always single block)
-				Arrays.parallelSort(out.getDenseBlockValues());
-				
+				if (k > 1)
+					Arrays.parallelSort(out.getDenseBlockValues());
+				else 
+					Arrays.sort(out.getDenseBlockValues());
 				if( desc )
 					sortReverseDense(out);
 				return out;
@@ -391,7 +390,6 @@ public class LibMatrixReorg
 				ExecutorService pool = CommonThreadPool.get(k);
 
 				ArrayList<SortTask> tasks = new ArrayList<>();
-				//int blklen = 10; 
 				
 				// sort smaller blocks.
 				int blklen = (int)(Math.ceil((double)rlen/k));
@@ -2175,17 +2173,14 @@ public class LibMatrixReorg
 	// Method to merge all blocks of a specified length.
 	private static void mergeSortedBlocks(int blockLength, int[] valueIndexes, double[] values, int k){
 		// Check if the blocklength is bigger than the size of the values
-		// if it is smaller then merge the blocks, if not you are done merging
+		// if it is smaller then merge the blocks, if not merging is done
 
 		int vlen = values.length;
 		int mergeBlockSize = blockLength * 2;
 		if (mergeBlockSize <= vlen + blockLength){
 			try {
-				
 				ExecutorService pool = CommonThreadPool.get(k);
-				// sort smaller blocks.
 				ArrayList<MergeTask> tasks = new ArrayList<>();
-				
 				for( int i=0; i*mergeBlockSize<vlen; i++ ){
 					int start = i*mergeBlockSize;
 					if (start + blockLength < vlen){
@@ -2197,10 +2192,7 @@ public class LibMatrixReorg
 				pool.shutdown();
 				for( Future<Object> task : taskret )
 					task.get();
-							//final pass to ensure stable output
-
-			
-				
+				// recursive merge larger blocks.
 				mergeSortedBlocks(mergeBlockSize, valueIndexes, values, k);
 			}
 			catch(Exception ex) {
