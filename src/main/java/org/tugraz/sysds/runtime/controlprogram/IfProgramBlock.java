@@ -93,7 +93,7 @@ public class IfProgramBlock extends ProgramBlock
 	{
 		BooleanObject predResult = executePredicate(ec);
 	
-		if (DMLScript.LINEAGE_DEDUP)
+		if (DMLScript.LINEAGE_DEDUP || DMLScript.LINEAGE_FUNC)
 			ec.getLineagePath().setBranchPredicateValue(predResult.getBooleanValue());
 			
 		//execute if statement

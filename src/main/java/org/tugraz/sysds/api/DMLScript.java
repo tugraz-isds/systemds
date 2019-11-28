@@ -93,6 +93,7 @@ public class DMLScript
 	public static String      GPU_MEMORY_ALLOCATOR = "cuda";                               // GPU memory allocator to use
 	public static boolean     LINEAGE = DMLOptions.defaultOptions.lineage;                 // whether compute lineage trace
 	public static boolean     LINEAGE_DEDUP = DMLOptions.defaultOptions.lineage_dedup;     // whether deduplicate lineage items
+	public static boolean     LINEAGE_FUNC = DMLOptions.defaultOptions.lineage_func;       // whether lineage trace functions
 	public static ReuseCacheType LINEAGE_REUSE = DMLOptions.defaultOptions.linReuseType;   // whether lineage-based reuse
 
 	public static boolean           USE_ACCELERATOR     = DMLOptions.defaultOptions.gpu;
@@ -195,6 +196,7 @@ public class DMLScript
 			EXEC_MODE           = dmlOptions.execMode;
 			LINEAGE             = dmlOptions.lineage;
 			LINEAGE_DEDUP       = dmlOptions.lineage_dedup;
+			LINEAGE_FUNC        = dmlOptions.lineage_func;
 			LINEAGE_REUSE       = dmlOptions.linReuseType;
 
 			String fnameOptConfig = dmlOptions.configFile;

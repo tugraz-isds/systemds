@@ -32,6 +32,7 @@ import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.DMLScriptException;
 import org.tugraz.sysds.runtime.controlprogram.context.ExecutionContext;
 import org.tugraz.sysds.runtime.instructions.cp.Data;
+import org.tugraz.sysds.runtime.lineage.LineagePath;
 import org.tugraz.sysds.utils.Statistics;
 
 
@@ -95,6 +96,8 @@ public class FunctionProgramBlock extends ProgramBlock
 	@Override
 	public void execute(ExecutionContext ec) 
 	{
+		LineagePath currentLineagePath = new LineagePath();
+
 		//dynamically recompile entire function body (according to function inputs)
 		try {
 			if( ConfigurationManager.isDynamicRecompilation() 
@@ -122,10 +125,22 @@ public class FunctionProgramBlock extends ProgramBlock
 			throw new DMLRuntimeException("Error recompiling function body.", ex);
 		}
 		
+		if (DMLScript.LINEAGE_FUNC) {
+			ec.getLineage().computeDedupBlock(this, ec); //TODO: not if function contains rand
+			currentLineagePath = ec.getLineagePath();
+			ec.getLineagePath().initLastBranch();
+			ec.getLineagePath().clearLastBranch();
+		}
+		
 		// for each program block
 		try {
 			for (int i=0 ; i < this._childBlocks.size() ; i++) {
 				_childBlocks.get(i).execute(ec);
+			}
+
+			// clear current LineageDedupBlock
+			if (DMLScript.LINEAGE_FUNC) {
+				ec.setLineagePath(currentLineagePath);
 			}
 		}
 		catch (DMLScriptException e) {

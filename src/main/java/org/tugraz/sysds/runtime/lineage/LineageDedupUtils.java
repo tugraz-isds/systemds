@@ -19,13 +19,14 @@ package org.tugraz.sysds.runtime.lineage;
 import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.controlprogram.BasicProgramBlock;
 import org.tugraz.sysds.runtime.controlprogram.ForProgramBlock;
+import org.tugraz.sysds.runtime.controlprogram.FunctionProgramBlock;
 import org.tugraz.sysds.runtime.controlprogram.IfProgramBlock;
 import org.tugraz.sysds.runtime.controlprogram.ProgramBlock;
 import org.tugraz.sysds.runtime.controlprogram.context.ExecutionContext;
 
 public class LineageDedupUtils {
 	
-	public static LineageDedupBlock computeDedupBlock(ForProgramBlock fpb, ExecutionContext ec) {
+	public static LineageDedupBlock computeDedupBlock(ProgramBlock fpb, ExecutionContext ec) {
 		LineageDedupBlock ldb = new LineageDedupBlock();
 		ec.getLineage().pushInitDedupBlock(ldb);
 		ldb.addBlock();
@@ -34,7 +35,8 @@ public class LineageDedupUtils {
 				ldb.traceIfProgramBlock((IfProgramBlock) pb, ec);
 			else if (pb instanceof BasicProgramBlock)
 				ldb.traceBasicProgramBlock((BasicProgramBlock) pb, ec);
-			else if (pb instanceof ForProgramBlock)
+			else if ((pb instanceof ForProgramBlock) && !(fpb instanceof FunctionProgramBlock))
+				//TODO: lineage for nested functions
 				ldb.splitBlocks();
 			else
 				throw new DMLRuntimeException("Only BasicProgramBlocks or "

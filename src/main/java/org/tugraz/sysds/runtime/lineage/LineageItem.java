@@ -33,8 +33,9 @@ public class LineageItem {
 	// not hidden when used as inputs to new items
 	private boolean _visited = true;
 	
-	public enum LineageItemType {Literal, Creation, Instruction, Dedup}
+	public enum LineageItemType {Literal, Creation, Instruction, Dedup, Func}
 	public static final String dedupItemOpcode = "dedup";
+	public static final String funcItemOpcode = "func";
 	
 	public LineageItem(long id, String name, String data) { this(id, name, data, "", null); }
 	
@@ -111,6 +112,8 @@ public class LineageItem {
 	public LineageItemType getType() {
 		if (_opcode.equals(dedupItemOpcode))
 			return LineageItemType.Dedup;
+		if (_opcode.equals(funcItemOpcode))
+			return LineageItemType.Func;
 		if (isLeaf() && isInstruction())
 			return LineageItemType.Creation;
 		else if (isLeaf() && !isInstruction())

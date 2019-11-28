@@ -69,6 +69,12 @@ public class LineageMap {
 		}
 	}
 	
+	public void processFuncItem(LineageMap lm, Long path, String key) {
+		if (lm._traces.containsKey(key))
+			addLineageItem(new LineageItem(key, path.toString(), LineageItem.funcItemOpcode,
+				new LineageItem[] {lm._traces.get(key)}));
+	}
+	
 	public LineageItem getOrCreate(CPOperand variable) {
 		if (variable == null)
 			return null;
@@ -201,9 +207,10 @@ public class LineageMap {
 		LineageItem li = get(inst.getInput1());
 		String fName = ec.getScalarInput(inst.getInput2().getName(), Types.ValueType.STRING, inst.getInput2().isLiteral()).getStringValue();
 		
-		if (DMLScript.LINEAGE_DEDUP) {
+		if (DMLScript.LINEAGE_DEDUP || DMLScript.LINEAGE_FUNC) {
 			LineageItemUtils.writeTraceToHDFS(Explain.explain(li), fName + ".lineage.dedup");
-			li = LineageItemUtils.rDecompress(li);
+			li = DMLScript.LINEAGE_DEDUP ? LineageItemUtils.rDecompress(li) : LineageItemUtils.rDecompressFunc(li);
+			//FIXME: Function arguments and original inputs are mixing up after decompression.
 		}
 		LineageItemUtils.writeTraceToHDFS(Explain.explain(li), fName + ".lineage");
 	}

@@ -207,10 +207,18 @@ public class FunctionCallCPInstruction extends CPInstruction {
 			//add/replace data in symbol table
 			ec.setVariable(boundVarName, boundValue);
 			
-			//map lineage of function returns back to calling site
-			if( lineage != null ) //unchanged ref
+			if( lineage != null && !DMLScript.LINEAGE_FUNC) //unchanged ref
+				//map lineage of function returns back to calling site
 				ec.getLineage().set(boundVarName, lineage.get(retVarName));
+
+			if (DMLScript.LINEAGE_FUNC) {
+				//FIXME: block number for nested functions
+				ec.getLineage().traceFuncPath(0, fn_ec.getLineagePath().getLastBranch(), boundVarName, fn_ec);
+				ec.getLineagePath().clearLastBranch();
+			}
 		}
+		if(DMLScript.LINEAGE_FUNC)
+			fn_ec.getLineage().clearDedupBlock();
 	}
 
 	@Override

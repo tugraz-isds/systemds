@@ -62,6 +62,7 @@ public class DMLOptions {
 	public boolean              help          = false;            // whether to print the usage option
 	public boolean              lineage       = false;            // whether compute lineage trace
 	public boolean              lineage_dedup = false;            // whether deduplicate lineage items
+	public boolean              lineage_func  = false;            // whether lineage trace functions
 	public ReuseCacheType       linReuseType  = ReuseCacheType.NONE;
 	public boolean              fedWorker     = false;
 	public int                  fedWorkerPort = -1;
@@ -117,6 +118,8 @@ public class DMLOptions {
 					if (lineageType != null){
 						if (lineageType.equalsIgnoreCase("dedup"))
 							dmlOptions.lineage_dedup = lineageType.equalsIgnoreCase("dedup");
+						else if (lineageType.equalsIgnoreCase("function"))
+							dmlOptions.lineage_func = lineageType.equalsIgnoreCase("function");
 						else if (lineageType.equalsIgnoreCase("reuse_full")
 							|| lineageType.equalsIgnoreCase("reuse"))
 							dmlOptions.linReuseType = ReuseCacheType.REUSE_FULL;

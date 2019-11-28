@@ -16,7 +16,7 @@
 
 package org.tugraz.sysds.runtime.lineage;
 
-import org.tugraz.sysds.runtime.controlprogram.ForProgramBlock;
+import org.tugraz.sysds.runtime.controlprogram.ProgramBlock;
 import org.tugraz.sysds.runtime.controlprogram.context.ExecutionContext;
 import org.tugraz.sysds.runtime.instructions.Instruction;
 import org.tugraz.sysds.runtime.instructions.cp.CPOperand;
@@ -30,7 +30,8 @@ public class Lineage {
 	private final LineageMap _map;
 	private final Stack<LineageDedupBlock> _initDedupBlock = new Stack<>();
 	private final Stack<LineageDedupBlock> _activeDedupBlock = new Stack<>();
-	private final Map<ForProgramBlock, LineageDedupBlock> _dedupBlocks = new HashMap<>();
+	private final Stack<LineageFuncBlock> _initFuncBlock = new Stack<>();
+	private final Map<ProgramBlock, LineageDedupBlock> _dedupBlocks = new HashMap<>();
 	
 	public Lineage() {
 		_map = new LineageMap();
@@ -51,16 +52,38 @@ public class Lineage {
 			_map.processDedupItem(lm, path);
 	}
 	
+	public void traceFuncPath(int fn_block, Long fn_path, String var, ExecutionContext fn_ec) {
+		LineageMap fn_lm = fn_ec.getLineage().getDedupBlock(fn_block, fn_path);
+		if (fn_lm != null)
+			_map.processFuncItem(fn_lm, fn_path, var);
+		
+	}
+	
+	public LineageMap getDedupBlock(int block, Long path) {
+		return _activeDedupBlock.peek().getMap(block, path);
+	}
+	
+	public LineageMap getLineageMap() {
+		return _map;
+	}
+	
 	public LineageItem getOrCreate(CPOperand variable) {
-		return _initDedupBlock.empty() ?
-			_map.getOrCreate(variable) :
-			_initDedupBlock.peek().getActiveMap().getOrCreate(variable);
+		//TODO: dedup inside functions and vice versa
+		if (!_initDedupBlock.empty())
+			return _initDedupBlock.peek().getActiveMap().getOrCreate(variable);
+		else if (!_initFuncBlock.empty())
+			return _initFuncBlock.peek().getActiveMap().getOrCreate(variable);
+		else
+			return _map.getOrCreate(variable);
 	}
 	
 	public boolean contains(CPOperand variable) {
-		return _initDedupBlock.empty() ?
-			_map.containsKey(variable.getName()) :
-			_initDedupBlock.peek().getActiveMap().containsKey(variable.getName());
+		if (!_initDedupBlock.empty())
+			return _initDedupBlock.peek().getActiveMap().containsKey(variable.getName());
+		else if (!_initFuncBlock.empty())
+			return _initFuncBlock.peek().getActiveMap().containsKey(variable.getName());
+		else
+			return _map.containsKey(variable.getName());
 	}
 	
 	public LineageItem get(String varName) {
@@ -72,20 +95,31 @@ public class Lineage {
 	}
 	
 	public LineageItem get(CPOperand variable) {
-		return _initDedupBlock.empty() ?
-			_map.get(variable) :
-			_initDedupBlock.peek().getActiveMap().get(variable);
+		if (!_initDedupBlock.empty())
+			return _initDedupBlock.peek().getActiveMap().get(variable);
+		else if (!_initFuncBlock.empty())
+			return _initFuncBlock.peek().getActiveMap().get(variable);
+		else
+			return _map.get(variable);
 	}
 	
 	public void pushInitDedupBlock(LineageDedupBlock ldb) {
 		_initDedupBlock.push(ldb);
+	}
+
+	public void pushInitFuncBlock(LineageFuncBlock lfb) {
+		_initFuncBlock.push(lfb);
 	}
 	
 	public LineageDedupBlock popInitDedupBlock() {
 		return _initDedupBlock.pop();
 	}
 	
-	public void computeDedupBlock(ForProgramBlock fpb, ExecutionContext ec) {
+	public LineageFuncBlock popInitFuncBlock() {
+		return _initFuncBlock.pop();
+	}
+	
+	public void computeDedupBlock(ProgramBlock fpb, ExecutionContext ec) {
 		if (!_dedupBlocks.containsKey(fpb))
 			_dedupBlocks.put(fpb, LineageDedupUtils.computeDedupBlock(fpb, ec));
 		_activeDedupBlock.push(_dedupBlocks.get(fpb));

@@ -77,6 +77,8 @@ public class LineageItemUtils {
 					return LineageItemType.Instruction;
 				case "D":
 					return LineageItemType.Dedup;
+				case "F":
+					return LineageItemType.Func;
 				default:
 					throw new DMLRuntimeException("Unknown LineageItemType given!");
 			}
@@ -94,6 +96,8 @@ public class LineageItemUtils {
 				return "I";
 			case Dedup:
 				return "D";
+			case Func:
+				return "F";
 			default:
 				throw new DMLRuntimeException("Unknown LineageItemType given!");
 		}
@@ -111,7 +115,8 @@ public class LineageItemUtils {
 		if (li.isLeaf()) {
 			sb.append(li.getData()).append(" ");
 		} else {
-			if (li.getType() == LineageItemType.Dedup)
+			if (li.getType() == LineageItemType.Dedup ||
+				li.getType() == LineageItemType.Func)
 				sb.append(li.getOpcode()).append(li.getData()).append(" ");
 			else
 				sb.append(li.getOpcode()).append(" ");
@@ -315,7 +320,8 @@ public class LineageItemUtils {
 			rSetDedupInputOntoOutput(item.getName(), li, dedupInput);
 			li.resetVisitStatus();
 			return li;
-		} else {
+		} 
+		else {
 			ArrayList<LineageItem> inputs = new ArrayList<>();
 			if (item.getInputs() != null) {
 				for (LineageItem li : item.getInputs())
@@ -324,6 +330,27 @@ public class LineageItemUtils {
 			return new LineageItem(item.getName(), item.getData(),
 				item.getOpcode(), inputs.toArray(new LineageItem[0]));
 		}
+	}
+
+	public static LineageItem rReplaceFuncItem(LineageItem item) {
+		if (item.getType() == LineageItemType.Func) {
+			LineageItem li = new LineageItem(item.getInputs()[0].getName(),
+				item.getInputs()[0].getData(),
+				item.getInputs()[0].getOpcode(), item.getInputs()[0].getInputs());
+			li.resetVisitStatus();
+			return li;
+		}
+		else 
+			return item;
+	}
+	public static LineageItem rDecompressFunc(LineageItem item) {
+		ArrayList<LineageItem> inputs = new ArrayList<>();
+		if (item.getInputs() != null) {
+			for (LineageItem li : item.getInputs())
+				inputs.add(rReplaceFuncItem(li));
+		}
+		return new LineageItem(item.getName(), item.getData(),
+			item.getOpcode(), inputs.toArray(new LineageItem[0]));
 	}
 	
 	public static void writeTraceToHDFS(String trace, String fname) {

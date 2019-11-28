@@ -65,6 +65,7 @@ import org.tugraz.sysds.runtime.instructions.spark.CheckpointSPInstruction;
 import org.tugraz.sysds.runtime.instructions.spark.ReblockSPInstruction;
 import org.tugraz.sysds.runtime.instructions.spark.SPInstruction;
 import org.tugraz.sysds.runtime.lineage.LineageItem;
+import org.tugraz.sysds.runtime.lineage.LineageItem.LineageItemType;
 
 public class Explain
 {
@@ -352,6 +353,8 @@ public class Explain
 		String s = explain(li, 0);
 		s += rExplainDedupItems(li, new ArrayList<>());
 		li.resetVisitStatus();
+		s += rExplainFuncItems(li, new ArrayList<>());
+		li.resetVisitStatus();
 		return s;
 	}
 
@@ -363,19 +366,27 @@ public class Explain
 	}
 	
 	private static String rExplainDedupItems(LineageItem li, List<String> paths) {
+		return rExplainCompressedItems(li, paths, LineageItem.LineageItemType.Dedup);
+	}
+	
+	private static String rExplainFuncItems(LineageItem li, List<String> paths) {
+		return rExplainCompressedItems(li, paths, LineageItem.LineageItemType.Func);
+	}
+
+	private static String rExplainCompressedItems(LineageItem li, List<String> paths, LineageItemType lt) {
 		if (li.isVisited())
 			return "";
 		StringBuilder sb = new StringBuilder();
-		
-		if (li.getType() == LineageItem.LineageItemType.Dedup && !paths.contains(li.getData())) {
-			sb.append("\n").append("dedup").append(li.getData()).append(":\n");
+	
+		if (li.getType() == lt && !paths.contains(li.getData())) {
+			sb.append("\n").append(lt.name().toLowerCase()).append(li.getData()).append(":\n");
 			sb.append(Explain.explain(li, 0));
 			paths.add(li.getData());
 		}
 		
 		if (li.getInputs() != null)
 			for (LineageItem in : li.getInputs())
-				sb.append(rExplainDedupItems(in, paths));
+				sb.append(rExplainCompressedItems(in, paths, lt));
 		
 		li.setVisited();
 		return sb.toString();
