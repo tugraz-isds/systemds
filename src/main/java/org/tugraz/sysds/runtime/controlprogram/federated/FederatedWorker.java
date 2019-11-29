@@ -32,7 +32,6 @@ import io.netty.handler.codec.serialization.ObjectEncoder;
 import org.tugraz.sysds.runtime.controlprogram.parfor.util.IDSequence;
 import org.tugraz.sysds.runtime.instructions.cp.Data;
 
-import java.lang.ref.Reference;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -56,7 +55,7 @@ public class FederatedWorker {
 					.channel(NioServerSocketChannel.class)
 					.childHandler(new ChannelInitializer<SocketChannel>() {
 						@Override
-						public void initChannel(SocketChannel ch) throws Exception {
+						public void initChannel(SocketChannel ch) {
 							ch.pipeline().addLast("ObjectDecoder",
 									new ObjectDecoder(ClassResolvers.weakCachingResolver(ClassLoader.getSystemClassLoader())))
 									.addLast("ObjectEncoder", new ObjectEncoder())

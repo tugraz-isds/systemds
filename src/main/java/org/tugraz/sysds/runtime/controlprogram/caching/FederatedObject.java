@@ -81,43 +81,6 @@ public class FederatedObject extends CacheableData<MatrixBlock> {
 		}
 	}
 	
-	public MatrixBlock matrixVecMult(MatrixBlock vector) {
-		// TODO if we have limitations to how Federated tensors will be blocked we can optimize this a lot
-		long[] dims = getDataCharacteristics().getDims();
-		MatrixBlock result = new MatrixBlock((int) dims[0], 1, false);
-		for (Map.Entry<FederatedRange, FederatedData> entry : _mapping.entrySet()) {
-			FederatedRange range = entry.getKey();
-			// TODO generalize for n dimensions
-			int[] beginDimsInt = range.getBeginDimsInt();
-			int[] endDimsInt = range.getEndDimsInt();
-			
-			MatrixBlock vecSlice = new MatrixBlock(endDimsInt[0] - beginDimsInt[0], endDimsInt[1] - beginDimsInt[1],
-					false);
-			vector.slice(beginDimsInt[1], endDimsInt[1], 0, 1, vecSlice);
-			
-			FederatedData fd = entry.getValue();
-			MatrixBlock multRes;
-			if( fd.isInitialized() ) {
-				FederatedRequest request = new FederatedRequest(FederatedRequest.FedMethod.VECMATMULT);
-				request.appendParam(vecSlice);
-				FederatedResponse response = fd.executeFederatedOperation(request);
-				if( !response.isSuccessful() ) {
-					throw new DMLRuntimeException("Federated tensor multiplication failed: " + response.getErrorMessage());
-				}
-				request = new FederatedRequest(FederatedRequest.FedMethod.TRANSFER);
-				request.appendParam(response.getData());
-				response = fd.executeFederatedOperation(request);
-				multRes = (MatrixBlock) response.getData();
-			}
-			else {
-				// TODO normal VecMatMult
-				throw new DMLRuntimeException("Federated tensor operations only supported on federated tensorObjects");
-			}
-			result.copy(beginDimsInt[0], endDimsInt[0], beginDimsInt[1], endDimsInt[1], multRes, false);
-		}
-		return result;
-	}
-	
 	@Override
 	public void refreshMetaData() {
 		if (_metaData == null ) //refresh only for existing data

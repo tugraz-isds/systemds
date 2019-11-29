@@ -41,22 +41,20 @@ public class Federated extends Lop {
 	
 	@Override
 	public String getInstructions(String addresses, String ranges, String output) {
-		StringBuilder sb = new StringBuilder();
-		sb.append("FED");
-		sb.append(OPERAND_DELIMITOR);
-		sb.append("fedread");
-		sb.append(OPERAND_DELIMITOR);
-		sb.append(_addresses.prepScalarInputOperand(addresses));
-		sb.append(OPERAND_DELIMITOR);
-		sb.append(_ranges.prepScalarInputOperand(ranges));
-		sb.append(OPERAND_DELIMITOR);
-		sb.append(prepOutputOperand(output));
-		return sb.toString();
+		return "FED" +
+				OPERAND_DELIMITOR +
+				"fedread" +
+				OPERAND_DELIMITOR +
+				_addresses.prepScalarInputOperand(addresses) +
+				OPERAND_DELIMITOR +
+				_ranges.prepScalarInputOperand(ranges) +
+				OPERAND_DELIMITOR +
+				prepOutputOperand(output);
 	}
 	
 	@Override
 	public String toString() {
-		// TODO Sql.toString() lop
+		// TODO Federated.toString() lop
 		return null;
 	}
 }

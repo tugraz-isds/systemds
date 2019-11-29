@@ -17,20 +17,16 @@
 
 package org.tugraz.sysds.runtime.controlprogram.federated;
 
-import org.apache.hadoop.yarn.webapp.view.HtmlPage;
-import org.tugraz.sysds.runtime.controlprogram.caching.TensorObject;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 
 public class FederatedRequest implements Serializable {
 	private static final long serialVersionUID = 5946781306963870394L;
 	
 	public enum FedMethod {
-		READ, VECMATMULT, SHUTDOWN, TRANSFER
+		READ, SHUTDOWN, TRANSFER
 	}
 	
 	private FedMethod _method;

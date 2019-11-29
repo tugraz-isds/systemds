@@ -25,7 +25,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.wink.json4j.JSONObject;
 import org.tugraz.sysds.common.Types;
 import org.tugraz.sysds.conf.ConfigurationManager;
-import org.tugraz.sysds.hops.OptimizerUtils;
 import org.tugraz.sysds.parser.DataExpression;
 import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.controlprogram.caching.MatrixObject;
@@ -35,8 +34,6 @@ import org.tugraz.sysds.runtime.instructions.cp.Data;
 import org.tugraz.sysds.runtime.instructions.cp.ListObject;
 import org.tugraz.sysds.runtime.io.IOUtilFunctions;
 import org.tugraz.sysds.runtime.matrix.data.InputInfo;
-import org.tugraz.sysds.runtime.matrix.data.LibMatrixMult;
-import org.tugraz.sysds.runtime.matrix.data.MatrixBlock;
 import org.tugraz.sysds.runtime.matrix.data.OutputInfo;
 import org.tugraz.sysds.runtime.meta.MatrixCharacteristics;
 import org.tugraz.sysds.runtime.meta.MetaDataFormat;
@@ -53,7 +50,7 @@ import static org.tugraz.sysds.parser.DataExpression.FORMAT_TYPE_VALUE_MATRIXMAR
 import static org.tugraz.sysds.parser.DataExpression.FORMAT_TYPE_VALUE_TEXT;
 
 public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
-	private IDSequence _seq;
+	private final IDSequence _seq;
 	private Map<Long, Data> _vars;
 	
 	public FederatedWorkerHandler(IDSequence seq, Map<Long, Data> vars) {
@@ -128,39 +125,6 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 						response = new FederatedResponse(FederatedResponse.Type.SUCCESS, id);
 					}
 					catch (DMLRuntimeException exception) {
-						response = new FederatedResponse(FederatedResponse.Type.ERROR,
-								ExceptionUtils.getFullStackTrace(exception));
-					}
-					finally {
-						ctx.writeAndFlush(response);
-					}
-					break;
-				case VECMATMULT:
-					try {
-						// params: matrix, varID
-						int numParams = request.getNumParams();
-						checkNumParams(numParams, 2);
-						MatrixBlock matrix = (MatrixBlock) request.getParam(0);
-						long varID = (Long) request.getParam(1);
-						
-						long result_var = _seq.getNextID();
-						MatrixObject matTo = (MatrixObject) _vars.get(varID);
-						// TODO other datatypes
-						MatrixBlock result = new MatrixBlock((int) matTo.getNumRows(), 1, false);
-						LibMatrixMult.matrixMult(matTo.acquireReadAndRelease(), matrix, result);
-						
-						MatrixObject resTo = new MatrixObject(Types.ValueType.FP64, OptimizerUtils.getUniqueTempFileName());
-						MetaDataFormat metadata = new MetaDataFormat(new MatrixCharacteristics(resTo.getNumRows(),
-								resTo.getNumColumns()),
-								OutputInfo.BinaryTensorBlockOutputInfo, InputInfo.BinaryTensorBlockInputInfo);
-						resTo.setMetaData(metadata);
-						resTo.acquireModify(result);
-						resTo.release();
-						_vars.put(result_var, resTo);
-						response = new FederatedResponse(FederatedResponse.Type.SUCCESS, result_var);
-					}
-					catch (Exception exception) {
-						System.out.println("[Federated Worker] VECMATMULT failed");
 						response = new FederatedResponse(FederatedResponse.Type.ERROR,
 								ExceptionUtils.getFullStackTrace(exception));
 					}
