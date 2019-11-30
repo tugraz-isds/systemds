@@ -171,6 +171,7 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 					response = new FederatedResponse(FederatedResponse.Type.ERROR, message);
 			}
 			ctx.writeAndFlush(response);
+			ctx.close();
 		}
 		
 	}
