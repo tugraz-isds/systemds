@@ -37,7 +37,6 @@ import org.tugraz.sysds.parser.Statement;
 import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.controlprogram.caching.CacheBlock;
 import org.tugraz.sysds.runtime.controlprogram.caching.CacheableData;
-import org.tugraz.sysds.runtime.controlprogram.caching.FederatedObject;
 import org.tugraz.sysds.runtime.controlprogram.caching.FrameObject;
 import org.tugraz.sysds.runtime.controlprogram.caching.MatrixObject;
 import org.tugraz.sysds.runtime.controlprogram.caching.TensorObject;
@@ -331,7 +330,7 @@ public class ParameterizedBuiltinCPInstruction extends ComputationCPInstruction 
 			String out = null;
 			
 			CacheableData<?> cacheData = ec.getCacheableData(getParam("target"));
-			if( cacheData instanceof MatrixObject || cacheData instanceof FederatedObject) {
+			if( cacheData instanceof MatrixObject) {
 				MatrixBlock matrix = (MatrixBlock) cacheData.acquireRead();
 				warnOnTrunction(matrix, rows, cols);
 				out = DataConverter.toString(matrix, sparse, separator, lineSeparator, rows, cols, decimal);

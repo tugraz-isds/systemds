@@ -43,7 +43,7 @@ public class Federated extends Lop {
 	public String getInstructions(String addresses, String ranges, String output) {
 		return "FED" +
 				OPERAND_DELIMITOR +
-				"fedread" +
+				"fedinit" +
 				OPERAND_DELIMITOR +
 				_addresses.prepScalarInputOperand(addresses) +
 				OPERAND_DELIMITOR +

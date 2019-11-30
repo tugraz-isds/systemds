@@ -20,7 +20,7 @@ package org.tugraz.sysds.runtime.instructions;
 import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.instructions.fed.FEDInstruction;
 import org.tugraz.sysds.runtime.instructions.fed.FEDInstruction.FEDType;
-import org.tugraz.sysds.runtime.instructions.fed.ReadFEDInstruction;
+import org.tugraz.sysds.runtime.instructions.fed.InitFEDInstruction;
 
 import java.util.HashMap;
 
@@ -29,7 +29,7 @@ public class FEDInstructionParser extends InstructionParser
 	public static final HashMap<String, FEDType> String2FEDInstructionType;
 	static {
 		String2FEDInstructionType = new HashMap<>();
-		String2FEDInstructionType.put("fedread", FEDType.Read);
+		String2FEDInstructionType.put("fedinit", FEDType.Init);
 	}
 
 	public static FEDInstruction parseSingleInstruction (String str ) {
@@ -48,8 +48,8 @@ public class FEDInstructionParser extends InstructionParser
 		if ( str == null || str.isEmpty() )
 			return null;
 		switch(fedtype) {
-			case Read:
-				return ReadFEDInstruction.parseInstruction(str);
+			case Init:
+				return InitFEDInstruction.parseInstruction(str);
 			default:
 				throw new DMLRuntimeException("Invalid FEDERATED Instruction Type: " + fedtype );
 		}

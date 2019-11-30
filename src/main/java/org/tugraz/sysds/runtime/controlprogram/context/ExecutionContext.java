@@ -29,7 +29,6 @@ import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.controlprogram.LocalVariableMap;
 import org.tugraz.sysds.runtime.controlprogram.Program;
 import org.tugraz.sysds.runtime.controlprogram.caching.CacheableData;
-import org.tugraz.sysds.runtime.controlprogram.caching.FederatedObject;
 import org.tugraz.sysds.runtime.controlprogram.caching.FrameObject;
 import org.tugraz.sysds.runtime.controlprogram.caching.MatrixObject;
 import org.tugraz.sysds.runtime.controlprogram.caching.MatrixObject.UpdateType;
@@ -231,19 +230,6 @@ public class ExecutionContext {
 
 		return (TensorObject) dat;
 	}
-	
-	public FederatedObject getFederatedObject(String varname) {
-		Data dat = getVariable(varname);
-		
-		//error handling if non existing or no matrix
-		if( dat == null )
-			throw new DMLRuntimeException("Variable '"+varname+"' does not exist in the symbol table.");
-		if( !(dat instanceof FederatedObject) )
-			throw new DMLRuntimeException("Variable '"+varname+"' is not a federated tensor.");
-		
-		return (FederatedObject) dat;
-	}
-	
 	
 	public boolean isFrameObject(String varname) {
 		Data dat = getVariable(varname);
@@ -534,11 +520,6 @@ public class ExecutionContext {
 		setVariable(varName, to);
 	}
 	
-	public void setFederatedOutput(String varName, long[] dims,
-			List<org.apache.commons.lang3.tuple.Pair<FederatedRange, FederatedData>> feds) {
-		getFederatedObject(varName).reset(dims, feds);
-	}
-
 	public void setFrameOutput(String varName, FrameBlock outputData) {
 		FrameObject fo = getFrameObject(varName);
 		fo.acquireModify(outputData);

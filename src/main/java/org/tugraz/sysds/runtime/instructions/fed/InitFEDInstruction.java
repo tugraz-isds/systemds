@@ -21,7 +21,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.tugraz.sysds.common.Types;
 import org.tugraz.sysds.runtime.DMLRuntimeException;
-import org.tugraz.sysds.runtime.controlprogram.caching.FederatedObject;
+import org.tugraz.sysds.runtime.controlprogram.caching.MatrixObject;
 import org.tugraz.sysds.runtime.controlprogram.context.ExecutionContext;
 import org.tugraz.sysds.runtime.data.FederatedData;
 import org.tugraz.sysds.runtime.data.FederatedRange;
@@ -40,17 +40,17 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class ReadFEDInstruction extends FEDInstruction {
+public class InitFEDInstruction extends FEDInstruction {
 	private CPOperand _addresses, _ranges, _output;
 	
-	public ReadFEDInstruction(CPOperand addresses, CPOperand ranges, CPOperand out, String opcode, String instr) {
-		super(FEDType.Read, opcode, instr);
+	public InitFEDInstruction(CPOperand addresses, CPOperand ranges, CPOperand out, String opcode, String instr) {
+		super(FEDType.Init, opcode, instr);
 		_addresses = addresses;
 		_ranges = ranges;
 		_output = out;
 	}
 	
-	public static ReadFEDInstruction parseInstruction(String str) {
+	public static InitFEDInstruction parseInstruction(String str) {
 		String[] parts = InstructionUtils.getInstructionPartsWithValueType(str);
 		// We need 3 parts: Opcode, Addresses (list of Strings with url/ip:port/filepath), ranges and the output Operand
 		if( parts.length != 4 )
@@ -61,7 +61,7 @@ public class ReadFEDInstruction extends FEDInstruction {
 		addresses = new CPOperand(parts[1]);
 		ranges = new CPOperand(parts[2]);
 		out = new CPOperand(parts[3]);
-		return new ReadFEDInstruction(addresses, ranges, out, opcode, str);
+		return new InitFEDInstruction(addresses, ranges, out, opcode, str);
 	}
 	
 	@Override
@@ -126,8 +126,8 @@ public class ReadFEDInstruction extends FEDInstruction {
 				throw new DMLRuntimeException("federated instruction only takes strings as addresses");
 			}
 		}
-		ec.setFederatedOutput(_output.getName(), usedDims, feds);
-		FederatedObject fo = ec.getFederatedObject(_output.getName());
-		fo.prepareWorkers();
+		MatrixObject matrixObject = ec.getMatrixObject(_output);
+		matrixObject.getDataCharacteristics().setRows(usedDims[0]).setCols(usedDims[1]);
+		matrixObject.federate(feds);
 	}
 }

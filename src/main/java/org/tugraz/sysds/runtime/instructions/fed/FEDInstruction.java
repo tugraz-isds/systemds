@@ -33,7 +33,7 @@ import org.tugraz.sysds.runtime.matrix.operators.Operator;
 public abstract class FEDInstruction extends Instruction
 {
 	public enum FEDType {
-		Read
+		Init
 	}
 
 	protected final FEDType _fedType;

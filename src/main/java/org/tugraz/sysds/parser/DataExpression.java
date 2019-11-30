@@ -1916,7 +1916,7 @@ public class DataExpression extends DataIdentifier
 			
 			// TODO format type?
 			getOutput().setFormatType(FormatType.BINARY);
-			getOutput().setDataType(DataType.FEDERATED);
+			getOutput().setDataType(DataType.MATRIX);
 			getOutput().setValueType(ValueType.UNKNOWN);
 			getOutput().setDimensions(-1, -1);
 			break;
