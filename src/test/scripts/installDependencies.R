@@ -35,5 +35,4 @@ custom_install("outliers");
 custom_install("caret");
 custom_install("Sigmoid");
 custom_install("DescTools");
-custom_install("mice");
 

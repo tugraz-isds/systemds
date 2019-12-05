@@ -1,23 +1,18 @@
 #-------------------------------------------------------------
 #
-# Modifications Copyright 2019 Graz University of Technology
+# Copyright 2019 Graz University of Technology
 #
-# Licensed to the Apache Software Foundation (ASF) under one
-# or more contributor license agreements.  See the NOTICE file
-# distributed with this work for additional information
-# regarding copyright ownership.  The ASF licenses this file
-# to you under the Apache License, Version 2.0 (the
-# "License"); you may not use this file except in compliance
-# with the License.  You may obtain a copy of the License at
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
 #   http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an
-# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied.  See the License for the
-# specific language governing permissions and limitations
-# under the License.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
 #-------------------------------------------------------------
 
@@ -47,101 +42,85 @@
 
 
 m_mice_linearReg = function(Matrix[Double] X, Integer iter = 3, Integer complete = 3)
-return(Matrix[Double] dataset, Matrix[Double] singleSet)
-  {
+return(Matrix[Double] dataset, Matrix[Double] singleSet) 
+{  
   n = nrow(X)
   row = n*complete;
   col = ncol(X);
-  R = matrix(0, rows=1, cols=col)
-  MR = matrix(0, rows=1, cols=col)
-  
-  mu = colMeans(X) #mean of columns for initial imputation
+  Result = matrix(0, rows = 1, cols = col)
+  Mask_Result = matrix(0, rows = 1, cols = col)
 
-# storing the mask/address of missing values
-  Mask = X==0;
+  # storing the mask/address of missing values
+  Mask = X == 0;
   Mask_Filled = Mask;
-
-# filling the missing data with thier means
-  X2 = X+(Mask*mu)
-  
-#slicing non-missing dataset for training columnwise linear regression
+  # filling the missing data with their means
+  X2 = X+(Mask*colMeans(X))
+    
+  #slicing non-missing dataset for training columnwise linear regression
   inverseMask = 1 - Mask;
-
   for(k in 1:iter)
   {
     for(i in 1:col)
     {
-	  slice_X = removeEmpty(target=X2, margin = "rows", select = inverseMask[,i])
-	  train_Y = slice_X[,i]
-	  
-	  if(i == 1)
-	  {
-	    train_X = slice_X[, (i+1): col]
-	  }
-	  else if (i == col)
-	  {
-	    train_X= slice_X[, 1:col-1];
-	  }
-	  else{
-	    train_X= cbind(slice_X[, 1:i-1], slice_X[,i+1:col]);
-	  }
-	  
-	  
-# slicing dataset for filling missing values
-	  slice_Y = removeEmpty(target=X2, margin = "rows", select = Mask[,i])
-	  test_Y = slice_Y[,i]
-	  if(i == 1)
-	  {
-	    test_X = slice_Y[, (i+1): col]
-	  }
-	  else if (i == col)
-	  {
-	    test_X= slice_Y[, 1:col-1];
-	  }
-	  else{
-	    test_X= cbind(slice_Y[, 1:i-1], slice_Y[,i+1:col]); 
-	  }
+      slice_X = removeEmpty(target=X2, margin = "rows", select = inverseMask[,i])
+      train_Y = slice_X[,i]
+      
+      if(i == 1)
+        train_X = slice_X[, (i+1): col]
+      else if (i == col)
+        train_X= slice_X[, 1:col-1];
+      else
+        train_X= cbind(slice_X[, 1:i-1], slice_X[, i+1:col]);
 
-# learning a regression line 
-	  beta = lm(X=train_X, y=train_Y)
+      # slicing dataset for filling missing values
+      slice_Y = removeEmpty(target = X2, margin = "rows", select = Mask[,i])
+      test_Y = slice_Y[,i]
+      
+      if(i == 1)
+        test_X = slice_Y[, (i+1): col]
+      else if (i == col)
+        test_X = slice_Y[, 1:col-1];
+      else
+        test_X = cbind(slice_Y[, 1:i-1], slice_Y[,i+1:col]); 
 
-# predicting missing values 
-	  pred = lmpredict(X=test_X, w=beta)
+      # learning a regression line 
+      beta = lm(X=train_X, y=train_Y)
 
-#imputing missing values
-	  j=1;
-	  for(r in 1:nrow(Mask_Filled) )
-	  {	
-	    if(as.scalar(Mask_Filled[r,i]) == 1.0)
-	    {
-	      Mask_Filled[r,i] = pred[j,1]
-		  j = j+1;
-	    }
-	  }
-	  C = X+Mask_Filled;
+      # predicting missing values 
+      pred = lmpredict(X=test_X, w=beta)
+
+      #imputing missing values
+      j = 1;
+      for(r in 1:nrow(Mask_Filled) )
+      { 
+        if(as.scalar(Mask_Filled[r,i]) == 1.0)
+        {
+          Mask_Filled[r,i] = pred[j,1]
+          j = j+ 1;
+        }
+      }
+      Col_Impute = X + Mask_Filled;
     }
-#binding results of multiple imputations
-# R is Resultant matrix and MR is Mask of Resultant Matrix
-	R = rbind(R, C)
-	MR = rbind(MR, Mask_Filled)
-	Mask_Filled = Mask;
+    # binding results of multiple imputations 
+    Result = rbind(Result, Col_Impute)
+    Mask_Result = rbind(Mask_Result, Mask_Filled) 
+    Mask_Filled = Mask;
   }
-# return imputed dataset  
-  R = R[2: n*iter+1, ]
-  MR = MR[2: n*iter+1, ]
+  # return imputed dataset  
+  Result = Result[2: n*iter+1, ]
+  Mask_Result = Mask_Result[2: n*iter+1, ]
   index = (((complete*n)-n)+1)
  
-# aggregating the results
-  D = MR[index:row, ] 
-  count =0;
+  # aggregating the results
+  Agg_Matrix = Mask_Result[index:row, ] 
+  count = 0;
   for(d in 1:(iter-1))
   {
-    D = D+MR[((count*n)+1):(n*d),]
-	count = count+1;
+    Agg_Matrix = Agg_Matrix + Mask_Result[((count*n)+1):(n*d),]
+    count = count+1;
   }
-  D=(D/iter)  
-	  
-# return imputed data
-  dataset = X+D
-  singleSet = R[index: row, ]
+  Agg_Matrix =(Agg_Matrix/iter)      
+  # return imputed data
+  dataset = X + Agg_Matrix
+  singleSet = Result[index:row, ]
 }
