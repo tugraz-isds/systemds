@@ -133,7 +133,7 @@ public class FederatedData {
 				@Override
 				public void initChannel(SocketChannel ch) {
 					ch.pipeline().addLast("ObjectDecoder",
-							new ObjectDecoder(ClassResolvers.weakCachingResolver(ClassLoader.getSystemClassLoader())))
+							new ObjectDecoder(Integer.MAX_VALUE, ClassResolvers.weakCachingResolver(ClassLoader.getSystemClassLoader())))
 							.addLast("FederatedOperationHandler", new ChannelInboundHandlerAdapter() {
 								@Override
 								public void channelRead(ChannelHandlerContext ctx, Object msg) {

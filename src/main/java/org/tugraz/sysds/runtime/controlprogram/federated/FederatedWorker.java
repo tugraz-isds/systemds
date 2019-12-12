@@ -59,7 +59,7 @@ public class FederatedWorker {
 					@Override
 					public void initChannel(SocketChannel ch) {
 						ch.pipeline().addLast("ObjectDecoder",
-							new ObjectDecoder(ClassResolvers.weakCachingResolver(ClassLoader.getSystemClassLoader())))
+							new ObjectDecoder(Integer.MAX_VALUE, ClassResolvers.weakCachingResolver(ClassLoader.getSystemClassLoader())))
 								.addLast("ObjectEncoder", new ObjectEncoder())
 								.addLast("FederatedWorkerHandler", new FederatedWorkerHandler(_seq, _vars));
 					}
