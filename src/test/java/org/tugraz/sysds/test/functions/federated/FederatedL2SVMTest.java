@@ -62,7 +62,7 @@ public class FederatedL2SVMTest extends AutomatedTestBase {
 			
 			Thread t = new Thread(() ->
 					runTest(true, false, null, -1));
-			//t.start();
+			t.start();
 			
 			TestConfiguration config = availableTestConfigurations.get(TEST_NAME);
 			loadTestConfiguration(config);
