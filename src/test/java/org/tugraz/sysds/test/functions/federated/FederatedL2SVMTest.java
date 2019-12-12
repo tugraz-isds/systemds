@@ -38,8 +38,8 @@ public class FederatedL2SVMTest extends AutomatedTestBase {
 	
 	private final static int blocksize = 1024;
 	private final static int port = 1222;
-	private final static int rows = 60;
-	private final static int cols = 30;
+	private final static int rows = 1000;
+	private final static int cols = 1000;
 	
 	@Override
 	public void setUp() {
@@ -62,7 +62,7 @@ public class FederatedL2SVMTest extends AutomatedTestBase {
 			
 			Thread t = new Thread(() ->
 					runTest(true, false, null, -1));
-			t.start();
+			//t.start();
 			
 			TestConfiguration config = availableTestConfigurations.get(TEST_NAME);
 			loadTestConfiguration(config);

@@ -49,6 +49,7 @@ import org.tugraz.sysds.runtime.meta.DataCharacteristics;
 import org.tugraz.sysds.runtime.meta.MatrixCharacteristics;
 import org.tugraz.sysds.runtime.meta.MetaData;
 import org.tugraz.sysds.runtime.meta.MetaDataFormat;
+import org.tugraz.sysds.runtime.util.CommonThreadPool;
 import org.tugraz.sysds.runtime.util.DataConverter;
 import org.tugraz.sysds.runtime.util.HDFSTool;
 import org.tugraz.sysds.runtime.util.IndexRange;
@@ -60,6 +61,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 
 /**
@@ -201,7 +204,7 @@ public class MatrixObject extends CacheableData<MatrixBlock>
 			output.getDataCharacteristics().setRows(getNumRows()).setCols(1);
 			resultBlock = new MatrixBlock((int) getNumRows(), 1, false);
 		}
-		List<CompletableFuture<Void>> joinFutures = new ArrayList<>();
+		List<CompletableFuture<CompletableFuture<Void>>> joinFutures = new ArrayList<>();
 		MatrixBlock vector = other.acquireRead();
 		for (Map.Entry<FederatedRange, FederatedData> entry : _fedMapping.entrySet()) {
 			FederatedRange range = entry.getKey();
@@ -228,7 +231,7 @@ public class MatrixObject extends CacheableData<MatrixBlock>
 			CompletableFuture<FederatedResponse> future = fedData.executeFederatedOperation(
 					new FederatedRequest(FederatedRequest.FedMethod.MATVECMULT, params), true);
 			// use varId
-			CompletableFuture<Void> joinFuture = future.thenApply(idResponse -> {
+			CompletableFuture<CompletableFuture<Void>> joinFuture = future.thenApply(idResponse -> {
 				if( !idResponse.isSuccessful() )
 					throw new DMLRuntimeException("An error occurred while trying to perform a federated vector-matrix multiplication: " +
 							idResponse.getErrorMessage());
@@ -239,28 +242,24 @@ public class MatrixObject extends CacheableData<MatrixBlock>
 				// we execute the next operation, the read
 				return fedData.executeFederatedOperation(new FederatedRequest(FederatedRequest.FedMethod.TRANSFER,
 						paramId));
-			}).thenAccept(resultResponseFuture -> {
-				int[] beginDims = range.getBeginDimsInt();
-				try {
+			}).thenApply(resultResponseFuture -> {
 					// we got a CompletableFuture<FederatedResponse>
-					FederatedResponse federatedResponse = resultResponseFuture.get();
-					MatrixBlock mb = (MatrixBlock) federatedResponse.getData();
-					// TODO performance optimizations
-					// TODO Improve Vector Matrix multiplication accuracy
-					// Add worker response to resultBlock
-					for (int r = 0; r < mb.getNumRows(); r++)
-						for (int c = 0; c < mb.getNumColumns(); c++) {
-							int resultRow = r + (swapParams ? 0 : beginDims[0]);
-							int resultColumn = c + (swapParams ? beginDims[1] : 0);
-							synchronized (resultBlock) {
-								resultBlock.quickSetValue(resultRow, resultColumn,
-										resultBlock.quickGetValue(resultRow, resultColumn) + mb.quickGetValue(r, c));
+					return resultResponseFuture.thenAccept(federatedResponse -> {
+						int[] beginDims = range.getBeginDimsInt();
+						MatrixBlock mb = (MatrixBlock) federatedResponse.getData();
+						// TODO performance optimizations
+						// TODO Improve Vector Matrix multiplication accuracy
+						// Add worker response to resultBlock
+						for (int r = 0; r < mb.getNumRows(); r++)
+							for (int c = 0; c < mb.getNumColumns(); c++) {
+								int resultRow = r + (swapParams ? 0 : beginDims[0]);
+								int resultColumn = c + (swapParams ? beginDims[1] : 0);
+								synchronized (resultBlock) {
+									resultBlock.quickSetValue(resultRow, resultColumn,
+											resultBlock.quickGetValue(resultRow, resultColumn) + mb.quickGetValue(r, c));
+								}
 							}
-						}
-				}
-				catch (Exception e) {
-					throw new DMLRuntimeException("Could not vector multiply federated matrix", e);
-				}
+					});
 			}).exceptionally(e -> {
 				throw new DMLRuntimeException("Federated binary operation failed: " + e.getMessage());
 			});
@@ -268,7 +267,7 @@ public class MatrixObject extends CacheableData<MatrixBlock>
 		}
 		other.release();
 		// wait for all data to be written to resultBlock
-		joinFutures.forEach(CompletableFuture::join);
+		joinFutures.forEach((f) -> f.join().join());
 		long nnz = resultBlock.recomputeNonZeros();
 		output.acquireModify(resultBlock);
 		output.getDataCharacteristics().setNonZeros(nnz);

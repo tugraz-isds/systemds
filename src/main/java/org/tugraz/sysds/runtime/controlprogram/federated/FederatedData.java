@@ -31,8 +31,6 @@ import io.netty.handler.codec.serialization.ClassResolvers;
 import io.netty.handler.codec.serialization.ObjectDecoder;
 import io.netty.handler.codec.serialization.ObjectEncoder;
 import org.tugraz.sysds.runtime.DMLRuntimeException;
-import org.tugraz.sysds.runtime.controlprogram.federated.FederatedRequest;
-import org.tugraz.sysds.runtime.controlprogram.federated.FederatedResponse;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.CompletableFuture;
@@ -76,7 +74,7 @@ public class FederatedData {
 		return _varID != -1;
 	}
 	
-	public CompletableFuture<Void> initFederatedData() {
+	public synchronized CompletableFuture<Void> initFederatedData() {
 		if( isInitialized() )
 			throw new DMLRuntimeException("Tried to init already initialized data");
 		FederatedRequest request = new FederatedRequest(FederatedRequest.FedMethod.READ);
@@ -99,7 +97,7 @@ public class FederatedData {
 	 * @param withVarID true if we should add the default varID (initialized) or false if we should not
 	 * @return the response
 	 */
-	public synchronized CompletableFuture<FederatedResponse> executeFederatedOperation(FederatedRequest request, boolean withVarID) {
+	public CompletableFuture<FederatedResponse> executeFederatedOperation(FederatedRequest request, boolean withVarID) {
 		if (withVarID) {
 			if( !isInitialized() )
 				throw new DMLRuntimeException("Tried to execute federated operation on data non initialized federated data.");
@@ -114,7 +112,7 @@ public class FederatedData {
 	 * @param request the requested operation
 	 * @return the response
 	 */
-	public synchronized CompletableFuture<FederatedResponse> executeFederatedOperation(FederatedRequest request, long varID) {
+	public CompletableFuture<FederatedResponse> executeFederatedOperation(FederatedRequest request, long varID) {
 		request = request.deepClone();
 		request.appendParam(varID);
 		return executeFederatedOperation(request);

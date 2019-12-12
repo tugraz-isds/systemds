@@ -52,6 +52,7 @@ import java.util.Arrays;
 import java.util.Map;
 
 import static org.tugraz.sysds.parser.DataExpression.FORMAT_TYPE_VALUE_BINARY;
+import static org.tugraz.sysds.parser.DataExpression.FORMAT_TYPE_VALUE_CSV;
 import static org.tugraz.sysds.parser.DataExpression.FORMAT_TYPE_VALUE_LIBSVM;
 import static org.tugraz.sysds.parser.DataExpression.FORMAT_TYPE_VALUE_MATRIXMARKET;
 import static org.tugraz.sysds.parser.DataExpression.FORMAT_TYPE_VALUE_TEXT;
@@ -209,6 +210,9 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 						}
 						else if( format.equalsIgnoreCase(FORMAT_TYPE_VALUE_LIBSVM) ) {
 							oi = OutputInfo.LIBSVMOutputInfo;
+						}
+						else if( format.equalsIgnoreCase(FORMAT_TYPE_VALUE_CSV) ) {
+							oi = OutputInfo.CSVOutputInfo;
 						}
 						else {
 							return new FederatedResponse(FederatedResponse.Type.ERROR,
