@@ -49,7 +49,6 @@ import org.tugraz.sysds.runtime.meta.DataCharacteristics;
 import org.tugraz.sysds.runtime.meta.MatrixCharacteristics;
 import org.tugraz.sysds.runtime.meta.MetaData;
 import org.tugraz.sysds.runtime.meta.MetaDataFormat;
-import org.tugraz.sysds.runtime.util.CommonThreadPool;
 import org.tugraz.sysds.runtime.util.DataConverter;
 import org.tugraz.sysds.runtime.util.HDFSTool;
 import org.tugraz.sysds.runtime.util.IndexRange;
@@ -61,8 +60,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 
 /**
@@ -259,6 +256,8 @@ public class MatrixObject extends CacheableData<MatrixBlock>
 											resultBlock.quickGetValue(resultRow, resultColumn) + mb.quickGetValue(r, c));
 								}
 							}
+					}).exceptionally(e -> {
+						throw new DMLRuntimeException("Federated binary operation failed: " + e.getMessage());
 					});
 			}).exceptionally(e -> {
 				throw new DMLRuntimeException("Federated binary operation failed: " + e.getMessage());
