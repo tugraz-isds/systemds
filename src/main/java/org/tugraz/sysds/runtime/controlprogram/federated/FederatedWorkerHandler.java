@@ -17,6 +17,8 @@
 
 package org.tugraz.sysds.runtime.controlprogram.federated;
 
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.apache.commons.lang.exception.ExceptionUtils;
@@ -128,7 +130,7 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 			if (!response.isSuccessful())
 				log.error("[Federated Worker] Method " + request.getMethod() + " failed: " +
 						response.getErrorMessage());
-			ctx.writeAndFlush(response);
+			ctx.writeAndFlush(response).addListener(new CloseListener());
 		}
 	}
 	
@@ -258,4 +260,14 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 		ctx.close();
 	}
 	
+	private static class CloseListener implements ChannelFutureListener {
+		@Override
+		public void operationComplete(ChannelFuture channelFuture) throws Exception {
+			if (channelFuture.isSuccess()) {
+				channelFuture.channel().close().sync();
+			} else {
+				throw new DMLRuntimeException("[Federated Worker] Write failed");
+			}
+		}
+	}
 }
