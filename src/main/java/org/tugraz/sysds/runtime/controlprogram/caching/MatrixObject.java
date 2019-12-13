@@ -22,6 +22,7 @@
 package org.tugraz.sysds.runtime.controlprogram.caching;
 
 import org.apache.commons.lang.mutable.MutableBoolean;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.tugraz.sysds.api.DMLScript;
 import org.tugraz.sysds.common.Types.DataType;
@@ -59,7 +60,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 
 
 /**
@@ -151,7 +152,7 @@ public class MatrixObject extends CacheableData<MatrixBlock>
 			// TODO support all value types
 			_fedMapping.put(t.getLeft(), t.getRight());
 		}
-		List<CompletableFuture<Void>> futures = new ArrayList<>();
+		List<Pair<FederatedData, Future<FederatedResponse>>> idResponses = new ArrayList<>();
 		for (Map.Entry<FederatedRange, FederatedData> entry : _fedMapping.entrySet()) {
 			FederatedRange range = entry.getKey();
 			FederatedData value = entry.getValue();
@@ -162,16 +163,20 @@ public class MatrixObject extends CacheableData<MatrixBlock>
 				for (int i = 0; i < dims.length; i++) {
 					dims[i] = endDims[i] - beginDims[i];
 				}
-				futures.add(value.initFederatedData());
+				idResponses.add(new ImmutablePair<>(value, value.initFederatedData()));
 			}
 		}
-		for (CompletableFuture<Void> future : futures) {
-			try {
-				future.get();
+		try {
+			for (Pair<FederatedData, Future<FederatedResponse>> idResponse : idResponses) {
+				FederatedResponse response = idResponse.getRight().get();
+				if( response.isSuccessful() )
+					idResponse.getLeft().setVarID((Long) response.getData());
+				else
+					throw new DMLRuntimeException(response.getErrorMessage());
 			}
-			catch (Exception e) {
-				throw new DMLRuntimeException("Could not federate matrix", e);
-			}
+		}
+		catch (Exception e) {
+			throw new DMLRuntimeException("Federation initialization failed", e);
 		}
 		getDataCharacteristics().setNonZeros(getNumColumns() * getNumRows());
 	}
@@ -201,7 +206,7 @@ public class MatrixObject extends CacheableData<MatrixBlock>
 			output.getDataCharacteristics().setRows(getNumRows()).setCols(1);
 			resultBlock = new MatrixBlock((int) getNumRows(), 1, false);
 		}
-		List<CompletableFuture<CompletableFuture<Void>>> joinFutures = new ArrayList<>();
+		List<Pair<FederatedRange, Future<FederatedResponse>>> idResponsePairs = new ArrayList<>();
 		MatrixBlock vector = other.acquireRead();
 		for (Map.Entry<FederatedRange, FederatedData> entry : _fedMapping.entrySet()) {
 			FederatedRange range = entry.getKey();
@@ -225,48 +230,33 @@ public class MatrixObject extends CacheableData<MatrixBlock>
 			}
 			params.add(vectorSlice);
 			params.add(!swapParams); // if is matrix vector multiplication true, otherwise false
-			CompletableFuture<FederatedResponse> future = fedData.executeFederatedOperation(
+			Future<FederatedResponse> future = fedData.executeFederatedOperation(
 					new FederatedRequest(FederatedRequest.FedMethod.MATVECMULT, params), true);
-			// use varId
-			CompletableFuture<CompletableFuture<Void>> joinFuture = future.thenApply(idResponse -> {
-				if( !idResponse.isSuccessful() )
-					throw new DMLRuntimeException("An error occurred while trying to perform a federated vector-matrix multiplication: " +
-							idResponse.getErrorMessage());
-				long varID = (Long) idResponse.getData();
-				List<Object> paramId = new ArrayList<>();
-				// we want the variable with `varID` of last request (result of MATVECMULT)
-				paramId.add(varID);
-				// we execute the next operation, the read
-				return fedData.executeFederatedOperation(new FederatedRequest(FederatedRequest.FedMethod.TRANSFER,
-						paramId));
-			}).thenApply(resultResponseFuture -> {
-					// we got a CompletableFuture<FederatedResponse>
-					return resultResponseFuture.thenAccept(federatedResponse -> {
-						int[] beginDims = range.getBeginDimsInt();
-						MatrixBlock mb = (MatrixBlock) federatedResponse.getData();
-						// TODO performance optimizations
-						// TODO Improve Vector Matrix multiplication accuracy
-						// Add worker response to resultBlock
-						for (int r = 0; r < mb.getNumRows(); r++)
-							for (int c = 0; c < mb.getNumColumns(); c++) {
-								int resultRow = r + (swapParams ? 0 : beginDims[0]);
-								int resultColumn = c + (swapParams ? beginDims[1] : 0);
-								synchronized (resultBlock) {
-									resultBlock.quickSetValue(resultRow, resultColumn,
-											resultBlock.quickGetValue(resultRow, resultColumn) + mb.quickGetValue(r, c));
-								}
-							}
-					}).exceptionally(e -> {
-						throw new DMLRuntimeException("Federated binary operation failed: " + e.getMessage());
-					});
-			}).exceptionally(e -> {
-				throw new DMLRuntimeException("Federated binary operation failed: " + e.getMessage());
-			});
-			joinFutures.add(joinFuture);
+			idResponsePairs.add(new ImmutablePair<>(range, future));
 		}
 		other.release();
+		try {
+			for (Pair<FederatedRange, Future<FederatedResponse>> idResponsePair : idResponsePairs) {
+				FederatedRange range = idResponsePair.getLeft();
+				FederatedResponse federatedResponse = idResponsePair.getRight().get();
+				int[] beginDims = range.getBeginDimsInt();
+				MatrixBlock mb = (MatrixBlock) federatedResponse.getData();
+				// TODO performance optimizations
+				// TODO Improve Vector Matrix multiplication accuracy
+				// Add worker response to resultBlock
+				for (int r = 0; r < mb.getNumRows(); r++)
+					for (int c = 0; c < mb.getNumColumns(); c++) {
+						int resultRow = r + (swapParams ? 0 : beginDims[0]);
+						int resultColumn = c + (swapParams ? beginDims[1] : 0);
+						resultBlock.quickSetValue(resultRow, resultColumn,
+								resultBlock.quickGetValue(resultRow, resultColumn) + mb.quickGetValue(r, c));
+					}
+			}
+		}
+		catch (Exception e) {
+			throw new DMLRuntimeException("Federated binary aggregation failed", e);
+		}
 		// wait for all data to be written to resultBlock
-		joinFutures.forEach((f) -> f.join().join());
 		long nnz = resultBlock.recomputeNonZeros();
 		output.acquireModify(resultBlock);
 		output.getDataCharacteristics().setNonZeros(nnz);
@@ -286,37 +276,41 @@ public class MatrixObject extends CacheableData<MatrixBlock>
 		long[] dims = getDataCharacteristics().getDims();
 		// TODO sparse optimization
 		MatrixBlock result = new MatrixBlock((int) dims[0], (int) dims[1], false);
-		List<CompletableFuture<Void>> joinFutures = new ArrayList<>();
+		List<Pair<FederatedRange, Future<FederatedResponse>>> readResponses = new ArrayList<>();
 		for (Map.Entry<FederatedRange, FederatedData> entry : _fedMapping.entrySet()) {
 			FederatedRange range = entry.getKey();
 			FederatedData fd = entry.getValue();
 			
 			if( fd.isInitialized() ) {
 				FederatedRequest request = new FederatedRequest(FederatedRequest.FedMethod.TRANSFER);
-				// Future we can later join on, so we can ensure all workers are finished
-				CompletableFuture<Void> joinFuture = fd.executeFederatedOperation(request, true)
-						.thenAccept(response -> {
-							// add result
-							int[] beginDimsInt = range.getBeginDimsInt();
-							int[] endDimsInt = range.getEndDimsInt();
-							if( !response.isSuccessful() ) {
-								throw new DMLRuntimeException("Federated matrix read failed: " +
-										response.getErrorMessage());
-							}
-							MatrixBlock multRes = (MatrixBlock) response.getData();
-							result.copy(beginDimsInt[0], endDimsInt[0] - 1, beginDimsInt[1], endDimsInt[1] - 1,
-									multRes, false);
-							result.setNonZeros(result.getNonZeros() + multRes.getNonZeros());
-						}).exceptionally(e -> {
-							throw new DMLRuntimeException("Federated matrix read failed: " + e.getMessage());
-						});
-				joinFutures.add(joinFuture);
+				Future<FederatedResponse> readResponse = fd.executeFederatedOperation(request, true);
+				readResponses.add(new ImmutablePair<>(range, readResponse));
 			}
 			else {
 				throw new DMLRuntimeException("Federated matrix read only supported on initialized FederatedData");
 			}
 		}
-		joinFutures.forEach(CompletableFuture::join);
+		try {
+			for (Pair<FederatedRange, Future<FederatedResponse>> readResponse : readResponses) {
+				FederatedRange range = readResponse.getLeft();
+				FederatedResponse response = readResponse.getRight().get();
+				// add result
+				int[] beginDimsInt = range.getBeginDimsInt();
+				int[] endDimsInt = range.getEndDimsInt();
+				if( !response.isSuccessful() ) {
+					throw new DMLRuntimeException("Federated matrix read failed: " +
+							response.getErrorMessage());
+				}
+				MatrixBlock multRes = (MatrixBlock) response.getData();
+				result.copy(beginDimsInt[0], endDimsInt[0] - 1, beginDimsInt[1], endDimsInt[1] - 1,
+						multRes, false);
+				result.setNonZeros(result.getNonZeros() + multRes.getNonZeros());
+			}
+		}
+		catch (Exception e) {
+			throw new DMLRuntimeException("Federated matrix read failed.", e);
+		}
+		
 		return result;
 	}
 	

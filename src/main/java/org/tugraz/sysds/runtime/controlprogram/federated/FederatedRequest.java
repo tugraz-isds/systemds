@@ -26,7 +26,7 @@ public class FederatedRequest implements Serializable {
 	private static final long serialVersionUID = 5946781306963870394L;
 	
 	public enum FedMethod {
-		READ, MATVECMULT, SHUTDOWN, TRANSFER
+		READ, MATVECMULT, TRANSFER
 	}
 	
 	private FedMethod _method;

@@ -30,8 +30,8 @@ import io.netty.handler.codec.serialization.ClassResolvers;
 import io.netty.handler.codec.serialization.ObjectDecoder;
 import io.netty.handler.codec.serialization.ObjectEncoder;
 import org.apache.log4j.Logger;
+import org.tugraz.sysds.runtime.controlprogram.caching.CacheableData;
 import org.tugraz.sysds.runtime.controlprogram.parfor.util.IDSequence;
-import org.tugraz.sysds.runtime.instructions.cp.Data;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -41,7 +41,7 @@ public class FederatedWorker {
 	
 	public int _port;
 	private IDSequence _seq = new IDSequence();
-	private Map<Long, Data> _vars = new HashMap<>();
+	private Map<Long, CacheableData> _vars = new HashMap<>();
 	
 	public FederatedWorker(int port) {
 		_port = port;
@@ -49,8 +49,8 @@ public class FederatedWorker {
 	
 	public void run() throws Exception {
 		log.debug("[Federated Worker] Setting up...");
-		EventLoopGroup bossGroup = new NioEventLoopGroup();
-		EventLoopGroup workerGroup = new NioEventLoopGroup();
+		EventLoopGroup bossGroup = new NioEventLoopGroup(10);
+		EventLoopGroup workerGroup = new NioEventLoopGroup(10);
 		try {
 			ServerBootstrap b = new ServerBootstrap();
 			b.group(bossGroup, workerGroup)

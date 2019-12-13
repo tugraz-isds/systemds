@@ -30,16 +30,19 @@ import org.tugraz.sysds.test.TestUtils;
 
 import java.io.IOException;
 
+import static java.lang.Thread.sleep;
+
 public class FederatedL2SVMTest extends AutomatedTestBase {
 	
 	private final static String TEST_DIR = "functions/federated/";
 	private final static String TEST_NAME = "FederatedL2SVMTest";
 	private final static String TEST_CLASS_DIR = TEST_DIR + FederatedL2SVMTest.class.getSimpleName() + "/";
 	
-	private final static int blocksize = 1024;
-	private final static int port = 1222;
+	private final static int blocksize = 1000;
+	private final static int port1 = 1222;
+	private final static int port2 = 1223;
 	private final static int rows = 1000;
-	private final static int cols = 1000;
+	private final static int cols = 100;
 	
 	@Override
 	public void setUp() {
@@ -58,11 +61,16 @@ public class FederatedL2SVMTest extends AutomatedTestBase {
 			
 			// empty script name because we don't execute any script, just start the worker
 			fullDMLScriptName = "";
-			programArgs = new String[]{"-w", Integer.toString(port)};
-			
-			Thread t = new Thread(() ->
+			programArgs = new String[]{"-w", Integer.toString(port1)};
+			Thread t1 = new Thread(() ->
 					runTest(true, false, null, -1));
-			t.start();
+			t1.start();
+			sleep(1000);
+			fullDMLScriptName = "";
+			programArgs = new String[]{"-w", Integer.toString(port2)};
+			Thread t2 = new Thread(() ->
+					runTest(true, false, null, -1));
+			t2.start();
 			
 			TestConfiguration config = availableTestConfigurations.get(TEST_NAME);
 			loadTestConfiguration(config);
@@ -85,16 +93,21 @@ public class FederatedL2SVMTest extends AutomatedTestBase {
 			double[][] expected = readMatrix(output("Z2"), InputInfo.BinaryBlockInputInfo, cols, 1, blocksize);
 			
 			fullDMLScriptName = HOME + TEST_NAME + ".dml";
-			programArgs = new String[]{"-explain", "-args", "\"localhost:" + port + "/" + input("X1") + "\"",
-					"\"localhost:" + port + "/" + input("X2") + "\"", Integer.toString(rows), Integer.toString(cols),
+			programArgs = new String[]{"-explain", "-args", "\"localhost:" + port1 + "/" + input("X1") + "\"",
+					"\"localhost:" + port2 + "/" + input("X2") + "\"", Integer.toString(rows), Integer.toString(cols),
 					Integer.toString(halfRows), input("Y"), output("Z1")};
 			runTest(true, false, null, -1);
 			double[][] actual = readMatrix(output("Z1"), InputInfo.BinaryBlockInputInfo, cols, 1, blocksize);
 			
 			// epsilon because aggregation works slightly differently for federated
-			TestUtils.compareMatrices(expected, actual, cols, 1, 1e-14);
+			TestUtils.compareMatrices(expected, actual, cols, 1, 1e-6);
 			// kill the worker
-			t.interrupt();
+			t1.interrupt();
+			t2.interrupt();
+		}
+		catch (InterruptedException e) {
+			e.printStackTrace();
+			assert(false);
 		}
 		finally {
 			rtplatform = platformOld;

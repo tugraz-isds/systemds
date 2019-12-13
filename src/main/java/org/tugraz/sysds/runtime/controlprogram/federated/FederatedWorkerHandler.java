@@ -29,6 +29,7 @@ import org.tugraz.sysds.conf.ConfigurationManager;
 import org.tugraz.sysds.hops.OptimizerUtils;
 import org.tugraz.sysds.parser.DataExpression;
 import org.tugraz.sysds.runtime.DMLRuntimeException;
+import org.tugraz.sysds.runtime.controlprogram.caching.CacheableData;
 import org.tugraz.sysds.runtime.controlprogram.caching.MatrixObject;
 import org.tugraz.sysds.runtime.controlprogram.caching.TensorObject;
 import org.tugraz.sysds.runtime.controlprogram.parfor.util.IDSequence;
@@ -61,9 +62,9 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 	protected static Logger log = Logger.getLogger(FederatedWorkerHandler.class);
 	
 	private final IDSequence _seq;
-	private Map<Long, Data> _vars;
+	private Map<Long, CacheableData> _vars;
 	
-	public FederatedWorkerHandler(IDSequence seq, Map<Long, Data> vars) {
+	public FederatedWorkerHandler(IDSequence seq, Map<Long, CacheableData> vars) {
 		_seq = seq;
 		_vars = vars;
 	}
@@ -120,12 +121,6 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 					response = getVariableData(varID);
 					break;
 				
-				case SHUTDOWN:
-					log.debug("[Federated Worker] Shutting down server...");
-					ctx.close();
-					response = new FederatedResponse(FederatedResponse.Type.SUCCESS_EMPTY);
-					break;
-				
 				default:
 					String message = String.format("[Federated Worker] Method %s is not supported.", request.getMethod());
 					response = new FederatedResponse(FederatedResponse.Type.ERROR, message);
@@ -134,9 +129,7 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 				log.error("[Federated Worker] Method " + request.getMethod() + " failed: " +
 						response.getErrorMessage());
 			ctx.writeAndFlush(response);
-			ctx.close();
 		}
-		
 	}
 	
 	private FederatedResponse getVariableData(long varID) {
@@ -177,7 +170,7 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 		else {
 			result = vector.aggregateBinaryOperations(vector, matBlock1, new MatrixBlock(), ab_op);
 		}
-		return createMatrixObject(result);
+		return new FederatedResponse(FederatedResponse.Type.SUCCESS, result);
 	}
 	
 	private FederatedResponse readMatrix(String filename) {
