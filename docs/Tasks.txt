@@ -193,5 +193,8 @@ SYSTEMDS-250 Large-Scale Slice Finding
  * 232 Lineage of generated operators
 >>>>>>> 24a1f2cf... [SYSTEMDS-12] Remove hop-lop indirections (type consolidation)
 
+ SYSTEMDS-240 Student Projects
+ * 241 Hidden Markov Models for Missing Value Imputation              OK
+ 
 Others:
  * Break append instruction to cbind and rbind 
