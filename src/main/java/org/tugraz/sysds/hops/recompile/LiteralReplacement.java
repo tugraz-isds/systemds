@@ -41,6 +41,7 @@ import org.tugraz.sysds.common.Types.DataType;
 import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.controlprogram.LocalVariableMap;
 import org.tugraz.sysds.runtime.controlprogram.caching.MatrixObject;
+import org.tugraz.sysds.runtime.controlprogram.context.ExecutionContext;
 import org.tugraz.sysds.runtime.instructions.cp.Data;
 import org.tugraz.sysds.runtime.instructions.cp.ListObject;
 import org.tugraz.sysds.runtime.instructions.cp.ScalarObject;
@@ -55,9 +56,68 @@ public class LiteralReplacement
 	private static final boolean REPORT_LITERAL_REPLACE_OPS_STATS = true;
 	
 	@SuppressWarnings("null")
-	protected static void rReplaceLiterals( Hop hop, LocalVariableMap vars, boolean scalarsOnly )
+	protected static void rReplaceLiterals( Hop hop, ExecutionContext ec, boolean scalarsOnly )
 	{
 		if( hop.isVisited() )
+			return;
+
+		LocalVariableMap vars = ec.getVariables();
+		if( hop.getInput() != null )
+		{
+			//indexed access to allow parent-child modifications
+			for( int i=0; i<hop.getInput().size(); i++ )
+			{
+				Hop c = hop.getInput().get(i);
+				Hop lit = null;
+				
+				//conditional apply of literal replacements
+				lit = (lit==null) ? replaceLiteralScalarRead(c, vars) : lit;
+				lit = (lit==null) ? replaceLiteralValueTypeCastScalarRead(c, vars) : lit;
+				lit = (lit==null) ? replaceLiteralValueTypeCastLiteral(c, vars) : lit;
+				if( !scalarsOnly ) {
+					lit = (lit==null) ? replaceLiteralDataTypeCastMatrixRead(c, vars) : lit;
+					lit = (lit==null) ? replaceLiteralValueTypeCastRightIndexing(c, vars) : lit;
+					lit = (lit==null) ? replaceLiteralFullUnaryAggregate(c, vars) : lit;
+					lit = (lit==null) ? replaceLiteralFullUnaryAggregateRightIndexing(c, vars) : lit;
+					lit = (lit==null) ? replaceTReadMatrixFromList(c, vars) : lit;
+					lit = (lit==null) ? replaceTReadMatrixFromListAppend(c, ec) : lit;
+					lit = (lit==null) ? replaceTReadMatrixLookupFromList(c, vars) : lit;
+					lit = (lit==null) ? replaceTReadScalarLookupFromList(c, vars) : lit;
+				}
+				
+				//replace hop w/ literal on demand
+				if( lit != null )
+				{
+					//replace hop c by literal, for all parents to prevent (1) missed opportunities
+					//because hop c marked as visited, and (2) repeated evaluation of uagg ops
+					
+					if( c.getParent().size() > 1 ) { //multiple parents
+						ArrayList<Hop> parents = new ArrayList<>(c.getParent());
+						for( Hop p : parents ) {
+							int pos = HopRewriteUtils.getChildReferencePos(p, c);
+							HopRewriteUtils.removeChildReferenceByPos(p, c, pos);
+							HopRewriteUtils.addChildReference(p, lit, pos);
+						}
+					}
+					else { //current hop is only parent
+						HopRewriteUtils.replaceChildReference(hop, c, lit, i);
+					}
+				}
+				//recursively process children
+				else {
+					rReplaceLiterals(c, ec, scalarsOnly);	
+				}
+			}
+		}
+		
+		hop.setVisited();
+	}
+
+	@SuppressWarnings("null")
+	protected static void rReplaceLiterals( Hop hop, LocalVariableMap vars, boolean scalarsOnly )
+	{
+		rReplaceLiterals(hop, new ExecutionContext(vars), scalarsOnly);
+		/*if( hop.isVisited() )
 			return;
 
 		if( hop.getInput() != null )
@@ -108,7 +168,7 @@ public class LiteralReplacement
 			}
 		}
 		
-		hop.setVisited();
+		hop.setVisited();*/
 	}
 	
 
@@ -356,21 +416,23 @@ public class LiteralReplacement
 		return ret;
 	}
 	
-	private static NaryOp replaceTReadMatrixFromListAppend( Hop c, LocalVariableMap vars ) {
+	private static NaryOp replaceTReadMatrixFromListAppend( Hop c, ExecutionContext ec ) {
 		//pattern: cbind(X) or rbind(X) with X being a list
 		NaryOp ret = null;
 		if( HopRewriteUtils.isNary(c, OpOpN.CBIND, OpOpN.RBIND)) {
 			Hop in = c.getInput().get(0);
 			if( in.getDataType() == DataType.LIST
 				&& HopRewriteUtils.isData(in, DataOpTypes.TRANSIENTREAD) ) {
-				ListObject list = (ListObject)vars.get(in.getName());
+				ListObject list = (ListObject)ec.getVariables().get(in.getName());
 				if( list.getLength() <= 128 ) {
 					ArrayList<Hop> tmp = new ArrayList<>();
 					for( int i=0; i < list.getLength(); i++ ) {
 						String varname = Dag.getNextUniqueVarname(DataType.MATRIX);
 						MatrixObject mo = (MatrixObject) list.slice(i);
-						vars.put(varname, mo);
+						ec.getVariables().put(varname, mo);
 						tmp.add(HopRewriteUtils.createTransientRead(varname, mo));
+						if (DMLScript.LINEAGE)
+							ec.getLineage().set(varname, list.getLineageItem(i));
 					}
 					ret = HopRewriteUtils.createNary(
 						((NaryOp)c).getOp(), tmp.toArray(new Hop[0]));
@@ -379,7 +441,7 @@ public class LiteralReplacement
 		}
 		return ret;
 	}
-	
+
 	private static DataOp replaceTReadMatrixLookupFromList( Hop c, LocalVariableMap vars ) {
 		//pattern: as.matrix(X[i:i]) or as.matrix(X['a','a']) with X being a list
 		DataOp ret = null;
