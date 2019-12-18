@@ -106,6 +106,9 @@
 				<version>2.5.3</version>
 				<configuration>
 					<pushChanges>false</pushChanges>
+					<suppressCommitBeforeTag>true</suppressCommitBeforeTag>
+					<remoteTagging>false</remoteTagging>
+					<localCheckout>true</localCheckout>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -164,6 +167,12 @@
 									<include>org.antlr:antlr4-runtime:*</include>
 								</includes>
 							</artifactSet>
+							<transformers>
+								<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+									<mainClass>org.tugraz.sysds.api.DMLScript</mainClass>
+								</transformer>
+							</transformers>
+							<createDependencyReducedPom>false</createDependencyReducedPom>
 						</configuration>
 					</execution>
 				</executions>
@@ -192,29 +201,6 @@
 					<target>1.8</target>
 				</configuration>
 			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-jar-plugin</artifactId>
-				<executions>
-					<execution>
-						<id>default-jar</id>
-						<goals>
-							<goal>jar</goal>
-						</goals>
-						<phase>package</phase>
-						<configuration>
-							<archive>
-								<index>true</index>
-								<manifestEntries>
-									<Build-Timestamp>${maven.build.timestamp}</Build-Timestamp>
-									<Main-Class>org.tugraz.sysds.api.DMLScript</Main-Class>
-								</manifestEntries>
-							</archive>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-resources-plugin</artifactId>
@@ -616,6 +602,57 @@
 			<build>
 				<plugins>
 					<plugin>
+						<artifactId>maven-assembly-plugin</artifactId>
+						<configuration>
+							<tarLongFileMode>gnu</tarLongFileMode>
+						</configuration>
+						<executions>
+							<execution>
+								<id>create-source-distribution</id>
+								<phase>package</phase>
+								<goals>
+									<goal>single</goal>
+								</goals>
+								<configuration>
+									<descriptors>
+										<descriptor>src/assembly/source.xml</descriptor>
+									</descriptors>
+								</configuration>
+							</execution>
+							<execution>
+								<id>create-binary-distribution</id>
+								<phase>package</phase>
+								<goals>
+									<goal>single</goal>
+								</goals>
+								<configuration>
+									<descriptors>
+										<descriptor>src/assembly/bin.xml</descriptor>
+									</descriptors>
+								</configuration>
+							</execution>
+							<execution>
+								<id>create-extra-jar</id>
+								<phase>package</phase>
+								<goals>
+									<goal>single</goal>
+								</goals>
+								<configuration>
+									<descriptors>
+										<descriptor>src/assembly/extra.xml</descriptor>
+									</descriptors>
+									<archive>
+										<manifestEntries>
+											<Build-Time>${maven.build.timestamp}</Build-Time>
+											<Artifact-Id>${project.artifactId}-extra</Artifact-Id>
+											<Version>${project.version}</Version>
+										</manifestEntries>
+									</archive>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
 						<artifactId>maven-gpg-plugin</artifactId>
 						<version>1.6</version>
 						<executions>
@@ -624,6 +661,13 @@
 								<goals>
 									<goal>sign</goal>
 								</goals>
+								<configuration>
+									<!-- This is necessary for gpg to not try to use the pinentry programs -->
+									<gpgArguments>
+										<arg>--pinentry-mode</arg>
+										<arg>loopback</arg>
+									</gpgArguments>
+								</configuration>
 							</execution>
 						</executions>
 					</plugin>
