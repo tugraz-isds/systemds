@@ -22,7 +22,7 @@
 #
 #-------------------------------------------------------------
 
-function pause() { read -p 'Press [Enter] key to continue...' }
+#function pause(){ read -p 'Press [Enter] key to continue...' }
 
 function exit_with_usage {
   cat << EOF
@@ -270,10 +270,10 @@ if [[ "$RELEASE_PREPARE" == "true" ]]; then
     -Darguments="-Dgpg.keyname='$GPG_KEYID' -Dgpg.passphrase='$GPG_PASSPHRASE' -DskipTests -DreleaseVersion='$RELEASE_VERSION' -DdevelopmentVersion='$DEVELOPMENT_VERSION' -Dtag='$RELEASE_TAG'"  | tee $BASE_DIR/prepare-output.log
 
     # exit at this point to run followiing steps manually.
-    echo "WARNING: Set followinig enviornment variables and run rest of the steps for 'Release Prepare' " 
+    echo "WARNING: Set followinig enviornment variables and run rest of the steps for 'Release Prepare' "
     echo
     echo "MVN=$MVN"
-    echo "PUBLISH_PROFILES=\"$PUBLISH_PROFILES\"" 
+    echo "PUBLISH_PROFILES=\"$PUBLISH_PROFILES\""
     echo "DRY_RUN=$DRY_RUN"
     echo "GPG_PASSPHRASE=$GPG_PASSPHRASE"
     echo "RELEASE_VERSION=$RELEASE_VERSION"
