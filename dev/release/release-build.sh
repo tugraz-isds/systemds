@@ -22,6 +22,8 @@
 #
 #-------------------------------------------------------------
 
+function pause() { read -p 'Press [Enter] key to continue...' }
+
 function exit_with_usage {
   cat << EOF
 
@@ -156,6 +158,13 @@ if [[ -z "$GPG_PASSPHRASE" ]]; then
     stty -echo && printf "GPG passphrase: " && read GPG_PASSPHRASE && printf '\n' && stty echo
 fi
 
+if [[ -z "$GPG_KEYID" ]]; then
+    echo 'The environment variable GPG_KEYID is not set. Enter the key ID for the '
+    echo ' GPG signing key that will be used to sign the release!'
+    echo
+    stty -echo && printf "GPG key ID: " && read GPG_KEYID && printf '\n' && stty echo
+fi
+
 if [[ "$RELEASE_PREPARE" == "true" && -z "$RELEASE_VERSION" ]]; then
     echo "ERROR: --releaseVersion must be passed as an argument to run this script"
     exit_with_usage
@@ -196,7 +205,10 @@ fi
 BASE_DIR=$(pwd)
 RELEASE_WORK_DIR=$BASE_DIR/target/release
 
+# used for debugging build scripts:
+#MVN="mvn --batch-mode --debug --errors"
 MVN="mvn"
+
 PUBLISH_PROFILES="-Pdistribution,rat"
 
 if [ -z "$RELEASE_RC" ]; then
@@ -207,7 +219,6 @@ if [ -z "$RELEASE_TAG" ]; then
   RELEASE_TAG="v$RELEASE_VERSION-$RELEASE_RC"
 fi
 
-#ToDo: release staging location
 RELEASE_STAGING_LOCATION="${SYSTEMDS_ROOT}/temp"
 
 
@@ -249,12 +260,14 @@ function checkout_code {
 
 if [[ "$RELEASE_PREPARE" == "true" ]]; then
     echo "Preparing release $RELEASE_VERSION"
-    # Checkout code
+
     checkout_code
     cd $RELEASE_WORK_DIR/systemds
 
     # Build and prepare the release
-    $MVN $PUBLISH_PROFILES release:clean release:prepare $DRY_RUN -Darguments="-Dgpg.passphrase=\"$GPG_PASSPHRASE\" -DskipTests" -DreleaseVersion="$RELEASE_VERSION" -DdevelopmentVersion="$DEVELOPMENT_VERSION" -Dtag="$RELEASE_TAG"
+    $MVN $PUBLISH_PROFILES release:clean release:prepare $DRY_RUN \
+    -DskipTests -DreleaseVersion=$RELEASE_VERSION -DdevelopmentVersion=$DEVELOPMENT_VERSION -Dtag=$RELEASE_TAG -Dgpg.keyname=$GPG_KEYID -Dgpg.passphrase=$GPG_PASSPHRASE \
+    -Darguments="-Dgpg.keyname='$GPG_KEYID' -Dgpg.passphrase='$GPG_PASSPHRASE' -DskipTests -DreleaseVersion='$RELEASE_VERSION' -DdevelopmentVersion='$DEVELOPMENT_VERSION' -Dtag='$RELEASE_TAG'"  | tee $BASE_DIR/prepare-output.log
 
     # exit at this point to run followiing steps manually.
     echo "WARNING: Set followinig enviornment variables and run rest of the steps for 'Release Prepare' " 
@@ -274,15 +287,15 @@ if [[ "$RELEASE_PREPARE" == "true" ]]; then
     # As fix has been added below to update version information exit to update pom file is not needed.
     # exit 5
 
-    # Update dev/release/target/release/systemds/pom.xml  with similar to following contents which is for 0.13.0 RC1
-    #   Update <version>0.13.0</version>
-    #   Update <tag>v0.13.0-rc1</tag>
-    sed -i .bak "s|<version>$DEVELOPMENT_VERSION<\/version>|<version>$RELEASE_VERSION<\/version>|" $BASE_DIR/target/release/systemds/pom.xml
-    sed -i .bak "s|<tag>HEAD<\/tag>|<tag>$RELEASE_TAG<\/tag>|" $BASE_DIR/target/release/systemds/pom.xml
+    echo "resetting version in pom.xml..." ; sleep 5
+    sed -i.bak -e "s/<version>$DEVELOPMENT_VERSION<\/version>/<version>$RELEASE_VERSION<\/version>/" $BASE_DIR/target/release/systemds/pom.xml
+    sed -i.bak -e "s/<tag>HEAD<\/tag>/<tag>$RELEASE_TAG<\/tag>/" $BASE_DIR/target/release/systemds/pom.xml
 
     cd $RELEASE_WORK_DIR/systemds
-    ## Rerunning mvn with clean and package goals, as release:prepare changes ordeer for some dependencies like unpack and shade.
-    $MVN $PUBLISH_PROFILES clean package $DRY_RUN -Darguments="-Dgpg.passphrase=\"$GPG_PASSPHRASE\" -DskipTests" -DreleaseVersion="$RELEASE_VERSION" -DdevelopmentVersion="$DEVELOPMENT_VERSION" -Dtag="$RELEASE_TAG"
+    ## Rerunning mvn with clean and package goals, as release:prepare changes order for some dependencies like unpack and shade.
+    $MVN $PUBLISH_PROFILES clean package $DRY_RUN -Dgpg.keyname=$GPG_KEYID -Dgpg.passphrase=$GPG_PASSPHRASE \
+    -Darguments="-Dgpg.keyname='$GPG_KEYID' -Dgpg.passphrase='$GPG_PASSPHRASE' -DskipTests -DreleaseVersion=$RELEASE_VERSION -DdevelopmentVersion=$DEVELOPMENT_VERSION -Dtag=$RELEASE_TAG" \
+    | tee $BASE_DIR/package-output.log
 
     cd $RELEASE_WORK_DIR
 
@@ -305,23 +318,18 @@ if [[ "$RELEASE_PREPARE" == "true" ]]; then
 #        svn ci -m"Apache SystemML $RELEASE_VERSION-$RELEASE_RC"
 #    fi
 
-
     cd "$BASE_DIR" #exit target
 
     exit 0
 fi
 
-#ToDo: fix release deployment
 if [[ "$RELEASE_PUBLISH" == "true" ]]; then
     echo "Preparing release $RELEASE_VERSION"
-    # Checkout code
     checkout_code
     cd $RELEASE_WORK_DIR/systemds
 
-    #Deploy scala 2.10
-#    mvn -DaltDeploymentRepository=apache.releases.https::default::https://repository.apache.org/service/local/staging/deploy/maven2 clean package gpg:sign install:install deploy:deploy -DskiptTests -Darguments="-DskipTests -Dgpg.passphrase=\"$GPG_PASSPHRASE\"" -Dgpg.passphrase="$GPG_PASSPHRASE" $PUBLISH_PROFILES
-
-    mvn -DaltDeploymentRepository=$SYSTEMDS_ROOT/temp clean package gpg:sign install:install deploy:deploy -DskiptTests -Darguments="-DskipTests -Dgpg.passphrase=\"$GPG_PASSPHRASE\"" -Dgpg.passphrase="$GPG_PASSPHRASE" $PUBLISH_PROFILES
+    $MVN clean package verify install:install deploy:deploy -DaltDeploymentRepository=altDepRepo::default::file://$SYSTEMDS_ROOT/temp -DskiptTests -Dgpg.keyname=$GPG_KEYID -Dgpg.passphrase=$GPG_PASSPHRASE \
+    -Darguments="-DskipTests -DaltDeploymentRepository='altDepRepo::default::file://$SYSTEMDS_ROOT/temp' -Dgpg.keyname='$GPG_KEYID' -Dgpg.passphrase='$GPG_PASSPHRASE'" $PUBLISH_PROFILES | tee $BASE_DIR/publish-output.log
 
     cd "$BASE_DIR" #exit target
 
