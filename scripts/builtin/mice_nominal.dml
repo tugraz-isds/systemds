@@ -50,34 +50,23 @@ s_mice_nominal= function(Frame[String] F, Integer iter = 3, Integer complete = 3
     stop("invalid aregument: can not apply mice on single column")
   # detecting the schema of data to identify nominal columns
   schema = detectSchema(F);
-  rec = matrix(0, 1, ncol(schema));
+  s=""
   for(i in 1: ncol(schema))
   {
     if(as.scalar(schema[1, i]) == 'STRING' | as.scalar(schema[1, i]) == 'BOOLEAN' )
-      rec[1, i] = 1
+      s = s+i+","
   }
-  rec = t(rec)
-  
-  # extracting the nominal columns
-  rec = removeEmpty(target=rec*seq(1,nrow(rec)), margin="rows");
-  s=""
-  for(j in 1: nrow(rec))
-  {
-    if(j != nrow(rec))
-      s = s+as.integer(as.scalar(rec[j,1]))+","   
-    else
-      s = s+as.integer(as.scalar(rec[j,1])) 
-  }
-  
   # encoding nominal columns using recode transformation
   jspec = "{ids:true, recode:["+s+"]}";
   [X, M] = transformencode(target=F, spec=jspec);
   
   # replacing the empty cells in encoded data with 0 
   X = replace(target=X, pattern=NaN, replacement=0);
+
   # applying mice_lm on encoded data
-  [X_filled, singleSet] = mice_lm(X=floor(X), iter=iter, complete=complete)
+  [X_filled, singleSet] = mice_lm(X=X, iter=iter, complete=complete)
+
   # decoding frame into its original form 
-  dataset = transformdecode(target=ceil(X_filled), spec=jspec, meta=M);
-  singleSet = transformdecode(target=ceil(singleSet), spec=jspec, meta=M);
+  dataset = transformdecode(target=floor(X_filled), spec=jspec, meta=M);
+  singleSet = transformdecode(target=floor(singleSet), spec=jspec, meta=M);
 }
