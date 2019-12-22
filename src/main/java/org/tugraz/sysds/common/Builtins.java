@@ -111,6 +111,7 @@ public enum Builtins {
 	LU("lu", false, ReturnType.MULTI_RETURN),
 	MEAN("mean", "avg", false),
 	MICE_LM("mice_lm", true),
+	MICE_NOMINAL("mice_nominal", true),
 	MIN("min", "pmin", false),
 	MAX("max", "pmax", false),
 	MAX_POOL("max_pool", false),
