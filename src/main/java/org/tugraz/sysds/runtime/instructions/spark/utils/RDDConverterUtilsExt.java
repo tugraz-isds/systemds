@@ -103,11 +103,19 @@ public class RDDConverterUtilsExt
 	}
 
 	public static MatrixBlock convertPy4JArrayToMB(byte [] data, long rlen, long clen) {
-		return convertPy4JArrayToMB(data, (int)rlen, (int)clen, false);
+		return convertPy4JArrayToMB(data, (int)rlen, (int)clen, false, 2);
+	}
+
+	public static MatrixBlock convertPy4JArrayToMB(byte [] data, long rlen, long clen, int dataType) {
+		return convertPy4JArrayToMB(data, (int)rlen, (int)clen, false, dataType);
 	}
 
 	public static MatrixBlock convertPy4JArrayToMB(byte [] data, int rlen, int clen) {
-		return convertPy4JArrayToMB(data, rlen, clen, false);
+		return convertPy4JArrayToMB(data, rlen, clen, false, 2);
+	}
+	
+	public static MatrixBlock convertPy4JArrayToMB(byte [] data, int rlen, int clen, long dataType) {
+		return convertPy4JArrayToMB(data, rlen, clen, false, dataType);
 	}
 
 	public static MatrixBlock convertSciPyCOOToMB(byte [] data, byte [] row, byte [] col, long rlen, long clen, long nnz) {
@@ -135,7 +143,7 @@ public class RDDConverterUtilsExt
 	}
 
 	public static MatrixBlock convertPy4JArrayToMB(byte [] data, long rlen, long clen, boolean isSparse) {
-		return convertPy4JArrayToMB(data, (int) rlen, (int) clen, isSparse);
+		return convertPy4JArrayToMB(data, (int) rlen, (int) clen, isSparse, 2);
 	}
 
 	public static MatrixBlock allocateDenseOrSparse(int rlen, int clen, boolean isSparse) {
@@ -171,7 +179,8 @@ public class RDDConverterUtilsExt
 		ret.examSparsity();
 	}
 
-	public static MatrixBlock convertPy4JArrayToMB(byte [] data, int rlen, int clen, boolean isSparse) {
+	// dataType: 0...int, 1...float, 2...double
+	public static MatrixBlock convertPy4JArrayToMB(byte [] data, int rlen, int clen, boolean isSparse, long dataType) {
 		MatrixBlock mb = new MatrixBlock(rlen, clen, isSparse, -1);
 		if(isSparse) {
 			throw new DMLRuntimeException("Convertion to sparse format not supported");
@@ -183,8 +192,17 @@ public class RDDConverterUtilsExt
 			double [] denseBlock = new double[(int) limit];
 			ByteBuffer buf = ByteBuffer.wrap(data);
 			buf.order(ByteOrder.nativeOrder());
-			for(int i = 0; i < rlen*clen; i++) {
-				denseBlock[i] = buf.getDouble();
+			if(dataType == 0) {
+				for(int i = 0; i < rlen*clen; i++)
+					denseBlock[i] = buf.getInt();
+			}
+			else if(dataType == 1) {
+				for(int i = 0; i < rlen*clen; i++)
+					denseBlock[i] = buf.getFloat();
+			}
+			else if(dataType == 2) {
+				for(int i = 0; i < rlen*clen; i++)
+					denseBlock[i] = buf.getDouble();
 			}
 			mb.init( denseBlock, rlen, clen );
 		}
