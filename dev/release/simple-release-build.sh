@@ -194,7 +194,8 @@ function checkout_code {
     rm -rf $RELEASE_WORK_DIR
     mkdir -p $RELEASE_WORK_DIR
     cd $RELEASE_WORK_DIR
-    git clone https://github.com/tugraz-isds/systemds.git
+#     git clone https://github.com/tugraz-isds/systemds.git
+    git clone https://github.com/corepointer/systemds.git
     cd systemds
     git checkout $GIT_REF
     git_hash=`git rev-parse --short HEAD`
