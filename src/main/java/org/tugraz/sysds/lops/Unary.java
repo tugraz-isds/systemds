@@ -38,7 +38,7 @@ public class Unary extends Lop
 {
 	@SuppressWarnings("hiding")
 	public enum OperationTypes {
-		ADD, SUBTRACT, SUBTRACTRIGHT, MULTIPLY, MULTIPLY2, DIVIDE, MODULUS, INTDIV, MINUS1_MULTIPLY, 
+		ADD, SUBTRACT, SUBTRACTRIGHT, MULTIPLY, MULTIPLY2, DIVIDE, MODULUS, INTDIV, MINUS1_MULTIPLY,
 		POW, POW2, LOG, MAX, MIN, NOT, ABS, SIN, COS, TAN, ASIN, ACOS, ATAN, SINH, COSH, TANH, SIGN, SQRT, EXP, Over, 
 		LESS_THAN, LESS_THAN_OR_EQUALS, GREATER_THAN, GREATER_THAN_OR_EQUALS, EQUALS, NOT_EQUALS,
 		AND, OR, XOR, BW_AND, BW_OR, BW_XOR, BW_SHIFTL, BW_SHIFTR,
@@ -46,7 +46,7 @@ public class Unary extends Lop
 		CUMSUM, CUMPROD, CUMMIN, CUMMAX, CUMSUMPROD,
 		SPROP, SIGMOID, SUBTRACT_NZ, LOG_NZ,
 		CAST_AS_MATRIX, CAST_AS_FRAME,
-		TYPEOF, DETECTSCHEMA,
+		TYPEOF, DETECTSCHEMA, DISTINCT,
 		NOTSUPPORTED
 	}
 
@@ -258,7 +258,7 @@ public class Unary extends Lop
 		
 		case CUMSUMPROD:
 			return "ucumk+*";
-		
+
 		case INVERSE:
 			return "inverse";
 		
@@ -279,7 +279,10 @@ public class Unary extends Lop
 
 		case DETECTSCHEMA:
 			return "detectSchema";
-		
+
+		case DISTINCT:
+				return "distinct";
+
 		case CAST_AS_MATRIX:
 			return UnaryCP.CAST_AS_MATRIX_OPCODE;
 

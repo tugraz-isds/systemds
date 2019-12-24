@@ -46,5 +46,12 @@ public class UnaryFrameCPInstruction extends UnaryCPInstruction {
 			ec.releaseFrameInput(input1.getName());
 			ec.setFrameOutput(output.getName(), retBlock);
 		}
+		else if(getOpcode().equals("distinct"))
+		{
+			FrameBlock inBlock = ec.getFrameInput(input1.getName());
+			FrameBlock retBlock = inBlock.returnDistinctItems();
+			ec.releaseFrameInput(input1.getName());
+			ec.setFrameOutput(output.getName(), retBlock);
+		}
 	}
 }

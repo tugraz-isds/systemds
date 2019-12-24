@@ -78,6 +78,7 @@ public enum Builtins {
 	CUMSUMPROD("cumsumprod", false),
 	DETECTSCHEMA("detectSchema", false),
 	DIAG("diag", false),
+	DISTINCT("distinct", false),
 	EIGEN("eigen", false, ReturnType.MULTI_RETURN),
 	EXISTS("exists", false),
 	EXP("exp", false),

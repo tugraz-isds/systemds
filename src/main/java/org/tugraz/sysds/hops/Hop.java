@@ -970,10 +970,10 @@ public abstract class Hop implements ParseInfo
 
 	@SuppressWarnings("hiding")
 	public enum OpOp1 {
-		NOT, ABS, SIN, COS, TAN, ASIN, ACOS, ATAN, SINH, COSH, TANH, SIGN, SQRT, LOG, EXP, 
+		NOT, ABS, SIN, COS, TAN, ASIN, ACOS, ATAN, SINH, COSH, TANH, SIGN, SQRT, LOG, EXP,
 		CAST_AS_SCALAR, CAST_AS_MATRIX, CAST_AS_FRAME, CAST_AS_DOUBLE, CAST_AS_INT, CAST_AS_BOOLEAN,
 		PRINT, ASSERT, EIGEN, NROW, NCOL, LENGTH, ROUND, IQM, STOP, CEIL, FLOOR, MEDIAN, INVERSE, CHOLESKY,
-		SVD, EXISTS, LINEAGE, TYPEOF, DETECTSCHEMA,
+		SVD, EXISTS, LINEAGE, TYPEOF, DETECTSCHEMA, DISTINCT,
 		//cumulative sums, products, extreme values
 		CUMSUM, CUMPROD, CUMMIN, CUMMAX, CUMSUMPROD,
 		//fused ML-specific operators for performance 
@@ -1244,6 +1244,7 @@ public abstract class Hop implements ParseInfo
 		HopsOpOp1LopsU.put(OpOp1.SIGMOID, Unary.OperationTypes.SIGMOID);
 		HopsOpOp1LopsU.put(OpOp1.TYPEOF, Unary.OperationTypes.TYPEOF);
 		HopsOpOp1LopsU.put(OpOp1.DETECTSCHEMA, Unary.OperationTypes.DETECTSCHEMA);
+		HopsOpOp1LopsU.put(OpOp1.DISTINCT, Unary.OperationTypes.DISTINCT);
 		HopsOpOp1LopsU.put(OpOp1.LOG_NZ, org.tugraz.sysds.lops.Unary.OperationTypes.LOG_NZ);
 		HopsOpOp1LopsU.put(OpOp1.CAST_AS_MATRIX, org.tugraz.sysds.lops.Unary.OperationTypes.CAST_AS_MATRIX);
 		HopsOpOp1LopsU.put(OpOp1.CAST_AS_FRAME, org.tugraz.sysds.lops.Unary.OperationTypes.CAST_AS_FRAME);
@@ -1285,6 +1286,7 @@ public abstract class Hop implements ParseInfo
 		HopsOpOp1LopsUS.put(OpOp1.STOP, org.tugraz.sysds.lops.UnaryCP.OperationTypes.STOP);
 		HopsOpOp1LopsUS.put(OpOp1.TYPEOF, UnaryCP.OperationTypes.TYPEOF);
 		HopsOpOp1LopsUS.put(OpOp1.DETECTSCHEMA, UnaryCP.OperationTypes.DETECTSCHEMA);
+		HopsOpOp1LopsUS.put(OpOp1.DISTINCT, UnaryCP.OperationTypes.DISTINCT);
 	}
 
 	protected static final HashMap<OpOp3, Ternary.OperationType> HopsOpOp3Lops;
@@ -1349,6 +1351,8 @@ public abstract class Hop implements ParseInfo
 		HopsOpOp12String.put(OpOp1.SIGMOID, "sigmoid");
 		HopsOpOp12String.put(OpOp1.TYPEOF, "typeOf");
 		HopsOpOp12String.put(OpOp1.DETECTSCHEMA, "detectSchema");
+		HopsOpOp12String.put(OpOp1.DISTINCT, "distinct");
+
 
 		HopsStringOpOp1 = new HashMap<>();
 		for( Entry<OpOp1,String> e : HopsOpOp12String.entrySet() )

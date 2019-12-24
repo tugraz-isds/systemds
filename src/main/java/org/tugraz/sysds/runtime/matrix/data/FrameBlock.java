@@ -23,6 +23,7 @@ package org.tugraz.sysds.runtime.matrix.data;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.hadoop.io.Writable;
+import org.tugraz.sysds.api.DMLException;
 import org.tugraz.sysds.common.Types.ValueType;
 import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.controlprogram.caching.CacheBlock;
@@ -35,6 +36,7 @@ import java.io.*;
 import java.lang.ref.SoftReference;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 
 @SuppressWarnings({"rawtypes","unchecked"}) //allow generic native arrays
 public class FrameBlock implements Writable, CacheBlock, Externalizable  
@@ -1777,6 +1779,22 @@ public class FrameBlock implements Writable, CacheBlock, Externalizable
 		else return ValueType.STRING;
 	}
 
+	//TODO KMV implementation for counting distinct values
+	public FrameBlock returnDistinctItems() {
+		if (this.getNumColumns() > 1)
+			throw new DMLException("Invalid number of columns: Expected 1 found " + this.getNumColumns());
+		Array<String> obj = this.getColumn(0);
+		ArrayList<String> list = new ArrayList<>();
+		for (int i = 0; i < obj._size; i++)
+			list.add(obj.get(i));
+		Map<String, Long> items = list.stream().collect(Collectors.groupingBy(string -> string, Collectors.counting()));
+		FrameBlock fb = new FrameBlock(UtilFunctions.nCopies(2, ValueType.STRING));
+		items.forEach((value, count) -> {
+			fb.appendRow(new String[] {value, count.toString()});
+		});
+		return fb;
+	}
+
 	public FrameBlock detectSchemaFromRow(double sampleFraction) {
 		int rows = this.getNumRows();
 		int cols = this.getNumColumns();
@@ -1865,4 +1883,5 @@ public class FrameBlock implements Writable, CacheBlock, Externalizable
 		mergedFrame.appendRow(rowTemp1);
 		return mergedFrame;
 	}
+
 }

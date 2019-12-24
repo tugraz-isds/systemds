@@ -724,6 +724,14 @@ public class BuiltinFunctionExpression extends DataIdentifier
 			output.setBlocksize (id.getBlocksize());
 			output.setValueType(ValueType.STRING);
 			break;
+		case DISTINCT:
+			checkNumParameters(1);
+			checkMatrixFrameParam(getFirstExpr());
+			output.setDataType(DataType.FRAME);
+			output.setDimensions(id.getDim1(), 1);
+			output.setBlocksize (id.getBlocksize());
+			output.setValueType(id.getValueType());
+			break;
 		case CAST_AS_FRAME:
 			checkNumParameters(1);
 			checkMatrixScalarParam(getFirstExpr());

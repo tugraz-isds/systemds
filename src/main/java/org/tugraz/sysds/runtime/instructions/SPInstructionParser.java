@@ -246,6 +246,7 @@ public class SPInstructionParser extends InstructionParser
 		String2SPInstructionType.put( "sprop", SPType.Unary);
 		String2SPInstructionType.put( "sigmoid", SPType.Unary);
 		String2SPInstructionType.put( "detectSchema", SPType.Unary);
+		String2SPInstructionType.put( "distinct", SPType.Unary);
 
 		// Parameterized Builtin Functions
 		String2SPInstructionType.put( "groupedagg",     SPType.ParameterizedBuiltin);
