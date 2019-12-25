@@ -547,6 +547,10 @@ public class UnaryOp extends MultiThreadedHop
 			setDim1(1);
 			setDim2(input.getDim2());
 		}
+		else if(_op == OpOp1.DISTINCT) {
+			setDim1(input.getDim1());
+			setDim2(2);
+		}
 		else //general case
 		{
 			// If output is a Matrix then this operation is of type (B = op(A))
