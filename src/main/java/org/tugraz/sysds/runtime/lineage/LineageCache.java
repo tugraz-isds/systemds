@@ -84,6 +84,22 @@ public class LineageCache {
 		return reuse;
 	}
 	
+	public static MatrixBlock reuse(LineageItem item) {
+		if (ReuseCacheType.isNone())
+			return null;
+
+		MatrixBlock d = null;
+		synchronized( _cache ) {
+			if (LineageCache.probe(item)) 
+				d = LineageCache.get(item);
+			else
+				//create a placeholder if no reuse to avoid redundancy
+				//(e.g., concurrent threads that try to start the computation)
+				putIntern(item, null, 0);
+		}
+		return d;
+	}
+	
 	//NOTE: safe to pin the object in memory as coming from CPInstruction
 	
 	public static void put(Instruction inst, ExecutionContext ec) {
@@ -111,6 +127,23 @@ public class LineageCache {
 				updateSize(value, true);
 			}
 		}
+	}
+	
+	public static void putValue(LineageItem item, LineageItem probeItem, MatrixObject mo) {
+		if (ReuseCacheType.isNone())
+			return;
+		if (LineageCache.probe(probeItem)) {
+			MatrixBlock value = LineageCache.get(probeItem);
+			_cache.get(item).setValue(value, 0); //TODO: compute estimate for function
+
+			synchronized( _cache ) {
+				if(!isBelowThreshold(value)) 
+					makeSpace(value);
+				updateSize(value, true);
+			}
+		}
+		else
+			_cache.remove(item); //remove the placeholder
 	}
 	
 	private static void putIntern(LineageItem key, MatrixBlock value, double compcost) {

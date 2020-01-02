@@ -28,16 +28,24 @@ import org.tugraz.sysds.lops.Lop;
 import org.tugraz.sysds.parser.DMLProgram;
 import org.tugraz.sysds.parser.DataIdentifier;
 import org.tugraz.sysds.common.Types.DataType;
+import org.tugraz.sysds.common.Types.ValueType;
 import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.DMLScriptException;
 import org.tugraz.sysds.runtime.controlprogram.FunctionProgramBlock;
 import org.tugraz.sysds.runtime.controlprogram.LocalVariableMap;
+import org.tugraz.sysds.runtime.controlprogram.caching.MatrixObject;
 import org.tugraz.sysds.runtime.controlprogram.context.ExecutionContext;
 import org.tugraz.sysds.runtime.controlprogram.context.ExecutionContextFactory;
 import org.tugraz.sysds.runtime.instructions.Instruction;
 import org.tugraz.sysds.runtime.instructions.InstructionUtils;
 import org.tugraz.sysds.runtime.io.IOUtilFunctions;
 import org.tugraz.sysds.runtime.lineage.Lineage;
+import org.tugraz.sysds.runtime.lineage.LineageCache;
+import org.tugraz.sysds.runtime.lineage.LineageCacheConfig.ReuseCacheType;
+import org.tugraz.sysds.runtime.lineage.LineageItem;
+import org.tugraz.sysds.runtime.lineage.LineageItemUtils;
+import org.tugraz.sysds.runtime.matrix.data.MatrixBlock;
+import org.tugraz.sysds.runtime.meta.MetaData;
 
 public class FunctionCallCPInstruction extends CPInstruction {
 	private final String _functionName;
@@ -107,6 +115,38 @@ public class FunctionCallCPInstruction extends CPInstruction {
 		if( _boundInputs.length < fpb.getInputParams().size() ) {
 			throw new DMLRuntimeException("Number of bound input parameters does not match the function signature "
 				+ "("+_boundInputs.length+", but "+fpb.getInputParams().size()+" expected)");
+		}
+		
+		if (!ReuseCacheType.isNone()) {
+			boolean reuse = true;
+			int numOutputs = Math.min(_boundOutputNames.size(), fpb.getOutputParams().size());
+			for (int i=0; i< numOutputs; i++) {
+				String opcode = _functionName + _boundOutputNames.get(i);
+				LineageItem li = new LineageItem(_boundOutputNames.get(i), opcode, LineageItemUtils.getLineage(ec, _boundInputs));
+				MatrixBlock cachedValue = LineageCache.reuse(li);
+				reuse = (cachedValue == null) ? false : reuse;
+
+				if (cachedValue != null) {
+					String boundVarName = _boundOutputNames.get(i);
+					//convert to matrix object
+					MetaData md = new MetaData(cachedValue.getDataCharacteristics());
+					MatrixObject boundValue = new MatrixObject(ValueType.FP64, boundVarName, md);
+					boundValue.acquireModify(cachedValue);
+					boundValue.release();
+
+					//cleanup existing data bound to output variable name
+					Data exdata = ec.removeVariable(boundVarName);
+					if( exdata != boundValue)
+						ec.cleanupDataObject(exdata);
+
+					//add/replace data in symbol table
+					ec.setVariable(boundVarName, boundValue);
+					//FIXME: Find the original lineage item and rewire it with calling site. 
+					//		 Can be done easily when multiple lineage items point to the same MB.
+				}
+			}
+			if (reuse)
+				return; //only if all the outputs are found in cache 
 		}
 		
 		// create bindings to formal parameters for given function call
@@ -210,6 +250,13 @@ public class FunctionCallCPInstruction extends CPInstruction {
 			//map lineage of function returns back to calling site
 			if( lineage != null ) //unchanged ref
 				ec.getLineage().set(boundVarName, lineage.get(retVarName));
+
+			if (!ReuseCacheType.isNone()) {
+				String opcode = _functionName + _boundOutputNames.get(i);
+				LineageItem li = new LineageItem(_boundOutputNames.get(i), opcode, LineageItemUtils.getLineage(ec, _boundInputs));
+				LineageCache.putValue(li, lineage.get(retVarName), (MatrixObject)boundValue);
+				//TODO: Unmark for caching in compiler if function contains rand()
+			}
 		}
 	}
 
