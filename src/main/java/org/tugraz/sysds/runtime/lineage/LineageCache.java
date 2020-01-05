@@ -143,7 +143,8 @@ public class LineageCache {
 			}
 		}
 		else
-			_cache.remove(item); //remove the placeholder
+			delete(_cache.get(item)); //remove the placeholder
+
 	}
 	
 	private static void putIntern(LineageItem key, MatrixBlock value, double compcost) {

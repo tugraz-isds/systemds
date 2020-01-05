@@ -251,7 +251,7 @@ public class FunctionCallCPInstruction extends CPInstruction {
 			if( lineage != null ) //unchanged ref
 				ec.getLineage().set(boundVarName, lineage.get(retVarName));
 
-			if (!ReuseCacheType.isNone()) {
+			if (!ReuseCacheType.isNone() && !(boundValue instanceof ScalarObject)) {
 				String opcode = _functionName + _boundOutputNames.get(i);
 				LineageItem li = new LineageItem(_boundOutputNames.get(i), opcode, LineageItemUtils.getLineage(ec, _boundInputs));
 				LineageCache.putValue(li, lineage.get(retVarName), (MatrixObject)boundValue);
