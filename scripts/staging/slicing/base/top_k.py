@@ -21,3 +21,8 @@ class Topk:
         else:
             self.slices[len(self.slices) - 1] = new_top_slice
             return self.top_k_min_score()
+
+    def print_topk(self):
+        for candidate in self.slices:
+            print(candidate.name + ": " + "score = " + str(candidate.score) + "; size = " + str(candidate.size))
+
