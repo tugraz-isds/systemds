@@ -254,6 +254,7 @@ public class FunctionCallCPInstruction extends CPInstruction {
 			if (!ReuseCacheType.isNone() && !(boundValue instanceof ScalarObject)) {
 				String opcode = _functionName + _boundOutputNames.get(i);
 				LineageItem li = new LineageItem(_boundOutputNames.get(i), opcode, LineageItemUtils.getLineage(ec, _boundInputs));
+				//FIXME: li will not match the placeholder if i/p variables are updated inside the function.
 				LineageCache.putValue(li, lineage.get(retVarName), (MatrixObject)boundValue);
 				//TODO: Unmark for caching in compiler if function contains rand()
 			}
