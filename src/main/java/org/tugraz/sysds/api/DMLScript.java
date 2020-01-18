@@ -113,7 +113,9 @@ public class DMLScript
 
 	public static String _uuid = IDHandler.createDistributedUniqueID();
 	private static final Log LOG = LogFactory.getLog(DMLScript.class.getName());
-	
+
+	private static FileSystem fs = null;
+
 	///////////////////////////////
 	// public external interface
 	////////
@@ -146,24 +148,19 @@ public class DMLScript
 	}
 
 	/**
-	 *
 	 * @param args command-line arguments
-	 * @throws IOException if an IOException occurs
 	 */
 	public static void main(String[] args)
-		throws IOException
 	{
 		Configuration conf = new Configuration(ConfigurationManager.getCachedJobConf());
-		String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
-		
-		try {
+		try{
+			String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
 			DMLScript.executeScript(conf, otherArgs);
-		} catch (ParseException pe) {
-			System.err.println(pe.getMessage());
-		} catch (DMLScriptException e){
-			// In case of DMLScriptException, simply print the error message.
-			System.err.println(e.getMessage());
+			
+		} catch (IOException e){
+			LOG.error(e);
 		}
+		
 	}
 
 	/**
@@ -174,7 +171,7 @@ public class DMLScript
 	 * @param args arguments
 	 * @return true if success, false otherwise
 	 */
-	@SuppressWarnings("null")
+	//@SuppressWarnings("null")
 	public static boolean executeScript( Configuration conf, String[] args ) {
 		//parse arguments and set execution properties
 		ExecMode oldrtplatform  = EXEC_MODE;  //keep old rtplatform
@@ -242,7 +239,8 @@ public class DMLScript
 			formatter.printHelp( "systemds", dmlOptions.options );
 		}
 		catch (ParseException | DMLScriptException e) {
-			throw e;
+			// In case of DMLScriptException, simply print the error message.
+			LOG.error(e.getMessage());
 		}
 		catch(Exception ex) {
 			LOG.error("Failed to execute DML script.", ex);
@@ -285,9 +283,8 @@ public class DMLScript
 					|| IOUtilFunctions.isObjectStoreFileScheme(new Path(fileName)) )
 				{ 
 					Path scriptPath = new Path(fileName);
-					try(FileSystem fs = IOUtilFunctions.getFileSystem(scriptPath) ) {
-						in = new BufferedReader(new InputStreamReader(fs.open(scriptPath)));
-					}
+					fs = IOUtilFunctions.getFileSystem(scriptPath);
+					in = new BufferedReader(new InputStreamReader(fs.open(scriptPath)));
 				}
 				// from local file system
 				else { 
@@ -306,6 +303,8 @@ public class DMLScript
 				throw ex;
 			}
 			finally {
+				if(fs != null)
+					fs.close();
 				IOUtilFunctions.closeSilently(in);
 			}
 			
@@ -541,10 +540,10 @@ public class DMLScript
 		try {
 			new FederatedWorker(port).run();
 		} catch (ParseException e) {
-			System.err.println("-w flag should be followed by valid port number");
+			LOG.error("-w flag should be followed by valid port number");
 		}
 		catch (Exception e) {
-			System.err.println(e.getMessage());
+			LOG.error(e.getMessage());
 		}
 	}
 	

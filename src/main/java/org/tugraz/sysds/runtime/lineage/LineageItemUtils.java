@@ -59,6 +59,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -251,21 +252,15 @@ public class LineageItemUtils {
 							break;
 						}
 						case MatrixIndexing: {
-							if( "rightIndex".equals(item.getOpcode()) )
-								operands.put(item.getId(), HopRewriteUtils.createIndexingOp(
-									operands.get(item.getInputs()[0].getId()), //input
-									operands.get(item.getInputs()[1].getId()), //rl
-									operands.get(item.getInputs()[2].getId()), //ru
-									operands.get(item.getInputs()[3].getId()), //cl
-									operands.get(item.getInputs()[4].getId()))); //cu
-							else if( "leftIndex".equals(item.getOpcode()) )
-								operands.put(item.getId(), HopRewriteUtils.createLeftIndexingOp(
-									operands.get(item.getInputs()[0].getId()), //input
-									operands.get(item.getInputs()[1].getId()), //rhs
-									operands.get(item.getInputs()[2].getId()), //rl
-									operands.get(item.getInputs()[3].getId()), //ru
-									operands.get(item.getInputs()[4].getId()), //cl
-									operands.get(item.getInputs()[5].getId()))); //cu
+							operands.put(item.getId(), constructIndexingOp(item, operands));
+							break;
+						}
+						case MMTSJ: {
+							//TODO handling of tsmm type left and right -> placement transpose
+							Hop input = operands.get(item.getInputs()[0].getId());
+							Hop aggunary = HopRewriteUtils.createMatrixMultiply(
+								HopRewriteUtils.createTranspose(input), input);
+							operands.put(item.getId(), aggunary);
 							break;
 						}
 						case Variable: { //cpvar, write
@@ -274,14 +269,33 @@ public class LineageItemUtils {
 						}
 						default:
 							throw new DMLRuntimeException("Unsupported instruction "
-									+ "type: " + ctype.name() + " (" + item.getOpcode() + ").");
+								+ "type: " + ctype.name() + " (" + item.getOpcode() + ").");
 					}
-				} else if (stype == SPType.Reblock) {
-					Hop input = operands.get(item.getInputs()[0].getId());
-					input.setBlocksize(ConfigurationManager.getBlocksize());
-					input.setRequiresReblock(true);
-					operands.put(item.getId(), input);
-				} else
+				}
+				else if( stype != null ) {
+					switch(stype) {
+						case Reblock: {
+							Hop input = operands.get(item.getInputs()[0].getId());
+							input.setBlocksize(ConfigurationManager.getBlocksize());
+							input.setRequiresReblock(true);
+							operands.put(item.getId(), input);
+							break;
+						}
+						case Checkpoint: {
+							Hop input = operands.get(item.getInputs()[0].getId());
+							operands.put(item.getId(), input);
+							break;
+						}
+						case MatrixIndexing: {
+							operands.put(item.getId(), constructIndexingOp(item, operands));
+							break;
+						}
+						default:
+							throw new DMLRuntimeException("Unsupported instruction "
+								+ "type: " + stype.name() + " (" + item.getOpcode() + ").");
+					}
+				}
+				else
 					throw new DMLRuntimeException("Unsupported instruction: " + item.getOpcode());
 				break;
 			}
@@ -297,6 +311,27 @@ public class LineageItemUtils {
 		}
 		
 		item.setVisited();
+	}
+	
+	private static Hop constructIndexingOp(LineageItem item, Map<Long, Hop> operands) {
+		//TODO fix 
+		if( "rightIndex".equals(item.getOpcode()) )
+			return HopRewriteUtils.createIndexingOp(
+				operands.get(item.getInputs()[0].getId()), //input
+				operands.get(item.getInputs()[1].getId()), //rl
+				operands.get(item.getInputs()[2].getId()), //ru
+				operands.get(item.getInputs()[3].getId()), //cl
+				operands.get(item.getInputs()[4].getId())); //cu
+		else if( "leftIndex".equals(item.getOpcode()) 
+				|| "mapLeftIndex".equals(item.getOpcode()) )
+			return HopRewriteUtils.createLeftIndexingOp(
+				operands.get(item.getInputs()[0].getId()), //input
+				operands.get(item.getInputs()[1].getId()), //rhs
+				operands.get(item.getInputs()[2].getId()), //rl
+				operands.get(item.getInputs()[3].getId()), //ru
+				operands.get(item.getInputs()[4].getId()), //cl
+				operands.get(item.getInputs()[5].getId())); //cu
+		throw new DMLRuntimeException("Unsupported opcode: "+item.getOpcode());
 	}
 	
 	public static LineageItem rDecompress(LineageItem item) {
@@ -384,5 +419,41 @@ public class LineageItemUtils {
 		for( int i=0; i<len; i++ )
 			ret[i] = operands.get(item.getInputs()[i].getId());
 		return ret;
+	}
+	
+	public static boolean containsRandDataGen(HashSet<LineageItem> entries, LineageItem root) {
+		boolean isRand = false;
+		if (entries.contains(root))
+			return false;
+		if (isNonDeterministic(root))
+			isRand |= true;
+		if (!root.isLeaf()) 
+			for (LineageItem input : root.getInputs())
+				isRand = isRand ? true : containsRandDataGen(entries, input);
+		return isRand;
+		//TODO: unmark for caching in compile time
+	}
+	
+	private static boolean isNonDeterministic(LineageItem li) {
+		if (li.getType() != LineageItemType.Creation)
+			return false;
+
+		boolean isND = false;
+		DataGenCPInstruction ins = (DataGenCPInstruction)InstructionParser.parseSingleInstruction(li.getData());
+		switch(li.getOpcode().toUpperCase())
+		{
+			case "RAND":
+				if ((ins.getMinValue() != ins.getMaxValue()) || (ins.getSparsity() != 1))
+					isND = true;
+				break;
+			case "SAMPLE":
+				isND = true;
+				break;
+			default:
+				isND = false;
+				break;
+		}
+		//TODO: add 'read' in this list
+		return isND;
 	}
 }

@@ -24,13 +24,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 
+import org.tugraz.sysds.common.Types.AggOp;
+import org.tugraz.sysds.common.Types.Direction;
 import org.tugraz.sysds.hops.AggBinaryOp;
 import org.tugraz.sysds.hops.AggUnaryOp;
 import org.tugraz.sysds.hops.BinaryOp;
 import org.tugraz.sysds.hops.Hop;
 import org.tugraz.sysds.hops.UnaryOp;
-import org.tugraz.sysds.hops.Hop.AggOp;
-import org.tugraz.sysds.hops.Hop.Direction;
 import org.tugraz.sysds.hops.Hop.OpOp2;
 import org.tugraz.sysds.hops.codegen.cplan.CNode;
 import org.tugraz.sysds.hops.codegen.cplan.CNodeBinary;
@@ -57,23 +57,27 @@ public class TemplateOuterProduct extends TemplateBase {
 
 	@Override
 	public boolean open(Hop hop) {
-		//open on outer product like matrix mult (output larger than common dim)
-		return HopRewriteUtils.isOuterProductLikeMM(hop)
-			&& hop.getDim1()>256 && hop.getDim2() > 256;
+		//open on (1) outer product like matrix mult (output larger than common dim)
+		//or (2) binary outer operation
+		return (HopRewriteUtils.isOuterProductLikeMM(hop)
+				|| HopRewriteUtils.isOuterBinary(hop))
+			&& hop.getDim1() > 256 && hop.getDim2() > 256;
 	}
 
 	@Override
 	public boolean fuse(Hop hop, Hop input) {
-		return !isClosed() 
-			&&((hop instanceof UnaryOp && TemplateUtils.isOperationSupported(hop))  
-			|| (hop instanceof BinaryOp && TemplateUtils.isOperationSupported(hop)
-				&& (TemplateUtils.isBinaryMatrixColVector(hop) || HopRewriteUtils.isBinaryMatrixScalarOperation(hop)
-				|| (HopRewriteUtils.isBinaryMatrixMatrixOperation(hop)) )) 
-			|| (HopRewriteUtils.isTransposeOperation(hop) && input instanceof AggBinaryOp
-				&& !HopRewriteUtils.isOuterProductLikeMM(input)) 
-			|| (hop instanceof AggBinaryOp && !HopRewriteUtils.isOuterProductLikeMM(hop)
-				&& TemplateUtils.containsOuterProduct(input, HopRewriteUtils.getOtherInput(hop, input)))
-			|| (hop instanceof AggUnaryOp && ((AggUnaryOp)hop).getDirection()==Direction.RowCol));
+		return !isClosed()
+			&& ((hop instanceof UnaryOp && TemplateUtils.isOperationSupported(hop))
+				|| (hop instanceof BinaryOp && TemplateUtils.isOperationSupported(hop)
+					&& (TemplateUtils.isBinaryMatrixColVector(hop)
+					|| HopRewriteUtils.isBinaryMatrixScalarOperation(hop)
+					|| HopRewriteUtils.isBinaryMatrixMatrixOperation(hop)
+					|| TemplateUtils.isBinaryMatrixRowVector(hop)))
+				|| (HopRewriteUtils.isTransposeOperation(hop) && input instanceof AggBinaryOp
+					 && !HopRewriteUtils.isOuterProductLikeMM(input))
+				|| (hop instanceof AggBinaryOp && !HopRewriteUtils.isOuterProductLikeMM(hop)
+					 && TemplateUtils.containsOuterProduct(input, HopRewriteUtils.getOtherInput(hop, input)))
+				|| (hop instanceof AggUnaryOp && ((AggUnaryOp)hop).getDirection()==Direction.RowCol));
 	}
 
 	@Override

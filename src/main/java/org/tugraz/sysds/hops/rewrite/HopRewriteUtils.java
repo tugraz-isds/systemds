@@ -25,6 +25,7 @@ import org.apache.commons.lang.ArrayUtils;
 import org.tugraz.sysds.api.DMLScript;
 import org.tugraz.sysds.common.Types.DataType;
 import org.tugraz.sysds.common.Types.ExecMode;
+import org.tugraz.sysds.common.Types.ParamBuiltinOp;
 import org.tugraz.sysds.common.Types.ValueType;
 import org.tugraz.sysds.conf.ConfigurationManager;
 import org.tugraz.sysds.hops.AggBinaryOp;
@@ -34,17 +35,16 @@ import org.tugraz.sysds.hops.DataGenOp;
 import org.tugraz.sysds.hops.DataOp;
 import org.tugraz.sysds.hops.DnnOp;
 import org.tugraz.sysds.hops.Hop;
-import org.tugraz.sysds.hops.Hop.AggOp;
+import org.tugraz.sysds.common.Types.AggOp;
 import org.tugraz.sysds.hops.Hop.DataGenMethod;
 import org.tugraz.sysds.hops.Hop.DataOpTypes;
-import org.tugraz.sysds.hops.Hop.Direction;
+import org.tugraz.sysds.common.Types.Direction;
 import org.tugraz.sysds.hops.Hop.FileFormatTypes;
 import org.tugraz.sysds.hops.Hop.OpOp1;
 import org.tugraz.sysds.hops.Hop.OpOp2;
 import org.tugraz.sysds.hops.Hop.OpOp3;
 import org.tugraz.sysds.hops.Hop.OpOpDnn;
 import org.tugraz.sysds.hops.Hop.OpOpN;
-import org.tugraz.sysds.hops.Hop.ParamBuiltinOp;
 import org.tugraz.sysds.hops.Hop.ReOrgOp;
 import org.tugraz.sysds.hops.HopsException;
 import org.tugraz.sysds.hops.IndexingOp;
@@ -782,6 +782,11 @@ public class HopRewriteUtils
 		return ternOp;
 	}
 	
+	public static Hop createComputeNnz(Hop input) {
+		//nnz = sum(A != 0) -> later rewritten to meta-data operation
+		return createSum(createBinary(input, new LiteralOp(0), OpOp2.NOTEQUAL));
+	}
+	
 	public static void setOutputParameters( Hop hop, long rlen, long clen, int blen, long nnz ) {
 		hop.setDim1(rlen);
 		hop.setDim2(clen);
@@ -901,6 +906,10 @@ public class HopRewriteUtils
 			&& hop.getInput().get(0).dimsKnown() && hop.getInput().get(1).dimsKnown()	
 			&& hop.getInput().get(0).getDim1() > hop.getInput().get(0).getDim2()
 			&& hop.getInput().get(1).getDim1() < hop.getInput().get(1).getDim2();
+	}
+	
+	public static boolean isOuterBinary( Hop hop ) {
+		return hop instanceof BinaryOp && ((BinaryOp) hop).isOuter();
 	}
 	
 	public static boolean isValidOuterBinaryOp( OpOp2 op ) {
@@ -1125,6 +1134,12 @@ public class HopRewriteUtils
 		return hop instanceof ParameterizedBuiltinOp && ((ParameterizedBuiltinOp) hop).getOp().equals(type);
 	}
 	
+	public static boolean isRemoveEmpty(Hop hop, boolean rows) {
+		return isParameterBuiltinOp(hop, ParamBuiltinOp.RMEMPTY)
+			&& HopRewriteUtils.isLiteralOfValue(
+				((ParameterizedBuiltinOp)hop).getParameterHop("margin"), rows?"rows":"cols");
+	}
+	
 	public static boolean isNary(Hop hop, OpOpN type) {
 		return hop instanceof NaryOp && ((NaryOp)hop).getOp()==type;
 	}
@@ -1143,17 +1158,11 @@ public class HopRewriteUtils
 			&& ArrayUtils.contains(types, ((DnnOp) hop).getOp()));
 	}
 	
-	public static boolean isNonZeroIndicator(Hop pred, Hop hop )
-	{
-		if( pred instanceof BinaryOp && ((BinaryOp)pred).getOp()==OpOp2.NOTEQUAL
+	public static boolean isNonZeroIndicator(Hop pred, Hop hop ) {
+		return ( pred instanceof BinaryOp && ((BinaryOp)pred).getOp()==OpOp2.NOTEQUAL
 			&& pred.getInput().get(0) == hop //depend on common subexpression elimination
 			&& pred.getInput().get(1) instanceof LiteralOp
-			&& HopRewriteUtils.getDoubleValueSafe((LiteralOp)pred.getInput().get(1))==0 )
-		{
-			return true;
-		}
-		
-		return false;
+			&& HopRewriteUtils.getDoubleValueSafe((LiteralOp)pred.getInput().get(1))==0 );
 	}
 
 	public static boolean checkInputDataTypes(Hop hop, DataType... dt) {
@@ -1527,7 +1536,7 @@ public class HopRewriteUtils
 		if( hop.isVisited() ) return false;
 		hop.setVisited();
 		return HopRewriteUtils.isNary(hop, OpOpN.EVAL)
-			|| HopRewriteUtils.isParameterBuiltinOp(hop, Hop.ParamBuiltinOp.PARAMSERV)
+			|| HopRewriteUtils.isParameterBuiltinOp(hop, ParamBuiltinOp.PARAMSERV)
 			|| hop.getInput().stream().anyMatch(c -> containsSecondOrderBuiltin(c));
 	}
 }

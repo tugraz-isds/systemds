@@ -43,15 +43,15 @@ import org.tugraz.sysds.hops.QuaternaryOp;
 import org.tugraz.sysds.hops.ReorgOp;
 import org.tugraz.sysds.hops.TernaryOp;
 import org.tugraz.sysds.hops.UnaryOp;
-import org.tugraz.sysds.hops.Hop.AggOp;
+import org.tugraz.sysds.common.Types.AggOp;
+import org.tugraz.sysds.common.Types.Direction;
+import org.tugraz.sysds.common.Types.ParamBuiltinOp;
 import org.tugraz.sysds.hops.Hop.DataGenMethod;
-import org.tugraz.sysds.hops.Hop.Direction;
 import org.tugraz.sysds.hops.Hop.OpOp1;
 import org.tugraz.sysds.hops.Hop.OpOp2;
 import org.tugraz.sysds.hops.Hop.OpOp3;
 import org.tugraz.sysds.hops.Hop.OpOp4;
 import org.tugraz.sysds.hops.Hop.OpOpN;
-import org.tugraz.sysds.hops.Hop.ParamBuiltinOp;
 import org.tugraz.sysds.hops.Hop.ReOrgOp;
 import org.tugraz.sysds.lops.MapMultChain.ChainType;
 import org.tugraz.sysds.parser.DataExpression;
@@ -156,7 +156,7 @@ public class RewriteAlgebraicSimplificationDynamic extends HopRewriteRule
 			hi = removeUnnecessaryReorgOperation(hop, hi, i); //e.g., matrix(X) -> X, if dims(in)==dims(out); r(X)->X, if 1x1 dims
 			hi = removeUnnecessaryOuterProduct(hop, hi, i);   //e.g., X*(Y%*%matrix(1,...) -> X*Y, if Y col vector
 			hi = removeUnnecessaryIfElseOperation(hop, hi, i);//e.g., ifelse(E, A, B) -> A, if E==TRUE or nnz(E)==length(E)
-			hi = removeUnnecessaryAppendTSMM(hop, hi, i); //e.g., X = t(rbind(A,B,C)) %*% rbind(A,B,C) -> t(A)%*%A + t(B)%*%B + t(C)%*%C
+			hi = removeUnnecessaryAppendTSMM(hop, hi, i);     //e.g., X = t(rbind(A,B,C)) %*% rbind(A,B,C) -> t(A)%*%A + t(B)%*%B + t(C)%*%C
 			if(OptimizerUtils.ALLOW_OPERATOR_FUSION)
 				hi = fuseDatagenAndReorgOperation(hop, hi, i);    //e.g., t(rand(rows=10,cols=1)) -> rand(rows=1,cols=10), if one dim=1
 			hi = simplifyColwiseAggregate(hop, hi, i);        //e.g., colsums(X) -> sum(X) or X, if col/row vector
@@ -390,7 +390,7 @@ public class RewriteAlgebraicSimplificationDynamic extends HopRewriteRule
 				HopRewriteUtils.replaceChildReference(parent, hi, input, pos);
 				hi = input;
 				LOG.debug("Applied removeUnnecessaryReorg.");
-			}			
+			}
 		}
 		
 		return hi;

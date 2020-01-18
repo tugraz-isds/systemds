@@ -80,6 +80,12 @@ public class DMLConfig
 	public static final String EAGER_CUDA_FREE      = "sysds.gpu.eager.cudaFree"; // boolean: whether to perform eager CUDA free on rmvar
 	public static final String GPU_EVICTION_POLICY  = "sysds.gpu.eviction.policy"; // string: can be lru, lfu, min_evict
 	
+	// Yarn Specific static refs
+	public static final String YARN_APPMASTER       = "sysds.yarn.appmaster";
+	public static final String YARN_APPMASTERMEM    = "sysds.yarn.appmaster.mem";
+	public static final String YARN_MAPREDUCEMEM    = "sysds.yarn.mapreduce.mem";
+	public static final String YARN_APPQUEUE        = "sysds.yarn.app.queue"; 
+
 	// Fraction of available memory to use. The available memory is computer when the GPUContext is created
 	// to handle the tradeoff on calling cudaMemGetInfo too often.
 	public static final String GPU_MEMORY_UTILIZATION_FACTOR = "sysds.gpu.memory.util.factor";
@@ -88,6 +94,9 @@ public class DMLConfig
 	public static final String PRINT_GPU_MEMORY_INFO = "sysds.gpu.print.memoryInfo";
 	public static final String EVICTION_SHADOW_BUFFERSIZE = "sysds.gpu.eviction.shadow.bufferSize";
 	
+	public static final String DEFAULT_FEDERATED_PORT = "25501";
+	public static final String DEFAULT_NUMBER_OF_FEDERATED_WORKER_THREADS = "10";
+
 	//internal config
 	public static final String DEFAULT_SHARED_DIR_PERMISSION = "777"; //for local fs and DFS
 	

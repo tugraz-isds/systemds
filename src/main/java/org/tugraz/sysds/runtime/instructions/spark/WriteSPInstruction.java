@@ -55,7 +55,7 @@ import java.util.ArrayList;
 import java.util.Random;
 
 public class WriteSPInstruction extends SPInstruction implements LineageTraceable {
-	private CPOperand input1 = null;
+	public CPOperand input1 = null;
 	private CPOperand input2 = null;
 	private CPOperand input3 = null;
 	private CPOperand input4 = null;
@@ -106,7 +106,7 @@ public class WriteSPInstruction extends SPInstruction implements LineageTraceabl
 			inst.input4 = in4;
 			inst.setFormatProperties(ffp);
 		}
-		return inst;		
+		return inst;
 	}
 	
 	
@@ -116,6 +116,14 @@ public class WriteSPInstruction extends SPInstruction implements LineageTraceabl
 	
 	public void setFormatProperties(FileFormatProperties prop) {
 		formatProperties = prop;
+	}
+	
+	public CPOperand getInput1() { 
+		return input1;
+	}
+	
+	public CPOperand getInput2() {
+		return input2;
 	}
 	
 	@Override
