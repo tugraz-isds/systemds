@@ -117,12 +117,15 @@ public class FunctionCallCPInstruction extends CPInstruction {
 				+ "("+_boundInputs.length+", but "+fpb.getInputParams().size()+" expected)");
 		}
 		
+		// Save the input lineages as they can be replaced if input and output share the same name.
+		LineageItem LiInputs[] = DMLScript.LINEAGE ? LineageItemUtils.getLineage(ec, _boundInputs) : null;
 		if (!ReuseCacheType.isNone()) {
 			boolean reuse = true;
 			int numOutputs = Math.min(_boundOutputNames.size(), fpb.getOutputParams().size());
 			for (int i=0; i< numOutputs; i++) {
-				String opcode = _functionName + _boundOutputNames.get(i);
-				LineageItem li = new LineageItem(_boundOutputNames.get(i), opcode, LineageItemUtils.getLineage(ec, _boundInputs));
+				//String opcode = _functionName + _boundOutputNames.get(i);
+				String opcode = _functionName + String.valueOf(i+1);
+				LineageItem li = new LineageItem(_boundOutputNames.get(i), opcode, LiInputs);
 				MatrixBlock cachedValue = LineageCache.reuse(li);
 				reuse = (cachedValue == null) ? false : reuse;
 
@@ -141,12 +144,15 @@ public class FunctionCallCPInstruction extends CPInstruction {
 
 					//add/replace data in symbol table
 					ec.setVariable(boundVarName, boundValue);
-					//FIXME: Find the original lineage item and rewire it with calling site. 
-					//		 Can be done easily when multiple lineage items point to the same MB.
+					
+					// map original lineage of function return to the calling site
+					LineageItem orig = LineageCache.getNext(li);
+					ec.getLineage().set(boundVarName, orig);
 				}
 			}
-			if (reuse)
+			if (reuse) {
 				return; //only if all the outputs are found in cache 
+			}
 		}
 		
 		// create bindings to formal parameters for given function call
@@ -251,12 +257,14 @@ public class FunctionCallCPInstruction extends CPInstruction {
 			if( lineage != null ) //unchanged ref
 				ec.getLineage().set(boundVarName, lineage.get(retVarName));
 
-			if (!ReuseCacheType.isNone() && !(boundValue instanceof ScalarObject)) {
-				String opcode = _functionName + _boundOutputNames.get(i);
-				LineageItem li = new LineageItem(_boundOutputNames.get(i), opcode, LineageItemUtils.getLineage(ec, _boundInputs));
-				//FIXME: li will not match the placeholder if i/p variables are updated inside the function.
-				LineageCache.putValue(li, lineage.get(retVarName), (MatrixObject)boundValue);
-				//TODO: Unmark for caching in compiler if function contains rand()
+			if (!ReuseCacheType.isNone()) {
+				String opcode = _functionName + String.valueOf(i+1);
+				LineageItem li = new LineageItem(_boundOutputNames.get(i), opcode, LiInputs);
+				if (boundValue instanceof ScalarObject) //TODO: cache scalar objects
+					LineageCache.removeEntry(li);  //remove the placeholder
+				else 
+					LineageCache.putValue(li, lineage.get(retVarName), (MatrixObject)boundValue);
+					//TODO: Unmark for caching in compiler if function contains rand()
 			}
 		}
 	}

@@ -34,10 +34,10 @@ X = rand(rows=r, cols=c, seed=42);
 y = rand(rows=r, cols=1, seed=43);
 R = matrix(0, 1, 2);
 
-beta = SimLM(X, y, 0.0001);
-R[,1] = beta;
+beta1 = SimLM(X, y, 0.0001);
+R[,1] = beta1;
 
-beta = SimLM(X, y, 0.0001);
-R[,2] = beta;
+beta2 = SimLM(X, y, 0.0001);
+R[,2] = beta2;
 
 write(R, $1, format="text");

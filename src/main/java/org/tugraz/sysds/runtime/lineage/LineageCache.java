@@ -64,7 +64,7 @@ public class LineageCache {
 			return false;
 		
 		boolean reuse = false;
-		if (inst instanceof ComputationCPInstruction && LineageCache.isReusable(inst)) {
+		if (inst instanceof ComputationCPInstruction && LineageCache.isReusable(inst, ec)) {
 			LineageItem item = ((ComputationCPInstruction) inst).getLineageItems(ec)[0];
 			
 			synchronized( _cache ) {
@@ -100,10 +100,19 @@ public class LineageCache {
 		return d;
 	}
 	
+	public static LineageItem getNext(LineageItem firstItem) {
+		for(Map.Entry<LineageItem, Entry> entry : _cache.entrySet()) {
+			if (!(entry.getKey().equals(firstItem)) && !entry.getValue().isNullVal() &&
+					(entry.getValue().getValue() == _cache.get(firstItem).getValue()))
+				return entry.getKey();
+		}
+		return null;
+	}
+	
 	//NOTE: safe to pin the object in memory as coming from CPInstruction
 	
 	public static void put(Instruction inst, ExecutionContext ec) {
-		if (inst instanceof ComputationCPInstruction && isReusable(inst) ) {
+		if (inst instanceof ComputationCPInstruction && isReusable(inst, ec) ) {
 			LineageItem item = ((LineageTraceable) inst).getLineageItems(ec)[0];
 			MatrixObject mo = ec.getMatrixObject(((ComputationCPInstruction) inst).output);
 			synchronized( _cache ) {
@@ -115,7 +124,7 @@ public class LineageCache {
 	public static void putValue(Instruction inst, ExecutionContext ec) {
 		if (ReuseCacheType.isNone())
 			return;
-		if (inst instanceof ComputationCPInstruction && isReusable(inst) ) {
+		if (inst instanceof ComputationCPInstruction && isReusable(inst, ec) ) {
 			LineageItem item = ((LineageTraceable) inst).getLineageItems(ec)[0];
 			MatrixObject mo = ec.getMatrixObject(((ComputationCPInstruction) inst).output);
 			MatrixBlock value = mo.acquireReadAndRelease();
@@ -143,7 +152,7 @@ public class LineageCache {
 			}
 		}
 		else
-			delete(_cache.get(item)); //remove the placeholder
+			removeEntry(item);  //remove the placeholder
 
 	}
 	
@@ -213,14 +222,25 @@ public class LineageCache {
 			return readFromLocalFS(key);
 	}
 	
-	public static boolean isReusable (Instruction inst) {
+	public static boolean isReusable (Instruction inst, ExecutionContext ec) {
 		// TODO: Move this to the new class LineageCacheConfig and extend
 		return inst.getOpcode().equalsIgnoreCase("tsmm")
 				|| inst.getOpcode().equalsIgnoreCase("ba+*")
 				|| (inst.getOpcode().equalsIgnoreCase("*") &&
 					inst instanceof BinaryMatrixMatrixCPInstruction) //TODO support scalar
 				|| inst.getOpcode().equalsIgnoreCase("rightIndex")
-				|| inst.getOpcode().equalsIgnoreCase("groupedagg");
+				|| inst.getOpcode().equalsIgnoreCase("groupedagg")
+				|| inst.getOpcode().equalsIgnoreCase("r'")
+				|| (inst.getOpcode().equalsIgnoreCase("append") && ifVectorAppend(inst, ec))
+				|| inst.getOpcode().equalsIgnoreCase("solve");
+	}
+	
+	private static boolean ifVectorAppend(Instruction inst, ExecutionContext ec) {
+		MatrixObject mo1 = ec.getMatrixObject(((ComputationCPInstruction)inst).input1);
+		MatrixObject mo2 = ec.getMatrixObject(((ComputationCPInstruction)inst).input2);
+		long c1 = mo1.getNumColumns();
+		long c2 = mo2.getNumColumns();
+		return(c1 == 1 || c2 == 1);
 	}
 	
 	//---------------- CACHE SPACE MANAGEMENT METHODS -----------------
@@ -234,6 +254,11 @@ public class LineageCache {
 		// cost based eviction
 		while ((valSize+_cachesize) > CACHE_LIMIT)
 		{
+			if (_cache.get(_end._key).isNullVal()) {
+				setEnd2Head(_end);  // Must be null function entry. Move to next.
+				continue;
+			}
+				
 			double reduction = _cache.get(_end._key).getValue().getInMemorySize();
 			if (_cache.get(_end._key)._compEst > getDiskSpillEstimate() 
 					&& LineageCacheConfig.isSetSpill())
@@ -323,6 +348,8 @@ public class LineageCache {
 				if (inst.getOpcode().equalsIgnoreCase("*"))
 					// considering the dimensions of inputs and the output are same 
 					nflops = r1 * c1; 
+				else if (inst.getOpcode().equalsIgnoreCase("solve"))
+					nflops = r1 * c1 * c1;
 				break;
 			}
 			
@@ -355,6 +382,36 @@ public class LineageCache {
 				}
 				//TODO: support other PBuiltin ops
 				nflops = 2 * r1+xga * r1;
+				break;
+			}
+
+			case Reorg:  //r'
+			{
+				MatrixObject mo = ec.getMatrixObject(((ComputationCPInstruction)inst).input1);
+				long r = mo.getNumRows();
+				long c = mo.getNumColumns();
+				long nnz = mo.getNnz();
+				double s = OptimizerUtils.getSparsity(r, c, nnz);
+				boolean sparse = MatrixBlock.evalSparseFormatInMemory(r, c, nnz);
+				nflops = sparse ? r*c*s : r*c; 
+				break;
+			}
+
+			case Append:
+			{
+				MatrixObject mo1 = ec.getMatrixObject(((ComputationCPInstruction)inst).input1);
+				MatrixObject mo2 = ec.getMatrixObject(((ComputationCPInstruction)inst).input2);
+				long r1 = mo1.getNumRows();
+				long c1 = mo1.getNumColumns();
+				long nnz1 = mo1.getNnz();
+				double s1 = OptimizerUtils.getSparsity(r1, c1, nnz1);
+				boolean lsparse = MatrixBlock.evalSparseFormatInMemory(r1, c1, nnz1);
+				long r2 = mo2.getNumRows();
+				long c2 = mo2.getNumColumns();
+				long nnz2 = mo2.getNnz();
+				double s2 = OptimizerUtils.getSparsity(r2, c2, nnz2);
+				boolean rsparse = MatrixBlock.evalSparseFormatInMemory(r2, c2, nnz2);
+				nflops = 1.0 * ((lsparse ? r1*c1*s1 : r1*c1) + (rsparse ? r2*c2*s2 : r2*c2));
 				break;
 			}
 				
@@ -435,6 +492,11 @@ public class LineageCache {
 		if (_end == null)
 			_end = _head;
 	}
+	
+	private static void setEnd2Head(Entry entry) {
+		delete(entry);
+		setHead(entry);
+	}
 
 	private static void removeEntry(double space) {
 		if (DMLScript.STATISTICS)
@@ -442,6 +504,14 @@ public class LineageCache {
 		_cache.remove(_end._key);
 		_cachesize -= space;
 		delete(_end);
+	}
+	
+	public static void removeEntry(LineageItem key) {
+		// Remove the entry for key
+		if (!_cache.containsKey(key))
+			return;
+		delete(_cache.get(key));
+		_cache.remove(key);
 	}
 	
 	private static class Entry {
@@ -469,6 +539,10 @@ public class LineageCache {
 			catch( InterruptedException ex ) {
 				throw new DMLRuntimeException(ex);
 			}
+		}
+		
+		public boolean isNullVal() {
+			return(_val == null);
 		}
 		
 		public synchronized void setValue(MatrixBlock val, double compEst) {

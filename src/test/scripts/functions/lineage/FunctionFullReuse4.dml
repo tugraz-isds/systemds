@@ -25,8 +25,8 @@ funcadd = function(Matrix[Double] X) return (Matrix[Double] addX)
 
 functsmm = function(Matrix[Double] X) return (Matrix[Double] tsmmX) 
 {
-  Z = funcadd(X);
-  tsmmX = t(Z) %*% Z;
+  X = funcadd(X);
+  tsmmX = t(X) %*% X;
   while(FALSE){}
 }
 
