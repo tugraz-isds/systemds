@@ -52,6 +52,7 @@ import org.tugraz.sysds.runtime.instructions.InstructionUtils;
 import org.tugraz.sysds.runtime.instructions.cp.CPOperand;
 import org.tugraz.sysds.runtime.instructions.spark.utils.RDDConverterUtils;
 import org.tugraz.sysds.runtime.io.IOUtilFunctions;
+import org.tugraz.sysds.runtime.lineage.LineageItem;
 import org.tugraz.sysds.runtime.matrix.data.LibMatrixDatagen;
 import org.tugraz.sysds.runtime.matrix.data.MatrixBlock;
 import org.tugraz.sysds.runtime.matrix.data.MatrixCell;
@@ -75,6 +76,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Random;
 
+// TODO bnyra: implement lineage traceable
 public class RandSPInstruction extends UnarySPInstruction {
 	// internal configuration
 	private static final long INMEMORY_NUMBLOCKS_THRESHOLD = 1024 * 1024;
@@ -90,9 +92,14 @@ public class RandSPInstruction extends UnarySPInstruction {
 	private long seed = 0;
 	private final String dir;
 	private final CPOperand seq_from, seq_to, seq_incr;
+	private Long runtimeSeed;
 
 	// sample specific attributes
 	private final boolean replace;
+	
+	// seed positions
+	private static final int SEED_POSITION_RAND = 8;
+	private static final int SEED_POSITION_SAMPLE = 4;
 
 	private RandSPInstruction(Operator op, DataGenMethod mthd, CPOperand in, CPOperand out, CPOperand rows,
 		CPOperand cols, CPOperand dims, int blen, String minValue, String maxValue,
@@ -181,7 +188,11 @@ public class RandSPInstruction extends UnarySPInstruction {
 	public double getSparsity() {
 		return sparsity;
 	}
-
+	
+	public long getSeed() {
+		return seed;
+	}
+	
 	public static RandSPInstruction parseInstruction(String str) {
 		String[] s = InstructionUtils.getInstructionPartsWithValueType ( str );
 		String opcode = s[0];
@@ -280,6 +291,8 @@ public class RandSPInstruction extends UnarySPInstruction {
 		} else {
 			generateRandDataTensor(sec);
 		}
+		//reset runtime seed (e.g., when executed in loop)
+		runtimeSeed = null;
 	}
 
 	@SuppressWarnings("resource")
@@ -289,8 +302,12 @@ public class RandSPInstruction extends UnarySPInstruction {
 
 		//step 1: generate pseudo-random seed (because not specified)
 		long lSeed = seed; //seed per invocation
-		if( lSeed == DataGenOp.UNSPECIFIED_SEED )
-			lSeed = DataGenOp.generateRandomSeed();
+		if (lSeed == DataGenOp.UNSPECIFIED_SEED)
+		{
+			if (runtimeSeed == null)
+				runtimeSeed = DataGenOp.generateRandomSeed();
+			lSeed = runtimeSeed;
+		}
 
 		if( LOG.isTraceEnabled() )
 			LOG.trace("Process RandSPInstruction rand with seed = "+lSeed+".");
@@ -396,8 +413,12 @@ public class RandSPInstruction extends UnarySPInstruction {
 
 		//step 1: generate pseudo-random seed (because not specified)
 		long lSeed = seed; //seed per invocation
-		if( lSeed == DataGenOp.UNSPECIFIED_SEED )
-			lSeed = DataGenOp.generateRandomSeed();
+		if (lSeed == DataGenOp.UNSPECIFIED_SEED)
+		{
+			if (runtimeSeed == null)
+				runtimeSeed = DataGenOp.generateRandomSeed();
+			lSeed = runtimeSeed;
+		}
 
 		if( LOG.isTraceEnabled() )
 			LOG.trace("Process RandSPInstruction rand with seed = "+lSeed+".");
@@ -974,5 +995,21 @@ public class RandSPInstruction extends UnarySPInstruction {
 		return ( OptimizerUtils.isValidCPDimensions(lrows, lcols)
 				 && OptimizerUtils.isValidCPMatrixSize(lrows, lcols, sparsity) 
 				 && size < OptimizerUtils.getLocalMemBudget() );
+	}
+	
+	@Override
+	public LineageItem[] getLineageItems(ExecutionContext ec) {
+		String tmpInstStr = instString;
+		if (getSeed() == DataGenOp.UNSPECIFIED_SEED) {
+			//generate pseudo-random seed (because not specified)
+			if (runtimeSeed == null)
+				runtimeSeed = (minValue == maxValue && sparsity == 1) ?
+						DataGenOp.UNSPECIFIED_SEED : DataGenOp.generateRandomSeed();
+			int position = (method == DataGenMethod.RAND) ? SEED_POSITION_RAND :
+					(method == DataGenMethod.SAMPLE) ? SEED_POSITION_SAMPLE : 0;
+			tmpInstStr = InstructionUtils.replaceOperand(
+					tmpInstStr, position, String.valueOf(runtimeSeed));
+		}
+		return new LineageItem[]{new LineageItem(output.getName(), tmpInstStr, getOpcode())};
 	}
 }

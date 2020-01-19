@@ -118,6 +118,12 @@ public class WriteSPInstruction extends SPInstruction implements LineageTraceabl
 		formatProperties = prop;
 	}
 	
+	public CPOperand getInput1() { return input1; }
+	
+	public CPOperand getInput2() {
+		return input2;
+	}
+	
 	@Override
 	public void processInstruction(ExecutionContext ec) {
 		SparkExecutionContext sec = (SparkExecutionContext) ec;
