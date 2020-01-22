@@ -40,4 +40,4 @@ def create_dataset(input_file_name, output_file_name):
             csvFile.close() 
 
 
-create_dataset('reut2-000.sgm', 'text_matrix2.csv')
+create_dataset('reut2-000.sgm', 'text_matrix.csv')

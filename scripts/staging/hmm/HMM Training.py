@@ -24,7 +24,7 @@ def sample_word(dictionary):
         if p0 < cumulative:
             return key
 
-def generate_generic(sentence, no_of_words_to_generate, previous_words):
+def generate_generic(sentence, no_of_words_to_generate = 1, previous_words = 3):
     sentence = sentence.split()
     if len(sentence) < previous_words:
         previous_words = len(sentence)
@@ -133,6 +133,8 @@ def generate(sentence, no_of_words):
     print(' '.join(sentence))
 
 def train_markov_model_generic(data, no_of_words):
+    if no_of_words > 3:
+        no_of_words = 3
     for line in data:
         line_length = len(line)
         first_token = line[0]
@@ -205,5 +207,5 @@ second_word = {}
 transitions = {}
 #Second parameter is to determine how many previous words algorithm takes when learning
 train_markov_model_generic(data, 5)
-sentence = ''
-generate_generic(sentence,8,5)
+sentence = 'drought smith say'
+generate_generic(sentence)
