@@ -71,6 +71,7 @@ public class FrameReaderJSONL {
         int row = currentRow;
         try {
             while (reader.next(key, value)) {
+                // Potential Problem if JSON/L Object is very large
                 JSONObject jsonObject = new JSONObject(value.toString());
                 int col = 0;
                 for (Map.Entry<String, Integer> entry : schemaMap.entrySet()) {

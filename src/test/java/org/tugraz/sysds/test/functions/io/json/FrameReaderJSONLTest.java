@@ -11,10 +11,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class FrameReaderJSONLTest {
-    static final String FILENAME = "target/testTemp/functions/data/FrameJSONTest/in_500.json";
+    static final String FILENAME = "target/testTemp/functions/data/FrameJSONTest/in_50000.json";
 
     @Test
-    public void testReadTensorFromHDFS() throws IOException, JSONException {
+    public void testReadFrameFromHDFS() throws IOException, JSONException {
         FrameReaderJSONL frameReaderJSONL = new FrameReaderJSONL();
 
         Types.ValueType[] schema = new Types.ValueType[]{Types.ValueType.INT64, Types.ValueType.STRING, Types.ValueType.STRING};
@@ -26,7 +26,7 @@ public class FrameReaderJSONLTest {
         schemaMap.put("authors", 2);
 
 
-        FrameBlock input = frameReaderJSONL.readFrameFromHDFS(FILENAME, schema, schemaMap, null, 500,1);
+        FrameBlock input = frameReaderJSONL.readFrameFromHDFS(FILENAME, schema, schemaMap, null, 500000,3);
         input.getNumColumns();
     }
 }
