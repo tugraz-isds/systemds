@@ -61,8 +61,8 @@ public class FrameReaderJSONL {
 
 
     protected final int readJSONLFrameFromInputSplit(InputSplit split, InputFormat<LongWritable, Text> inputFormat,
-                                                      JobConf jobConf, Types.ValueType[] schema,
-                                                      Map<String, Integer> schemaMap, FrameBlock dest, int currentRow)
+                                                            JobConf jobConf, Types.ValueType[] schema,
+                                                            Map<String, Integer> schemaMap, FrameBlock dest, int currentRow)
             throws IOException, JSONException {
         RecordReader<LongWritable, Text> reader = inputFormat.getRecordReader(split, jobConf, Reporter.NULL);
         LongWritable key = new LongWritable();
@@ -88,11 +88,9 @@ public class FrameReaderJSONL {
     }
 
 
-    protected String[] createOutputNamesFromSchemaMap(Map<String, Integer> schemaMap){
+    private String[] createOutputNamesFromSchemaMap(Map<String, Integer> schemaMap){
         String[] names = new String[schemaMap.size()];
-        schemaMap.forEach((key, value) -> {
-            names[value] = key;
-        });
+        schemaMap.forEach((key, value) -> names[value] = key);
         return names;
     }
 

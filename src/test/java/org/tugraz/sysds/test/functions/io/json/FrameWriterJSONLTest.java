@@ -37,11 +37,9 @@ public class FrameWriterJSONLTest {
     }
 
 
-    private Map<String, Integer> generateRandomSchemaMap(int cols){
-        Map<String, Integer> schemaMap = new HashMap<String, Integer>();
+    public static Map<String, Integer> generateRandomSchemaMap(int cols){
+        Map<String, Integer> schemaMap = new HashMap<>();
         for(int i = 0; i < cols; i++){
-            byte[] array = new byte[7]; // length is bounded by 7
-            new Random().nextBytes(array);
             String generatedString = new Random().ints('a', 'z' + 1)
                     .limit(10)
                     .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)

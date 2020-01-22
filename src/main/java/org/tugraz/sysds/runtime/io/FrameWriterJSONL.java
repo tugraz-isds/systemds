@@ -54,7 +54,7 @@ public class FrameWriterJSONL{
 
         BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(fileSystem.create(path, true)));
         try {
-            Iterator<String[]> stringRowIterator = src.getStringRowIterator();
+            Iterator<String[]> stringRowIterator = src.getStringRowIterator(lowerRowBound, upperRowBound);
             StringBuilder stringBuilder = new StringBuilder();
             while (stringRowIterator.hasNext()) {
                 String[] row = stringRowIterator.next();
