@@ -16,8 +16,6 @@
 
 package org.tugraz.sysds.test.functions.lineage;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.tugraz.sysds.api.DMLScript;
 import org.tugraz.sysds.common.Types;
