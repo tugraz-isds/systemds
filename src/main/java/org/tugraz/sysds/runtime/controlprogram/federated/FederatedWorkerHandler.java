@@ -96,7 +96,7 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 					}
 					catch (DMLRuntimeException exception) {
 						response = new FederatedResponse(FederatedResponse.Type.ERROR,
-							ExceptionUtils.getFullStackTrace(exception));
+								ExceptionUtils.getFullStackTrace(exception));
 					}
 					break;
 				
@@ -113,7 +113,7 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 					}
 					catch (Exception exception) {
 						response = new FederatedResponse(FederatedResponse.Type.ERROR,
-							ExceptionUtils.getFullStackTrace(exception));
+								ExceptionUtils.getFullStackTrace(exception));
 					}
 					break;
 				
@@ -135,12 +135,14 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 					break;
 				
 				default:
-					String message = String.format(
+					String message = String
+							.format(
 						"[Federated Worker] Method %s is not supported.", request.getMethod());
 					response = new FederatedResponse(FederatedResponse.Type.ERROR, message);
 			}
 			if (!response.isSuccessful())
-				log.error("[Federated Worker] Method " + request.getMethod() + " failed: " + response.getErrorMessage());
+				log.error(
+						"[Federated Worker] Method " + request.getMethod() + " failed: " + response.getErrorMessage());
 			ctx.writeAndFlush(response).addListener(new CloseListener());
 		}
 	}
@@ -187,11 +189,11 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 		switch (dataObject.getDataType()) {
 			case TENSOR:
 				response = new FederatedResponse(FederatedResponse.Type.SUCCESS,
-					((TensorObject) dataObject).acquireReadAndRelease());
+						((TensorObject) dataObject).acquireReadAndRelease());
 				break;
 			case MATRIX:
 				response = new FederatedResponse(FederatedResponse.Type.SUCCESS,
-					((MatrixObject) dataObject).acquireReadAndRelease());
+						((MatrixObject) dataObject).acquireReadAndRelease());
 				break;
 			case LIST:
 				response = new FederatedResponse(FederatedResponse.Type.SUCCESS, ((ListObject) dataObject).getData());
@@ -199,7 +201,7 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 			// TODO rest of the possible datatypes
 			default:
 				response = new FederatedResponse(FederatedResponse.Type.ERROR,
-					"FederatedWorkerHandler: Not possible to send datatype " + dataObject.getDataType().name());
+						"FederatedWorkerHandler: Not possible to send datatype " + dataObject.getDataType().name());
 		}
 		return response;
 	}
@@ -210,7 +212,7 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 		// TODO other datatypes
 		AggregateBinaryOperator ab_op = new AggregateBinaryOperator(
 			Multiply.getMultiplyFnObject(), new AggregateOperator(0, Plus.getPlusFnObject()));
-		MatrixBlock result = isMatVecMult ?
+		MatrixBlock result =isMatVecMult?
 			matBlock1.aggregateBinaryOperations(matBlock1, vector, new MatrixBlock(), ab_op) :
 			vector.aggregateBinaryOperations(vector, matBlock1, new MatrixBlock(), ab_op);
 		return new FederatedResponse(FederatedResponse.Type.SUCCESS, result);
@@ -275,7 +277,7 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 	private FederatedResponse createMatrixObject(MatrixBlock result) {
 		MatrixObject resTo = new MatrixObject(Types.ValueType.FP64, OptimizerUtils.getUniqueTempFileName());
 		MetaDataFormat metadata = new MetaDataFormat(new MatrixCharacteristics(result.getNumRows(),
-			result.getNumColumns()), OutputInfo.BinaryBlockOutputInfo, InputInfo.BinaryBlockInputInfo);
+				result.getNumColumns()), OutputInfo.BinaryBlockOutputInfo, InputInfo.BinaryBlockInputInfo);
 		resTo.setMetaData(metadata);
 		resTo.acquireModify(result);
 		resTo.release();
@@ -285,11 +287,12 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 	}
 	
 	private static void checkNumParams(int actual, int... expected) {
-		if( Arrays.stream(expected).anyMatch(x -> x==actual) )
-			return;
+		if( Arrays.stream(expected).anyMatch(x -> x==actual ))
+				return;
 		throw new DMLRuntimeException(
-			"FederatedWorkerHandler: Received wrong amount of params:" + " expected="
-				+ Arrays.toString(expected) + ", actual=" + actual);
+				"FederatedWorkerHandler: Received wrong amount of params:" + " expected="
+				+  Arrays.toString(expected) +
+						", actual=" + actual);
 	}
 	
 	@Override

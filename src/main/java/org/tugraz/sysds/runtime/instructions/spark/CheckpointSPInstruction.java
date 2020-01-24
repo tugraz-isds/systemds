@@ -91,9 +91,9 @@ public class CheckpointSPInstruction extends UnarySPInstruction {
 		// and for federated matrices
 		CacheableData<?> obj = sec.getCacheableData(input1.getName());
 		DataCharacteristics mcIn = sec.getDataCharacteristics( input1.getName() );
-		if (obj.isCached(true) || Recompiler.checkCPCheckpoint(mcIn) 
-			|| (sec.getCacheableData(input1.getName()) instanceof MatrixObject 
-				&& sec.getMatrixObject(input1.getName()).isFederated())) {
+		if (obj.isCached(true) || Recompiler.checkCPCheckpoint(mcIn) ||
+				(sec.getCacheableData(input1.getName()) instanceof MatrixObject &&
+						sec.getMatrixObject(input1.getName()).isFederated())) {
 			//available in memory
 			sec.setVariable(output.getName(), obj);
 			Statistics.decrementNoOfExecutedSPInst();

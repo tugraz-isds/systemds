@@ -73,7 +73,7 @@ public class AggregateUnaryFEDInstruction extends UnaryFEDInstruction {
 			else {
 				ec.setMatrixOutput(output_name, outMatrix);
 				ec.getMatrixObject(output_name).getDataCharacteristics()
-					.setBlocksize(ConfigurationManager.getBlocksize());
+						.setBlocksize(ConfigurationManager.getBlocksize());
 			}
 		}
 		else {
