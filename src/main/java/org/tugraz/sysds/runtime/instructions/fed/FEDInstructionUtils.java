@@ -68,7 +68,6 @@ public class FEDInstructionUtils {
 				return AggregateUnaryFEDInstruction.parseInstruction(inst.getInstructionString());
 		}
 		else if (inst instanceof WriteSPInstruction) {
-			// TODO test this for federated
 			WriteSPInstruction instruction = (WriteSPInstruction) inst;
 			Data data = ec.getVariable(instruction.input1);
 			if (data instanceof MatrixObject && ((MatrixObject) data).isFederated()) {
