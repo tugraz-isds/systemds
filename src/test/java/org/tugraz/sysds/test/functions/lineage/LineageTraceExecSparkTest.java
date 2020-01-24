@@ -21,26 +21,29 @@ import org.tugraz.sysds.api.DMLScript;
 import org.tugraz.sysds.common.Types;
 import org.tugraz.sysds.hops.OptimizerUtils;
 import org.tugraz.sysds.hops.recompile.Recompiler;
+import org.tugraz.sysds.runtime.controlprogram.caching.MatrixObject;
+import org.tugraz.sysds.runtime.instructions.cp.Data;
 import org.tugraz.sysds.runtime.lineage.Lineage;
 import org.tugraz.sysds.runtime.lineage.LineageItem;
+import org.tugraz.sysds.runtime.lineage.LineageItemUtils;
 import org.tugraz.sysds.runtime.lineage.LineageParser;
+import org.tugraz.sysds.runtime.matrix.data.MatrixBlock;
+import org.tugraz.sysds.runtime.matrix.data.MatrixValue;
 import org.tugraz.sysds.test.AutomatedTestBase;
 import org.tugraz.sysds.test.TestConfiguration;
 import org.tugraz.sysds.test.TestUtils;
 import org.tugraz.sysds.utils.Explain;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
-public class LineageTraceSparkTest extends AutomatedTestBase {
+public class LineageTraceExecSparkTest extends AutomatedTestBase {
 	
 	protected static final String TEST_DIR = "functions/lineage/";
 	protected static final String TEST_NAME1 = "LineageTraceSpark1";
-	protected static final String TEST_NAME2 = "LineageTraceSpark2";
-	protected static final String TEST_NAME3 = "LineageTraceSpark3";
-	protected static final String TEST_NAME4 = "LineageTraceSpark4";
 	protected static final String TEST_NAME5 = "LineageTraceSpark5";
-	protected static String TEST_CLASS_DIR = TEST_DIR + LineageTraceSparkTest.class.getSimpleName() + "/";
+	protected static String TEST_CLASS_DIR = TEST_DIR + LineageTraceExecSparkTest.class.getSimpleName() + "/";
 	
 	protected static final int numRecords = 10;
 	protected static final int numFeatures = 5;
@@ -50,30 +53,12 @@ public class LineageTraceSparkTest extends AutomatedTestBase {
 	public void setUp() {
 		TestUtils.clearAssertionInformation();
 		addTestConfiguration(TEST_NAME1, new TestConfiguration(TEST_CLASS_DIR, TEST_NAME1, new String[]{"X", "X.lineage", "Y", "Y.lineage"}));
-		addTestConfiguration(TEST_NAME2, new TestConfiguration(TEST_CLASS_DIR, TEST_NAME2, new String[]{"X", "X.lineage", "Y", "Y.lineage"}));
-		addTestConfiguration(TEST_NAME3, new TestConfiguration(TEST_CLASS_DIR, TEST_NAME3, new String[]{"X", "X.lineage", "Y", "Y.lineage"}));
-		addTestConfiguration(TEST_NAME4, new TestConfiguration(TEST_CLASS_DIR, TEST_NAME4, new String[]{"X", "X.lineage", "Y", "Y.lineage"}));
 		addTestConfiguration(TEST_NAME5, new TestConfiguration(TEST_CLASS_DIR, TEST_NAME5, new String[]{"X", "X.lineage", "Y", "Y.lineage"}));
 	}
 	
 	@Test
 	public void testLineageTraceSpark1() {
 		testLineageTraceSpark(TEST_NAME1);
-	}
-	
-	@Test
-	public void testLineageTraceSpark2() {
-		testLineageTraceSpark(TEST_NAME2);
-	}
-	
-	@Test
-	public void testLineageTraceSpark3() {
-		testLineageTraceSpark(TEST_NAME3);
-	}
-	
-	@Test
-	public void testLineageTraceSpark4() {
-		testLineageTraceSpark(TEST_NAME4);
 	}
 	
 	@Test
@@ -128,6 +113,17 @@ public class LineageTraceSparkTest extends AutomatedTestBase {
 			
 			TestUtils.compareScalars(X_lineage, Explain.explain(X_li));
 			TestUtils.compareScalars(Y_lineage, Explain.explain(Y_li));
+			
+			//generate program
+			Data X_data = LineageItemUtils.computeByLineage(X_li);
+			HashMap<MatrixValue.CellIndex, Double> X_dmlfile = readDMLMatrixFromHDFS("X");
+			MatrixBlock X_tmp = ((MatrixObject)X_data).acquireReadAndRelease();
+			TestUtils.compareMatrices(X_dmlfile, X_tmp, 1e-6);
+			
+			Data Y_data = LineageItemUtils.computeByLineage(Y_li);
+			HashMap<MatrixValue.CellIndex, Double> Y_dmlfile = readDMLMatrixFromHDFS("Y");
+			MatrixBlock Y_tmp = ((MatrixObject)Y_data).acquireReadAndRelease();
+			TestUtils.compareMatrices(X_dmlfile, Y_tmp, 1e-6);
 		} finally {
 			OptimizerUtils.ALLOW_ALGEBRAIC_SIMPLIFICATION = old_simplification;
 			OptimizerUtils.ALLOW_SUM_PRODUCT_REWRITES = old_sum_product;

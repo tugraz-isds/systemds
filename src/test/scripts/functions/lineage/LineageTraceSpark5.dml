@@ -22,12 +22,15 @@
 # hadoop jar SystemDS.jar -f $LR_HOME/LineageTrace.dml -args "$INPUT_DIR/X" "$OUTPUT_DIR/X" "$OUTPUT_DIR/Y"
 
 X = read($1);
-# TODO mb: fix generation of spark instructions (chkpoint) in LineageItemUtils.rConstructHops()
-
 X = X * 3;
-X = X + 5;
 
-Y = t(X) %*% X;
+ms = matrix(0, rows=2, cols=3*10)
+for (v in 1:10, check=0) { # parallelizable
+    mv = matrix(v, rows=2, cols=3)
+# TODO mb: fix generation of spark instructions (mapLeftIndex) in LineageItemUtils.rConstructHops()
+    ms[,(v-1)*3+1:v*3] = mv
+}
 
-write(X, $2, format="text");
-write(Y, $3, format="text");
+print(lineage(ms));
+write(ms, $2);
+write(X, $3);
