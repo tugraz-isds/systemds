@@ -21,6 +21,10 @@ import java.util.HashMap;
 import java.util.List;
 
 import org.junit.Test;
+import org.tugraz.sysds.api.DMLScript;
+import org.tugraz.sysds.common.Types;
+import org.tugraz.sysds.hops.OptimizerUtils;
+import org.tugraz.sysds.hops.recompile.Recompiler;
 import org.tugraz.sysds.runtime.controlprogram.caching.MatrixObject;
 import org.tugraz.sysds.runtime.instructions.cp.Data;
 import org.tugraz.sysds.runtime.lineage.Lineage;
@@ -36,7 +40,8 @@ import org.tugraz.sysds.test.TestUtils;
 public class LineageTraceParforTest extends AutomatedTestBase {
 	
 	protected static final String TEST_DIR = "functions/lineage/";
-	protected static final String TEST_NAME1 = "LineageTraceParfor"; //rand - matrix result
+	protected static final String TEST_NAME1 = "LineageTraceParfor1"; //rand - matrix result
+	protected static final String TEST_NAME2 = "LineageTraceParfor2"; //rand - matrix result
 	
 	protected String TEST_CLASS_DIR = TEST_DIR + LineageTraceParforTest.class.getSimpleName() + "/";
 	
@@ -50,50 +55,63 @@ public class LineageTraceParforTest extends AutomatedTestBase {
 	public void setUp() {
 		TestUtils.clearAssertionInformation();
 		addTestConfiguration( TEST_NAME1, new TestConfiguration(TEST_CLASS_DIR, TEST_NAME1, new String[] {"R"}) );
+		addTestConfiguration( TEST_NAME2, new TestConfiguration(TEST_CLASS_DIR, TEST_NAME2, new String[] {"R"}) );
 	}
 	
 	@Test
-	public void testLineageTraceParFor1() {
+	public void testLineageTraceParFor1_1() {
 		testLineageTraceParFor(1, TEST_NAME1);
 	}
 	
 	@Test
-	public void testLineageTraceParFor8() {
+	public void testLineageTraceParFor1_8() {
 		testLineageTraceParFor(8, TEST_NAME1);
 	}
 	
 	@Test
-	public void testLineageTraceParFor32() {
+	public void testLineageTraceParFor1_32() {
 		testLineageTraceParFor(32, TEST_NAME1);
 	}
 	
+	@Test
+	public void testLineageTraceParFor2_8() {
+		testLineageTraceParFor(8, TEST_NAME2);
+	}
+	
 	private void testLineageTraceParFor(int ncol, String testname) {
-		System.out.println("------------ BEGIN " + testname + "------------");
-		
-		getAndLoadTestConfiguration(testname);
-		List<String> proArgs = new ArrayList<>();
-		
-		proArgs.add("-explain");
-		proArgs.add("-lineage");
-		proArgs.add("-args");
-		proArgs.add(input("X"));
-		proArgs.add(output("R"));
-		proArgs.add(String.valueOf(numRecords));
-		proArgs.add(String.valueOf(ncol));
-		programArgs = proArgs.toArray(new String[proArgs.size()]);
-		fullDMLScriptName = getScript();
-		
-		//run the test
-		Lineage.resetInternalState();
-		runTest(true, EXCEPTION_NOT_EXPECTED, null, -1);
-		
-		//get lineage and generate program
-		String Rtrace = readDMLLineageFromHDFS("R");
-		LineageItem R = LineageParser.parseLineageTrace(Rtrace);
-		Data ret = LineageItemUtils.computeByLineage(R);
-		
-		HashMap<CellIndex, Double> dmlfile = readDMLMatrixFromHDFS("R");
-		MatrixBlock tmp = ((MatrixObject)ret).acquireReadAndRelease();
-		TestUtils.compareMatrices(dmlfile, tmp, 1e-6);
+		try {
+			System.out.println("------------ BEGIN " + testname + "------------");
+			
+			getAndLoadTestConfiguration(testname);
+			List<String> proArgs = new ArrayList<>();
+			
+			proArgs.add("-explain");
+			proArgs.add("-lineage");
+			proArgs.add("-args");
+			proArgs.add(input("X"));
+			proArgs.add(output("R"));
+			proArgs.add(String.valueOf(numRecords));
+			proArgs.add(String.valueOf(ncol));
+			programArgs = proArgs.toArray(new String[proArgs.size()]);
+			fullDMLScriptName = getScript();
+			
+			//run the test
+			Lineage.resetInternalState();
+			runTest(true, EXCEPTION_NOT_EXPECTED, null, -1);
+			
+			//get lineage and generate program
+			String Rtrace = readDMLLineageFromHDFS("R");
+			System.out.println(Rtrace);
+			LineageItem R = LineageParser.parseLineageTrace(Rtrace);
+			
+			Data ret = LineageItemUtils.computeByLineage(R);
+			
+			HashMap<CellIndex, Double> dmlfile = readDMLMatrixFromHDFS("R");
+			MatrixBlock tmp = ((MatrixObject) ret).acquireReadAndRelease();
+			TestUtils.compareMatrices(dmlfile, tmp, 1e-6);
+			
+		} finally {
+			Recompiler.reinitRecompiler();
+		}
 	}
 }
