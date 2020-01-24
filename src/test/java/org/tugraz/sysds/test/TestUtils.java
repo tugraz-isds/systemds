@@ -115,8 +115,8 @@ public class TestUtils
 				lineActual = outIn.readLine();
 			}
 
-			assertTrue(expectedFile + ": " + lineExpected + " vs " + actualFile + ": " + lineActual, 
-					   lineActual.equals(lineExpected));
+			assertEquals(expectedFile + ": " + lineExpected + " vs " + actualFile + ": " + lineActual,
+					Double.parseDouble(lineExpected), Double.parseDouble(lineActual), epsilon);
 		} catch (IOException e) {
 			fail("unable to read file: " + e.getMessage());
 		}

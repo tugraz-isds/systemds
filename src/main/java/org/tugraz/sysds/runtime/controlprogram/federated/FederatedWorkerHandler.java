@@ -41,10 +41,12 @@ import org.tugraz.sysds.runtime.instructions.cp.Data;
 import org.tugraz.sysds.runtime.instructions.cp.ListObject;
 import org.tugraz.sysds.runtime.io.IOUtilFunctions;
 import org.tugraz.sysds.runtime.matrix.data.InputInfo;
+import org.tugraz.sysds.runtime.matrix.data.LibMatrixAgg;
 import org.tugraz.sysds.runtime.matrix.data.MatrixBlock;
 import org.tugraz.sysds.runtime.matrix.data.OutputInfo;
 import org.tugraz.sysds.runtime.matrix.operators.AggregateBinaryOperator;
 import org.tugraz.sysds.runtime.matrix.operators.AggregateOperator;
+import org.tugraz.sysds.runtime.matrix.operators.AggregateUnaryOperator;
 import org.tugraz.sysds.runtime.meta.MatrixCharacteristics;
 import org.tugraz.sysds.runtime.meta.MetaDataFormat;
 import org.tugraz.sysds.utils.JSONHelper;
@@ -76,7 +78,7 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 		//TODO could we modularize this method a bit?
 		log.debug("[Federated Worker] Received: " + msg.getClass().getSimpleName());
 		FederatedRequest request;
-		if( msg instanceof FederatedRequest )
+		if (msg instanceof FederatedRequest)
 			request = (FederatedRequest) msg;
 		else
 			throw new DMLRuntimeException("FederatedWorkerHandler: Received object no instance of `FederatedRequest`.");
@@ -94,7 +96,7 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 					}
 					catch (DMLRuntimeException exception) {
 						response = new FederatedResponse(FederatedResponse.Type.ERROR,
-							ExceptionUtils.getFullStackTrace(exception));
+								ExceptionUtils.getFullStackTrace(exception));
 					}
 					break;
 				
@@ -111,7 +113,7 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 					}
 					catch (Exception exception) {
 						response = new FederatedResponse(FederatedResponse.Type.ERROR,
-							ExceptionUtils.getFullStackTrace(exception));
+								ExceptionUtils.getFullStackTrace(exception));
 					}
 					break;
 				
@@ -123,15 +125,64 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 					response = getVariableData(varID);
 					break;
 				
+				case AGGREGATE:
+					// params: operatore, varID
+					numParams = request.getNumParams();
+					checkNumParams(numParams, 2);
+					AggregateUnaryOperator operator = (AggregateUnaryOperator) request.getParam(0);
+					varID = (Long) request.getParam(1);
+					response = executeAggregation(varID, operator);
+					break;
+				
 				default:
-					String message = String.format("[Federated Worker] Method %s is not supported.", request.getMethod());
+					String message = String
+							.format("[Federated Worker] Method %s is not supported.", request.getMethod());
 					response = new FederatedResponse(FederatedResponse.Type.ERROR, message);
 			}
 			if (!response.isSuccessful())
-				log.error("[Federated Worker] Method " + request.getMethod() 
-					+ " failed: " + response.getErrorMessage());
+				log.error(
+						"[Federated Worker] Method " + request.getMethod() + " failed: " + response.getErrorMessage());
 			ctx.writeAndFlush(response).addListener(new CloseListener());
 		}
+	}
+	
+	private FederatedResponse executeAggregation(long varID, AggregateUnaryOperator operator) {
+		Data dataObject = _vars.get(varID);
+		if (dataObject.getDataType() != Types.DataType.MATRIX) {
+			return new FederatedResponse(FederatedResponse.Type.ERROR,
+					"FederatedWorkerHandler: Aggregation only supported for matrices, not for " +
+							dataObject.getDataType().name());
+		}
+		MatrixObject matrixObject = (MatrixObject) dataObject;
+		MatrixBlock matrixBlock = matrixObject.acquireRead();
+		// create matrix for calculation with correction
+		MatrixBlock calculationBlock, resultBlock;
+		MatrixCharacteristics mc = new MatrixCharacteristics();
+		// find out the characteristics after aggregation
+		operator.indexFn.computeDimension(matrixObject.getDataCharacteristics(), mc);
+		// make outBlock right size
+		int outNumRows = (int) mc.getRows();
+		int outNumCols = (int) mc.getCols();
+		resultBlock = new MatrixBlock(outNumRows, outNumCols, false);
+		if (operator.aggOp.correctionExists) {
+			// add rows for correction
+			int numMissing = operator.aggOp.correctionLocation.getNumRemovedRowsColumns();
+			if (operator.aggOp.correctionLocation.getIsRows())
+				outNumRows += numMissing;
+			else
+				outNumCols += numMissing;
+		}
+		calculationBlock = new MatrixBlock(outNumRows, outNumCols, operator.aggOp.initialValue);
+		try {
+			LibMatrixAgg.aggregateUnaryMatrix(matrixBlock, calculationBlock, operator);
+		}
+		catch (Exception e) {
+			return new FederatedResponse(FederatedResponse.Type.ERROR, "FederatedWorkerHandler: " + e);
+		}
+		// result block without correction
+		calculationBlock.slice(0, resultBlock.getNumRows() - 1, 0, resultBlock.getNumColumns() - 1, resultBlock);
+		resultBlock.recomputeNonZeros();
+		return new FederatedResponse(FederatedResponse.Type.SUCCESS, resultBlock);
 	}
 	
 	private FederatedResponse getVariableData(long varID) {
@@ -140,20 +191,19 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 		switch (dataObject.getDataType()) {
 			case TENSOR:
 				response = new FederatedResponse(FederatedResponse.Type.SUCCESS,
-					((TensorObject) dataObject).acquireReadAndRelease());
+						((TensorObject) dataObject).acquireReadAndRelease());
 				break;
 			case MATRIX:
 				response = new FederatedResponse(FederatedResponse.Type.SUCCESS,
-					((MatrixObject) dataObject).acquireReadAndRelease());
+						((MatrixObject) dataObject).acquireReadAndRelease());
 				break;
 			case LIST:
-				response = new FederatedResponse(FederatedResponse.Type.SUCCESS,
-					((ListObject) dataObject).getData());
+				response = new FederatedResponse(FederatedResponse.Type.SUCCESS, ((ListObject) dataObject).getData());
 				break;
 			// TODO rest of the possible datatypes
 			default:
 				response = new FederatedResponse(FederatedResponse.Type.ERROR,
-					"FederatedWorkerHandler: Not possible to send datatype " + dataObject.getDataType().name());
+						"FederatedWorkerHandler: Not possible to send datatype " + dataObject.getDataType().name());
 		}
 		return response;
 	}
@@ -165,7 +215,7 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 		AggregateBinaryOperator ab_op = new AggregateBinaryOperator(Multiply.getMultiplyFnObject(),
 				new AggregateOperator(0, Plus.getPlusFnObject()));
 		MatrixBlock result;
-		if( isMatVecMult )
+		if (isMatVecMult)
 			result = matBlock1.aggregateBinaryOperations(matBlock1, vector, new MatrixBlock(), ab_op);
 		else
 			result = vector.aggregateBinaryOperations(vector, matBlock1, new MatrixBlock(), ab_op);
@@ -190,19 +240,19 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 					mc.setRows(mtd.getLong(DataExpression.READROWPARAM));
 					mc.setCols(mtd.getLong(DataExpression.READCOLPARAM));
 					String format = mtd.getString(DataExpression.FORMAT_TYPE);
-					if( format.equalsIgnoreCase(FORMAT_TYPE_VALUE_TEXT) ) {
+					if (format.equalsIgnoreCase(FORMAT_TYPE_VALUE_TEXT)) {
 						oi = OutputInfo.TextCellOutputInfo;
 					}
-					else if( format.equalsIgnoreCase(FORMAT_TYPE_VALUE_BINARY) ) {
+					else if (format.equalsIgnoreCase(FORMAT_TYPE_VALUE_BINARY)) {
 						oi = OutputInfo.BinaryBlockOutputInfo;
 					}
-					else if( format.equalsIgnoreCase(FORMAT_TYPE_VALUE_MATRIXMARKET) ) {
+					else if (format.equalsIgnoreCase(FORMAT_TYPE_VALUE_MATRIXMARKET)) {
 						oi = OutputInfo.MatrixMarketOutputInfo;
 					}
-					else if( format.equalsIgnoreCase(FORMAT_TYPE_VALUE_LIBSVM) ) {
+					else if (format.equalsIgnoreCase(FORMAT_TYPE_VALUE_LIBSVM)) {
 						oi = OutputInfo.LIBSVMOutputInfo;
 					}
-					else if( format.equalsIgnoreCase(FORMAT_TYPE_VALUE_CSV) ) {
+					else if (format.equalsIgnoreCase(FORMAT_TYPE_VALUE_CSV)) {
 						oi = OutputInfo.CSVOutputInfo;
 					}
 					else {
@@ -231,7 +281,7 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 	private FederatedResponse createMatrixObject(MatrixBlock result) {
 		MatrixObject resTo = new MatrixObject(Types.ValueType.FP64, OptimizerUtils.getUniqueTempFileName());
 		MetaDataFormat metadata = new MetaDataFormat(new MatrixCharacteristics(result.getNumRows(),
-			result.getNumColumns()), OutputInfo.BinaryBlockOutputInfo, InputInfo.BinaryBlockInputInfo);
+				result.getNumColumns()), OutputInfo.BinaryBlockOutputInfo, InputInfo.BinaryBlockInputInfo);
 		resTo.setMetaData(metadata);
 		resTo.acquireModify(result);
 		resTo.release();
@@ -242,10 +292,11 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 	
 	private static void checkNumParams(int actual, int... expected) {
 		for (int valid : expected)
-			if( actual == valid )
+			if (actual == valid)
 				return;
-		throw new DMLRuntimeException("FederatedWorkerHandler: Received wrong amount of params:"
-			+ " expected=" +Arrays.toString(expected) + ", actual=" + actual);
+		throw new DMLRuntimeException(
+				"FederatedWorkerHandler: Received wrong amount of params:" + " expected=" + Arrays.toString(expected) +
+						", actual=" + actual);
 	}
 	
 	@Override
