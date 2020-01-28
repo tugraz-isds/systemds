@@ -142,6 +142,12 @@ public class InitFEDInstruction extends FEDInstruction {
 			if (filePath.length() == 0)
 				throw new DMLRuntimeException("Missing File path for federated address");
 
+			if (address.getQuery() != null)
+				throw new DMLRuntimeException("Query is not supported");
+
+			if (address.getRef() != null)
+				throw new DMLRuntimeException("Reference is not supported");
+				
 			return new String[] { host, port, filePath };
 		} catch (MalformedURLException e) {
 			throw new DMLRuntimeException("federated address `" + input

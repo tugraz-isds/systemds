@@ -97,4 +97,42 @@ public class FederatedUrlParserTest {
         assertEquals("/file.txt", values[2]);
     }
 
+    @Test
+    public void parseFilePath_1() {
+        // Parse Filepath even if it is nested.
+        String[] values = InitFEDInstruction.parseURL("今日は.世界/fu_u_u/bar.txt");
+        assertEquals("/fu_u_u/bar.txt", values[2]);
+    }
+
+    @Test
+    public void parseFilePath_2() {
+        // Parse Filepath even if it is a folder out.
+        String[] values = InitFEDInstruction.parseURL("今日は.世界/../bar.txt");
+        assertEquals("/../bar.txt", values[2]);
+    }
+
+    @Test
+    public void parseFilePath_3() {
+        // Parse Filepath with special characters.
+        String[] values = InitFEDInstruction.parseURL("今日は.世界/../bar世界.txt");
+        assertEquals("/../bar世界.txt", values[2]);
+    }
+
+    @Test(expected = DMLRuntimeException.class)
+    public void parseQuery_negative_1() {
+        // All Queries should fail.
+        InitFEDInstruction.parseURL("今日は.世界/../bar世界.txt?shouldnothappen");
+    }
+
+    @Test(expected = DMLRuntimeException.class)
+    public void parseReference_negative_1() {
+        // All Queries should fail.
+        InitFEDInstruction.parseURL("今日は.世界/../bar世界.txt#shouldnothappen");
+    }
+
+    @Test(expected = DMLRuntimeException.class)
+    public void parseReferenceAndQuery_negative_1() {
+        // All Queries should fail.
+        InitFEDInstruction.parseURL("今日は.世界/../bar世界.txt?please#dont");
+    }
 }
