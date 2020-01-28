@@ -1,0 +1,129 @@
+#-------------------------------------------------------------
+#
+# Copyright 2020 Graz University of Technology
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+#-------------------------------------------------------------
+
+
+# Builtin function for detecting and repairing outliers using standard deviation 
+#
+# INPUT PARAMETERS:
+# ---------------------------------------------------------------------------------------------
+# NAME            TYPE    DEFAULT     MEANING
+# ---------------------------------------------------------------------------------------------
+# X               Double    ---        Matrix X  
+# isIterative     Boolean   TRUE       iterative repair or single repair 
+# repairMethod    Integer     1        values 0 = delete outlier, 1 = replace by mean, 2 = replace by median
+# ---------------------------------------------------------------------------------------------
+ 
+
+#Output(s)
+# ---------------------------------------------------------------------------------------------
+# NAME                  TYPE    DEFAULT     MEANING
+# ---------------------------------------------------------------------------------------------
+# processed_X           Double   ---     Matrix X with no outliers
+
+
+
+
+m_outlier_by_IQR = function(Matrix[Double] X,  Boolean isIterative = TRUE, Integer repairMethod = 2, Boolean verbose = TRUE)
+  return(Matrix[Double] processed_X) 
+{
+  
+  iterate = TRUE
+  k = 1.5
+  sumPrevious =0
+  sumNext = 1
+  while(isIterative | iterate)
+  {
+    iterate = FALSE
+    [Q1, Q3, IQR] = compute_quartiles(X)
+    upperBound = (Q3 + (k * IQR));
+    lowerBound = (Q3 - (k * IQR));
+    outlierFilter = outer(X, lowerBound, ">") &  outer(X, upperBound, "<")
+ 
+    if(sum(outlierFilter == 0) > 0 & sum(X) != 0 & sumPrevious != sumNext )
+    {
+      sumPrevious = sum(X)
+      X = fix_outliers(X, outlierFilter, repairMethod)
+      sumNext = sum(X)
+    }
+    else
+      isIterative = FALSE
+   if(verbose)
+    {
+      print("IQR \n"+toString(IQR))
+      print("upperBound \n"+toString(upperBound))
+      print("lowerBound \n"+toString(lowerBound))
+      print("outlier filter \n"+toString(outlierFilter))
+      print("output \n"+toString(X))
+    }
+  }
+  processed_X = X
+}
+  
+fix_outliers = function(Matrix[Double] X, Matrix[Double] outlierFilter, Integer repairMethod = 2)
+    return(Matrix[Double] fixed_X)
+{
+
+  rows = nrow(X)
+  cols = ncol(X)
+  if(repairMethod == 0)
+  {
+    sel = (1-(rowSums(outlierFilter == 0))>0)
+    X = removeEmpty(target = X, margin = "rows", select = sel)
+  }
+  else if(repairMethod == 1)
+  {
+    Mask = 1 - outlierFilter
+    Mask = Mask * (colMeans(X))
+    X = outlierFilter * X
+    X = X + Mask
+  }
+  else if(repairMethod == 2)
+  {
+    colMedian = matrix(0, 1, cols)
+    parfor(i in 1:cols)
+      colMedian[, i] = median(X[,i])
+    Mask = 1 - outlierFilter
+    Mask = Mask * colMedian
+    X = outlierFilter * X
+    X = X + Mask
+  }
+  else
+    stop("Invalid argument: repair required 0-2 found: "+repairMethod)
+    
+  fixed_X = X
+}
+
+compute_quartiles = function(Matrix[Double] X)
+return(Matrix[Double] colQ1, Matrix[Double] colQ3, Matrix[Double] IQR)
+{
+  if(nrow(X) > 1)
+  {
+    cols = ncol(X)
+    colQ1 = matrix(0, 1, cols)
+    colQ3 = matrix(0, 1, cols)
+  
+    for(i in 1:cols)
+    {
+      colQ1[,i] = quantile(X[,i], 0.25)
+      colQ3[,i] = quantile(X[,i], 0.75)
+    }
+  }
+
+  IQR = colQ3 - colQ1
+}
+ 
