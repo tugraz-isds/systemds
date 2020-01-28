@@ -120,19 +120,19 @@ public class FederatedUrlParserTest {
 
     @Test(expected = DMLRuntimeException.class)
     public void parseQuery_negative_1() {
-        // All Queries should fail.
+        // All Query flags should fail.
         InitFEDInstruction.parseURL("今日は.世界/../bar世界.txt?shouldnothappen");
     }
 
     @Test(expected = DMLRuntimeException.class)
     public void parseReference_negative_1() {
-        // All Queries should fail.
+        // All Reference flags should fail.
         InitFEDInstruction.parseURL("今日は.世界/../bar世界.txt#shouldnothappen");
     }
 
     @Test(expected = DMLRuntimeException.class)
     public void parseReferenceAndQuery_negative_1() {
-        // All Queries should fail.
+        // If both Reference and Query it should still should fail.
         InitFEDInstruction.parseURL("今日は.世界/../bar世界.txt?please#dont");
     }
 }
