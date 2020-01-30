@@ -23,9 +23,11 @@
 # ---------------------------------------------------------------------------------------------
 # NAME            TYPE    DEFAULT     MEANING
 # ---------------------------------------------------------------------------------------------
-# X               Double    ---        Matrix X  
+# X               Double     ---       Matrix X  
+# k               Double    1.5        a constant used to discern outliers k*IQR 
 # isIterative     Boolean   TRUE       iterative repair or single repair 
-# repairMethod    Integer     1        values 0 = delete outlier, 1 = replace by mean, 2 = replace by median
+# repairMethod    Integer     1        values: 0 = delete rows having outliers, 1 = replace outliers as missing values
+# max_iterations   Integer    0        values: 0 = arbitrary number of iteraition until all outliers are removed, n = any constant defined by user
 # ---------------------------------------------------------------------------------------------
  
 
@@ -33,45 +35,54 @@
 # ---------------------------------------------------------------------------------------------
 # NAME                  TYPE    DEFAULT     MEANING
 # ---------------------------------------------------------------------------------------------
-# processed_X           Double   ---     Matrix X with no outliers
+# Y           Double   ---     Matrix X with no outliers
 
 
 
 
-m_outlier_by_IQR = function(Matrix[Double] X,  Boolean isIterative = TRUE, Integer repairMethod = 2, Boolean verbose = TRUE)
-  return(Matrix[Double] processed_X) 
+m_outlier_by_IQR = function(Matrix[Double] X, Integer k =1.5, Integer repairMethod = 2, Integer max_iterations, Boolean verbose = TRUE)
+  return(Matrix[Double] Y) 
 {
-  
-  iterate = TRUE
-  k = 1.5
+
+  if(verbose)
+    iteration_count = 0;
+
   sumPrevious =0
   sumNext = 1
-  while(isIterative | iterate)
+  counter = max_iterations + 1
+  
+  while(ifelse(max_iterations == 0, TRUE, counter > 1))
   {
-    iterate = FALSE
     [Q1, Q3, IQR] = compute_quartiles(X)
     upperBound = (Q3 + (k * IQR));
     lowerBound = (Q3 - (k * IQR));
-    outlierFilter = outer(X, lowerBound, ">") &  outer(X, upperBound, "<")
- 
-    if(sum(outlierFilter == 0) > 0 & sum(X) != 0 & sumPrevious != sumNext )
+    outlierFilter = outer(X, lowerBound, "<") | outer(X, upperBound, ">")
+    if(sum(outlierFilter) > 1 & sum(X) != 0 & sumPrevious != sumNext )
     {
       sumPrevious = sum(X)
       X = fix_outliers(X, outlierFilter, repairMethod)
       sumNext = sum(X)
     }
     else
-      isIterative = FALSE
-   if(verbose)
-    {
-      print("IQR \n"+toString(IQR))
-      print("upperBound \n"+toString(upperBound))
-      print("lowerBound \n"+toString(lowerBound))
-      print("outlier filter \n"+toString(outlierFilter))
-      print("output \n"+toString(X))
-    }
+      max_iterations = -1
+
+    counter = counter - 1; 
+    
+    if(verbose)
+      iteration_count = iteration_count + 1;
+
   }
-  processed_X = X
+  Y = X
+  if(verbose)
+  {
+    print("Total executed iterations = "+iteration_count)
+    print("Upper-bound of data was calculated using Q3 + k * IQR")
+    print("lower-bound of data was calculated using Q3 - k * IQR")
+    print("Anything less than the lower-bound and greater than the upper-bound was treated as outlier")
+    if(sum(Y) == 0)
+    print("output is a zero matrix due to iterative evaluation of outliers ")
+    print("output:\n"+ toString(X))
+  }
 }
   
 fix_outliers = function(Matrix[Double] X, Matrix[Double] outlierFilter, Integer repairMethod = 2)
@@ -82,28 +93,13 @@ fix_outliers = function(Matrix[Double] X, Matrix[Double] outlierFilter, Integer 
   cols = ncol(X)
   if(repairMethod == 0)
   {
-    sel = (1-(rowSums(outlierFilter == 0))>0)
+    sel = 1-(rowMaxs(outlierFilter) > 0)
     X = removeEmpty(target = X, margin = "rows", select = sel)
   }
   else if(repairMethod == 1)
-  {
-    Mask = 1 - outlierFilter
-    Mask = Mask * (colMeans(X))
-    X = outlierFilter * X
-    X = X + Mask
-  }
-  else if(repairMethod == 2)
-  {
-    colMedian = matrix(0, 1, cols)
-    parfor(i in 1:cols)
-      colMedian[, i] = median(X[,i])
-    Mask = 1 - outlierFilter
-    Mask = Mask * colMedian
-    X = outlierFilter * X
-    X = X + Mask
-  }
+    X = (1-outlierFilter) * X
   else
-    stop("Invalid argument: repair required 0-2 found: "+repairMethod)
+    stop("Invalid argument: repair required 0-1 found: "+repairMethod)
     
   fixed_X = X
 }
@@ -111,12 +107,11 @@ fix_outliers = function(Matrix[Double] X, Matrix[Double] outlierFilter, Integer 
 compute_quartiles = function(Matrix[Double] X)
 return(Matrix[Double] colQ1, Matrix[Double] colQ3, Matrix[Double] IQR)
 {
+  cols = ncol(X)  
+  colQ1 = matrix(0, 1, cols)
+  colQ3 = matrix(0, 1, cols)
   if(nrow(X) > 1)
   {
-    cols = ncol(X)
-    colQ1 = matrix(0, 1, cols)
-    colQ3 = matrix(0, 1, cols)
-  
     for(i in 1:cols)
     {
       colQ1[,i] = quantile(X[,i], 0.25)

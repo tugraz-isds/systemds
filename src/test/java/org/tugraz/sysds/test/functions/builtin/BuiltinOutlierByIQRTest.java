@@ -28,8 +28,8 @@ public class BuiltinOutlierByIQRTest extends AutomatedTestBase {
 	private final static String TEST_DIR = "functions/builtin/";
 	private static final String TEST_CLASS_DIR = TEST_DIR + BuiltinOutlierByIQRTest.class.getSimpleName() + "/";
 
-	private final static int rows = 50;
-	private final static int cols = 10;
+	private final static int rows = 100;
+	private final static int cols = 15;
 	private final static double spDense = 0.7;
 	private final static double spSparse = 0.8;
 
@@ -40,35 +40,47 @@ public class BuiltinOutlierByIQRTest extends AutomatedTestBase {
 
 	@Test
 	public void testOutlierRepair0CP() {
-		runOutlierTest(false, true, 0, LopProperties.ExecType.CP);
+		runOutlierTest(false, 1.5, 0, 10,LopProperties.ExecType.CP);
 	}
 
 	@Test
 	public void testOutlierRepair1CP() {
-		runOutlierTest(false, true, 1, LopProperties.ExecType.CP);
+		runOutlierTest(false, 2, 1, 10,LopProperties.ExecType.CP);
 	}
 
-	@Test
-	public void testOutlierRepair2CP() {
-		runOutlierTest(true, true, 2, LopProperties.ExecType.CP);
-	}
 
 	@Test
 	public void testOutlierRepair0SP() {
-		runOutlierTest(false, true, 0, LopProperties.ExecType.SPARK);
+		runOutlierTest(false, 2, 0, 10,LopProperties.ExecType.SPARK);
 	}
 
 	@Test
 	public void testOutlierRepair1SP() {
-		runOutlierTest(false, true, 1, LopProperties.ExecType.SPARK);
+		runOutlierTest(false, 1.5, 1, 10,LopProperties.ExecType.SPARK);
+	}
+	@Test
+	public void testOutlierRepair0IterativeCP() {
+		runOutlierTest(false, 1.5, 0, 0,LopProperties.ExecType.CP);
 	}
 
 	@Test
-	public void testOutlierRepair2SP() {
-		runOutlierTest(true, true, 2, LopProperties.ExecType.SPARK);
+	public void testOutlierRepair1IterativeCP() {
+		runOutlierTest(false, 1.5, 1, 0,LopProperties.ExecType.CP);
 	}
 
-	private void runOutlierTest(boolean sparse, boolean iterative, int repair, LopProperties.ExecType instType)
+
+	@Test
+	public void testOutlierRepair0IterativeSP() {
+		runOutlierTest(false, 1.5, 0, 0,LopProperties.ExecType.SPARK);
+	}
+
+	@Test
+	public void testOutlierRepair1IterativeSP() {
+		runOutlierTest(false, 1.5, 1, 0,LopProperties.ExecType.SPARK);
+	}
+
+
+	private void runOutlierTest(boolean sparse, double  k,  int repair, int max_iterations, LopProperties.ExecType instType)
 	{
 		Types.ExecMode platformOld = setExecMode(instType);
 
@@ -78,8 +90,8 @@ public class BuiltinOutlierByIQRTest extends AutomatedTestBase {
 
 			String HOME = SCRIPT_DIR + TEST_DIR;
 			fullDMLScriptName = HOME + TEST_NAME + ".dml";
-			programArgs = new String[]{ "-explain", "-args", input("A"),
-					String.valueOf(iterative).toUpperCase(), String.valueOf(repair), output("B")};
+			programArgs = new String[]{ "-args", input("A"), String.valueOf(k),
+					 String.valueOf(repair), String.valueOf(max_iterations),output("B")};
 
 			//generate actual dataset
 			double[][] A =  getRandomMatrix(rows, cols, 1, 100, sparse?spSparse:spDense, 10);
