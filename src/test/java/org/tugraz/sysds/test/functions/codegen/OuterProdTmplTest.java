@@ -47,6 +47,7 @@ public class OuterProdTmplTest extends AutomatedTestBase
 	private static final String TEST_NAME8 = "wSparseUnsafeOuterProduct";
 	private static final String TEST_NAME9 = "wdivmmNeq";
 	private static final String TEST_NAME10 = "rmseDist";
+	private static final String TEST_NAME11 = "rmseDist2";
 	
 	private static final String TEST_DIR = "functions/codegen/";
 	private static final String TEST_CLASS_DIR = TEST_DIR + OuterProdTmplTest.class.getSimpleName() + "/";
@@ -68,36 +69,37 @@ public class OuterProdTmplTest extends AutomatedTestBase
 		addTestConfiguration( TEST_NAME8, new TestConfiguration(TEST_CLASS_DIR, TEST_NAME8, new String[] { "8" }) );
 		addTestConfiguration( TEST_NAME9, new TestConfiguration(TEST_CLASS_DIR, TEST_NAME9, new String[] { "9" }) );
 		addTestConfiguration( TEST_NAME10, new TestConfiguration(TEST_CLASS_DIR, TEST_NAME10, new String[] { "10" }) );
+		addTestConfiguration( TEST_NAME11, new TestConfiguration(TEST_CLASS_DIR, TEST_NAME11, new String[] { "11" }) );
 	}
 	
 	@Test
 	public void testCodegenOuterProdRewrite1() {
-		testCodegenIntegrationWithInput( TEST_NAME1, true, ExecType.CP  );
+		testCodegenIntegrationWithInput( TEST_NAME1, true, ExecType.CP );
 	}
 	
 	@Test
 	public void testCodegenOuterProdRewrite2()  {
-		testCodegenIntegration( TEST_NAME2, true, ExecType.CP  );
+		testCodegenIntegration( TEST_NAME2, true, ExecType.CP );
 	}
 	
 	@Test
 	public void testCodegenOuterProdRewrite3() {
-		testCodegenIntegration( TEST_NAME3, true, ExecType.CP  );
+		testCodegenIntegration( TEST_NAME3, true, ExecType.CP );
 	}
 	
 	@Test
 	public void testCodegenOuterProdRewrite4() {
-		testCodegenIntegrationWithInput( TEST_NAME4, true, ExecType.CP  );
+		testCodegenIntegrationWithInput( TEST_NAME4, true, ExecType.CP );
 	}
 
 	@Test
 	public void testCodegenOuterProdRewrite5() {
-		testCodegenIntegration( TEST_NAME5, true, ExecType.CP  );
+		testCodegenIntegration( TEST_NAME5, true, ExecType.CP );
 	}
 	
 	@Test
 	public void testCodegenOuterProdRewrite6() {
-		testCodegenIntegration( TEST_NAME6, true, ExecType.CP  );
+		testCodegenIntegration( TEST_NAME6, true, ExecType.CP );
 	}
 	
 	@Test
@@ -112,32 +114,32 @@ public class OuterProdTmplTest extends AutomatedTestBase
 
 	@Test
 	public void testCodegenOuterProd1() {
-		testCodegenIntegrationWithInput( TEST_NAME1, false, ExecType.CP  );
+		testCodegenIntegrationWithInput( TEST_NAME1, false, ExecType.CP );
 	}
 	
 	@Test
 	public void testCodegenOuterProd2()  {
-		testCodegenIntegration( TEST_NAME2, false, ExecType.CP  );
+		testCodegenIntegration( TEST_NAME2, false, ExecType.CP );
 	}
 	
 	@Test
 	public void testCodegenOuterProd3() {
-		testCodegenIntegration( TEST_NAME3, false, ExecType.CP  );
+		testCodegenIntegration( TEST_NAME3, false, ExecType.CP );
 	}
 	
 	@Test
 	public void testCodegenOuterProd4() {
-		testCodegenIntegrationWithInput( TEST_NAME4, false, ExecType.CP  );
+		testCodegenIntegrationWithInput( TEST_NAME4, false, ExecType.CP );
 	}
 
 	@Test
 	public void testCodegenOuterProd5() {
-		testCodegenIntegration( TEST_NAME5, false, ExecType.CP  );
+		testCodegenIntegration( TEST_NAME5, false, ExecType.CP );
 	}
 	
 	@Test
 	public void testCodegenOuterProd6() {
-		testCodegenIntegration( TEST_NAME6, false, ExecType.CP  );
+		testCodegenIntegration( TEST_NAME6, false, ExecType.CP );
 	}
 	
 	@Test
@@ -152,27 +154,27 @@ public class OuterProdTmplTest extends AutomatedTestBase
 	
 	@Test
 	public void testCodegenOuterProdRewrite1_sp() {
-		testCodegenIntegrationWithInput( TEST_NAME1, true, ExecType.SPARK  );
+		testCodegenIntegrationWithInput( TEST_NAME1, true, ExecType.SPARK );
 	}
 	
 	@Test
 	public void testCodegenOuterProdRewrite2_sp() {
-		testCodegenIntegration( TEST_NAME2, true, ExecType.SPARK  );
+		testCodegenIntegration( TEST_NAME2, true, ExecType.SPARK );
 	}
 	
 	@Test
 	public void testCodegenOuterProdRewrite3_sp() {
-		testCodegenIntegration( TEST_NAME3, true, ExecType.SPARK  );
+		testCodegenIntegration( TEST_NAME3, true, ExecType.SPARK );
 	}
 	
 	@Test
 	public void testCodegenOuterProdRewrite4_sp() {
-		testCodegenIntegrationWithInput( TEST_NAME4, true, ExecType.SPARK  );
+		testCodegenIntegrationWithInput( TEST_NAME4, true, ExecType.SPARK );
 	}
 	
 	@Test
 	public void testCodegenOuterProdRewrite8_sp() {
-		testCodegenIntegrationWithInput( TEST_NAME8, true, ExecType.SPARK  );
+		testCodegenIntegrationWithInput( TEST_NAME8, true, ExecType.SPARK );
 	}
 	
 	@Test
@@ -186,9 +188,7 @@ public class OuterProdTmplTest extends AutomatedTestBase
 	}
 	
 	@Test
-	public void testCodegenOuterProdRewrite9_sp() {
-		testCodegenIntegrationWithInput( TEST_NAME9, true, ExecType.SPARK );
-	}
+	public void testCodegenOuterProdRewrite9_sp() { testCodegenIntegrationWithInput( TEST_NAME9, true, ExecType.SPARK ); }
 	
 	@Test
 	public void testCodegenOuterProd10NoRewrite() {
@@ -196,19 +196,19 @@ public class OuterProdTmplTest extends AutomatedTestBase
 	}
 	
 	@Test
-	public void testCodegenOuterProd10NoRewriteSP() {
-		testCodegenIntegrationWithInput( TEST_NAME10, false, ExecType.SPARK );
+	public void testCodegenOuterProd10NoRewriteSP() { testCodegenIntegrationWithInput( TEST_NAME10, false, ExecType.SPARK ); }
+
+	@Test
+	public void testCodegenOuterProd11NoRewrite() {
+		testCodegenIntegration( TEST_NAME11, false, ExecType.CP );
 	}
-	
+
 	private void testCodegenIntegration( String testname, boolean rewrites, ExecType instType  )
 	{
 		boolean oldFlag = OptimizerUtils.ALLOW_ALGEBRAIC_SIMPLIFICATION;
 		ExecMode platformOld = rtplatform;
-		switch( instType ){
-			case SPARK: rtplatform = ExecMode.SPARK; break;
-			default: rtplatform = ExecMode.HYBRID; break;
-		}
-	
+		rtplatform = setExecMode(instType);
+
 		boolean sparkConfigOld = DMLScript.USE_LOCAL_SPARK_CONFIG;
 		if( rtplatform == ExecMode.SPARK || rtplatform == ExecMode.HYBRID )
 			DMLScript.USE_LOCAL_SPARK_CONFIG = true;
@@ -256,15 +256,10 @@ public class OuterProdTmplTest extends AutomatedTestBase
 
 	private void testCodegenIntegrationWithInput( String testname, boolean rewrites, ExecType instType )
 	{
-		boolean oldFlag = OptimizerUtils.ALLOW_ALGEBRAIC_SIMPLIFICATION;
-		switch( instType ){
-			case SPARK: 
-				rtplatform = ExecMode.SPARK;
-				DMLScript.USE_LOCAL_SPARK_CONFIG = true; 
-				break;
-			default: rtplatform = ExecMode.HYBRID; break;
-		}
-		
+		boolean oldFlag= OptimizerUtils.ALLOW_ALGEBRAIC_SIMPLIFICATION;
+		ExecMode platformOld = rtplatform;
+		rtplatform = setExecMode(instType);
+
 		try
 		{
 			TestConfiguration config = getTestConfiguration(testname);
@@ -307,6 +302,7 @@ public class OuterProdTmplTest extends AutomatedTestBase
 					|| heavyHittersContainsSubString("sp_spoofOP"));
 		}
 		finally {
+			rtplatform = platformOld;
 			OptimizerUtils.ALLOW_ALGEBRAIC_SIMPLIFICATION = oldFlag;
 			OptimizerUtils.ALLOW_AUTO_VECTORIZATION = true;
 			OptimizerUtils.ALLOW_OPERATOR_FUSION = true;
