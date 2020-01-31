@@ -18,8 +18,6 @@ import java.util.Map;
 
 public class FrameWriterJSONL{
 
-    private static final int BLOCKSIZE = 320;
-
     public void writeFrameToHDFS(FrameBlock src, String fname, Map<String, Integer> schemaMap, long rlen, long clen)
             throws IOException, DMLRuntimeException, JSONException {
 
@@ -53,6 +51,7 @@ public class FrameWriterJSONL{
                                          int upperRowBound, Map<String, Integer> schemaMap) throws IOException, JSONException {
 
         BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(fileSystem.create(path, true)));
+
         try {
             Iterator<String[]> stringRowIterator = src.getStringRowIterator(lowerRowBound, upperRowBound);
             StringBuilder stringBuilder = new StringBuilder();
@@ -73,11 +72,39 @@ public class FrameWriterJSONL{
         JSONObject jsonObject = new JSONObject();
 
         for (Map.Entry<String, Integer> entry : schemaMap.entrySet()) {
-            String key = entry.getKey();
+            //String key = entry.getKey();
+            String[] splits = entry.getKey().split("/");
             Integer value = entry.getValue();
-            jsonObject.put(key, values[value]);
+
+            //jsonObject.putAll(gernerateJSONObjectFromPath(splits, 1, values[value],jsonObject));
+            gernerateJSONObjectFromPath(splits, 1, values[value],jsonObject);
+            //jsonObject.put(key, temp);
         }
-        return jsonObject.write();
+        return jsonObject.toString();
+    }
+
+
+    protected JSONObject gernerateJSONObjectFromPath(String[] path, int index, Object value, JSONObject jsonObject) throws JSONException {
+        JSONObject temp = new JSONObject();
+        if(index == path.length - 1){
+            if(jsonObject != null){
+                jsonObject.put(path[index], value);
+                return jsonObject;
+            }
+            temp.put(path[index], value);
+            return temp;
+        }
+        JSONObject newJsonObject = (jsonObject == null)? null : jsonObject.optJSONObject(path[index]);
+        JSONObject ret = gernerateJSONObjectFromPath(path, index + 1, value, newJsonObject);
+
+        if(newJsonObject == null && jsonObject != null){
+            jsonObject.put(path[index], ret);
+            return null;
+        } else if( ret == null){
+            return null;
+        }
+        temp.put(path[index], ret);
+        return temp;
     }
 
 }

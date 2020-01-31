@@ -19,7 +19,7 @@ public class FrameWriterJSONLParallelTest {
         FrameWriterJSONLParallel frameWriterJSONL = new FrameWriterJSONLParallel();
         int rows = 3000;
         int cols = 3000;
-        Map<String, Integer> schemaMap = FrameWriterJSONLTest.generateRandomSchemaMap(cols);
+        Map<String, Integer> schemaMap = TestUtils.generateRandomSchemaMap(cols, -1);
         /*
         Map<String, Integer> schemaMap = new HashMap<String, Integer>();
         schemaMap.put("id", 0);
