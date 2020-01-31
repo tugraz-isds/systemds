@@ -30,7 +30,10 @@ public class FrameReaderWriterJSONLParallelTest {
     public void testWriteReadFrameBlockMultipleMultipleFromHDFS() throws IOException, JSONException { testWriteReadFrameBlockComplete(42,35, 4669201);}
 
     @Test
-    public void testWriteReadFrameBlockMultipleMultipleMediumFromHDFS() throws IOException, JSONException { testWriteReadFrameBlockComplete(694,164, 4669201);}
+    public void testWriteReadFrameBlockMultipleMultipleSmallFromHDFS() throws IOException, JSONException { testWriteReadFrameBlockComplete(694,164, 4669201);}
+
+    @Test
+    public void testWriteReadFrameBlockMultipleMultipleMediumFromHDFS() throws IOException, JSONException { testWriteReadFrameBlockComplete(30424,327, 4669201);}
 
 
 

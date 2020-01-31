@@ -39,7 +39,6 @@ public class FrameReaderJSONL {
 
         readJSONLFrameFromHDFS(path, jobConf, fileSystem, ret, schema, schemaMap);
         return ret;
-        //return readJsonFrameFromHDFS(path, jobConf, schema);
     }
 
 
@@ -66,33 +65,11 @@ public class FrameReaderJSONL {
 
         int row = currentRow;
         try {
-            //ObjectMapper mapper = new ObjectMapper();
             while (reader.next(key, value)) {
                 // Potential Problem if JSON/L Object is very large
                 JSONObject jsonObject = new JSONObject(value.toString());
-
-                //JsonNode root = mapper.readTree(value.toString());
-
                 for (Map.Entry<String, Integer> entry : schemaMap.entrySet()) {
-
-/*
-                    String strCellValue;
-                    JsonNode cellValue = root.at(entry.getKey());
-                    if (cellValue.isArray()) {
-                        strCellValue = cellValue.toString();
-                    } else {
-                        strCellValue = cellValue.asText();
-                    }
-
-
-
- */
                     String strCellValue = getStringFromJSONPath(jsonObject, entry.getKey());
-
-
-                    //String strCellValue = jsonObject.get(entry.getKey()).toString();
-
-
                     dest.set(row, entry.getValue(), UtilFunctions.stringToObject(schema[entry.getValue()], strCellValue));
                 }
                 row++;
@@ -102,7 +79,7 @@ public class FrameReaderJSONL {
         }
         return row;
     }
-
+    // TODO Needs Optimisation! "split" is inefficient
     private String getStringFromJSONPath(JSONObject jsonObject, String path) throws IOException {
         String[] splitPath = path.split("/");
         Object temp = null;

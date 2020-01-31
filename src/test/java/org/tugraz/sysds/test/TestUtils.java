@@ -1443,7 +1443,7 @@ public class TestUtils
 	public static Map<String, Integer> generateRandomSchemaMap(int size, Random random){
 		Map<String, Integer> schemaMap = new HashMap<>();
 		List<String> generatedPaths = new ArrayList<>();
-		for(int k = 0; k < size/2; k++){
+		for(int k = 0; k < (size/2) + 1; k++){
 			generatedPaths.add(generateRandomJSONPath(0, random));
 		}
 		while(generatedPaths.size() < size){
