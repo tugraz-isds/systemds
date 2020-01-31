@@ -117,16 +117,7 @@ public class FederatedRCBindTest extends AutomatedTestBase {
 			assert (false);
 		}
 		finally {
-			// kill the worker
-			if (t != null) {
-				t.interrupt();
-				try {
-					t.join();
-				}
-				catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-			}
+			TestUtils.shutdownThread(t);
 			rtplatform = platformOld;
 			DMLScript.USE_LOCAL_SPARK_CONFIG = sparkConfigOld;
 		}
