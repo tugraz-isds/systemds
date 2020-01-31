@@ -127,31 +127,35 @@ public class InitFEDInstruction extends FEDInstruction {
 
 	public static String[] parseURL(String input) {
 		try {
-			// Artificially making it http protocol. It is not used in the end.
+			// Artificially making it http protocol. 
+			// This is to avoid malformed address error in the URL passing.
+			// TODO: Construct new protocol name for Federated communication
 			URL address = new URL("http://" + input);
 			String host = address.getHost();
 			if (host.length() == 0)
-				throw new DMLRuntimeException("Missing Host name for federated address");
+				throw new IllegalArgumentException("Missing Host name for federated address");
+			// The current system does not support ipv6, only ipv4.
+			// TODO: Support IPV6 address for Federated communication
 			String ipRegex = "^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$";
 			if (host.matches("^\\d+\\.\\d+\\.\\d+\\.\\d+$") && !host.matches(ipRegex))
-				throw new DMLRuntimeException("Input Host address looks like an IP address but is outside range");
-			String port = address.getPort() + "";
-			if (port.matches("-1"))
+				throw new IllegalArgumentException("Input Host address looks like an IP address but is outside range");
+			String port = Integer.toString(address.getPort());
+			if (port.equals("-1"))
 				port = DMLConfig.DEFAULT_FEDERATED_PORT;
 			String filePath = address.getPath();
 			if (filePath.length() == 0)
-				throw new DMLRuntimeException("Missing File path for federated address");
+				throw new IllegalArgumentException("Missing File path for federated address");
 
 			if (address.getQuery() != null)
-				throw new DMLRuntimeException("Query is not supported");
+				throw new IllegalArgumentException("Query is not supported");
 
 			if (address.getRef() != null)
-				throw new DMLRuntimeException("Reference is not supported");
+				throw new IllegalArgumentException("Reference is not supported");
 				
 			return new String[] { host, port, filePath };
 		} catch (MalformedURLException e) {
-			throw new DMLRuntimeException("federated address `" + input
-					+ "` does not fit required pattern URL pattern of \"host:port/directory\"", e);
+			throw new IllegalArgumentException("federated address `" + input
+					+ "` does not fit required URL pattern of \"host:port/directory\"", e);
 		}
 	}
 

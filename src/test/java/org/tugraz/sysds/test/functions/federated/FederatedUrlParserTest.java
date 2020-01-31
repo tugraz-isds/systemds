@@ -18,7 +18,6 @@
 package org.tugraz.sysds.test.functions.federated;
 
 import org.tugraz.sysds.runtime.instructions.fed.InitFEDInstruction;
-import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.conf.DMLConfig;
 
 import static org.junit.Assert.assertEquals;
@@ -27,25 +26,25 @@ import org.junit.Test;
 
 public class FederatedUrlParserTest {
 
-    @Test(expected = DMLRuntimeException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void parseIPAddress_negative_1() {
         // Fail if the input is empty.
         InitFEDInstruction.parseURL("");
     }
 
-    @Test(expected = DMLRuntimeException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void parseIPAddress_negative_2() {
         // Fail if there is no file specified.
         InitFEDInstruction.parseURL("192.13.4.2");
     }
 
-    @Test(expected = DMLRuntimeException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void parseIPAddress_negative_3() {
         // Fail if there is no file specified even if port is.
         InitFEDInstruction.parseURL("192.13.4.2:132");
     }
 
-    @Test(expected = DMLRuntimeException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void parseIPAddress_negative_4() {
         // Fail if the input clearly is an ipv4 address but malformed.
         InitFEDInstruction.parseURL("192.131111.4.2:132/file.txt");
@@ -118,21 +117,31 @@ public class FederatedUrlParserTest {
         assertEquals("/../bar世界.txt", values[2]);
     }
 
-    @Test(expected = DMLRuntimeException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void parseQuery_negative_1() {
         // All Query flags should fail.
         InitFEDInstruction.parseURL("今日は.世界/../bar世界.txt?shouldnothappen");
     }
 
-    @Test(expected = DMLRuntimeException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void parseReference_negative_1() {
         // All Reference flags should fail.
         InitFEDInstruction.parseURL("今日は.世界/../bar世界.txt#shouldnothappen");
     }
 
-    @Test(expected = DMLRuntimeException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void parseReferenceAndQuery_negative_1() {
         // If both Reference and Query it should still should fail.
         InitFEDInstruction.parseURL("今日は.世界/../bar世界.txt?please#dont");
+    }
+
+
+    @Test
+    public void checkDefaultPortIsValid(){
+        int defaultPort = Integer.parseInt(DMLConfig.DEFAULT_FEDERATED_PORT);
+        // The highest port number allowed. 
+        int IANA_limit = 49152;
+        assert(defaultPort <= IANA_limit);
+        assert(defaultPort > 0);
     }
 }
