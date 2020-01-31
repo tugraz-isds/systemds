@@ -40,79 +40,45 @@ public class BuiltinOutlierBySDTest extends AutomatedTestBase {
 
 	@Test
 	public void testOutlierRepair0CP() {
-		runOutlierTest(false, 2,false, 0, LopProperties.ExecType.CP);
+		runOutlierTest(false, 2,0, 0, LopProperties.ExecType.CP);
 	}
 
 	@Test
 	public void testOutlierRepair1CP() {
-		runOutlierTest(false, 2,false, 1, LopProperties.ExecType.CP);
+		runOutlierTest(false, 2,1, 0, LopProperties.ExecType.CP);
 	}
 
 	@Test
 	public void testOutlierRepair2CP() {
-		runOutlierTest(false, 2,false, 2, LopProperties.ExecType.CP);
-	}
-
-	@Test
-	public void testOutlierRepair3CP() {
-		runOutlierTest(false, 2,true, 3, LopProperties.ExecType.CP);
+		runOutlierTest(false, 2,2, 10, LopProperties.ExecType.CP);
 	}
 
 	@Test
 	public void testOutlierRepair0SP() {
-		runOutlierTest(false, 2,false, 0, LopProperties.ExecType.SPARK);
+		runOutlierTest(false, 2,0, 10, LopProperties.ExecType.SPARK);
 	}
 
 	@Test
 	public void testOutlierRepair1SP() {
-		runOutlierTest(false, 3,true, 1, LopProperties.ExecType.SPARK);
+		runOutlierTest(false, 2,1, 0, LopProperties.ExecType.SPARK);
 	}
-
-	@Test
-	public void testOutlierRepair2SP() {
-		runOutlierTest(false, 3,true, 2, LopProperties.ExecType.SPARK);
-	}
-
-	@Test
-	public void testOutlierRepair3SP() {
-		runOutlierTest(false, 2,true, 3, LopProperties.ExecType.SPARK);
-	}
-
 
 	@Test
 	public void testOutlierK3CP() {
-		runOutlierTest(true, 3,false, 3,LopProperties.ExecType.CP);
-	}
-
-	@Test
-	public void testOutlierK3SP() {
-		runOutlierTest(true, 3,false, 3,LopProperties.ExecType.SPARK);
+		runOutlierTest(true, 3,1, 10,LopProperties.ExecType.CP);
 	}
 
 	@Test
 	public void testOutlierIterativeCP() {
-		runOutlierTest(false, 3,true, 2, LopProperties.ExecType.CP);
+		runOutlierTest(false, 2,1, 0, LopProperties.ExecType.CP);
 	}
 
 	@Test
 	public void testOutlierIterativeSP() {
-		runOutlierTest(false, 3,true, 0, LopProperties.ExecType.SPARK);
+		runOutlierTest(false, 2,1, 0, LopProperties.ExecType.SPARK);
 	}
 
-	@Test
-	public void testOutlierDenseImputeCP() {
-		runOutlierTest(false, 1,false, 2, LopProperties.ExecType.CP);
-	}
-
-	@Test
-	public void testOutlierDenseImputeSP() {
-		runOutlierTest(false, 1,false, 2, LopProperties.ExecType.SPARK);
-	}
-
-
-
-
-	private void runOutlierTest(boolean sparse, int k, boolean iterative, int repair, LopProperties.ExecType instType)
+	private void runOutlierTest(boolean sparse, double  k,  int repair, int max_iterations, LopProperties.ExecType instType)
 	{
 		Types.ExecMode platformOld = setExecMode(instType);
 
@@ -123,7 +89,7 @@ public class BuiltinOutlierBySDTest extends AutomatedTestBase {
 			String HOME = SCRIPT_DIR + TEST_DIR;
 			fullDMLScriptName = HOME + TEST_NAME + ".dml";
 			programArgs = new String[]{ "-args", input("A"), String.valueOf(k),
-					String.valueOf(iterative).toUpperCase(), String.valueOf(repair), output("B")};
+					String.valueOf(repair), String.valueOf(max_iterations),output("B")};
 
 			//generate actual dataset
 			double[][] A =  getRandomMatrix(rows, cols, 1, 10000, sparse?spSparse:spDense, 7);
