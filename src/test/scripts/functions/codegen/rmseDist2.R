@@ -25,8 +25,13 @@ args<-commandArgs(TRUE)
 options(digits=22)
 library("Matrix")
 
-V = matrix( 5, 2, 300)
-U = t(V)
+# V = matrix( 5, 2, 300)
+# U = t(V)
+
+U = matrix( 5, 300, 2)
+V = t(U)
+# X = rand(rows=300, cols=300, pdf="normal", sparsity=0.2, seed=7)
+# X = matrix(1, 300,300)
 
 X = U %*% V
 X[1:150,] = matrix(0,150,300);
