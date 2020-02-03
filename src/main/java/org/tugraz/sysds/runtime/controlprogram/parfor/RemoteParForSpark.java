@@ -45,9 +45,13 @@ import org.tugraz.sysds.runtime.controlprogram.parfor.stat.InfrastructureAnalyze
 import org.tugraz.sysds.runtime.controlprogram.parfor.util.IDSequence;
 import org.tugraz.sysds.runtime.instructions.cp.Data;
 import org.tugraz.sysds.runtime.instructions.cp.ScalarObject;
+import org.tugraz.sysds.runtime.lineage.LineageItem;
+import org.tugraz.sysds.runtime.lineage.LineageMap;
 import org.tugraz.sysds.utils.Statistics;
 
 import scala.Tuple2;
+
+import static org.tugraz.sysds.utils.Explain.explain;
 
 /**
  * This class serves two purposes: (1) isolating Spark imports to enable running in 
@@ -94,18 +98,24 @@ public class RemoteParForSpark
 
 		//run remote_spark parfor job 
 		//(w/o lazy evaluation to fit existing parfor framework, e.g., result merge)
-		List<Tuple2<Long,String>> out = sc.parallelize(tasks, tasks.size()) //create rdd of parfor tasks
+		List<Tuple2<String, String>> out = sc.parallelize(tasks, tasks.size()) //create rdd of parfor tasks
 			.flatMapToPair(new RemoteParForSparkWorker(jobid, prog,
 				clsMap, cpCaching, aTasks, aIters, brInputs, topLevelPF))
 			.collect(); //execute and get output handles
 		
+		for (Map.Entry<String, LineageItem> entry : ec.getLineage().getMap().getTraces().entrySet()) {
+			System.out.println(entry.getKey());
+			System.out.print(explain(entry.getValue()));
+		}
 		//de-serialize results
-		LocalVariableMap[] results = RemoteParForUtils.getResults(out, LOG);
+		LocalVariableMap[] results = RemoteParForUtils.getLocalVariableMaps(out, LOG);
+		LineageMap[] lineageMaps = RemoteParForUtils.getLineageMaps(out, LOG);
+		
 		int numTasks = aTasks.value().intValue(); //get accumulator value
 		int numIters = aIters.value().intValue(); //get accumulator value
 		
 		//create output symbol table entries
-		RemoteParForJobReturn ret = new RemoteParForJobReturn(true, numTasks, numIters, results);
+		RemoteParForJobReturn ret = new RemoteParForJobReturn(true, numTasks, numIters, results, lineageMaps);
 		
 		//maintain statistics
 		Statistics.incrementNoOfCompiledSPInst();

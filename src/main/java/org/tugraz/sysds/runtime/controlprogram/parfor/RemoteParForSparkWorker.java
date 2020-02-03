@@ -20,13 +20,8 @@
 package org.tugraz.sysds.runtime.controlprogram.parfor;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.spark.TaskContext;
@@ -42,7 +37,7 @@ import org.tugraz.sysds.runtime.util.UtilFunctions;
 
 import scala.Tuple2;
 
-public class RemoteParForSparkWorker extends ParWorker implements PairFlatMapFunction<Task, Long, String> 
+public class RemoteParForSparkWorker extends ParWorker implements PairFlatMapFunction<Task, String, String> 
 {
 	private static final long serialVersionUID = -3254950138084272296L;
 	
@@ -74,7 +69,7 @@ public class RemoteParForSparkWorker extends ParWorker implements PairFlatMapFun
 	}
 	
 	@Override 
-	public Iterator<Tuple2<Long, String>> call(Task arg0)
+	public Iterator<Tuple2<String, String>> call(Task arg0)
 		throws Exception 
 	{
 		//lazy parworker initialization
@@ -99,9 +94,12 @@ public class RemoteParForSparkWorker extends ParWorker implements PairFlatMapFun
 		
 		//write output if required (matrix indexed write), incl cleanup pinned vars
 		//note: this copy is necessary for environments without spark libraries
-		return RemoteParForUtils
-			.exportResultVariables(_workerID, _ec.getVariables(), _resultVars)
-			.stream().map(s -> new Tuple2<>(_workerID, s)).iterator();
+		List<Tuple2<String, String>> data = RemoteParForUtils.exportResultVariables(_workerID, _ec.getVariables(), _resultVars)
+				.stream()
+				.map(s -> new Tuple2<>(RemoteParForUtils.LVM_PREFIX + _workerID, s))
+				.collect(Collectors.toList());
+		data.addAll(RemoteParForUtils.exportLineageItems(_workerID, _ec.getLineage().getMap()));
+		return data.iterator();
 	}
 	
 	private void configureWorker(long taskID) 

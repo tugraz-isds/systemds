@@ -95,6 +95,10 @@ public class Lineage {
 		_activeDedupBlock.pop();
 	}
 	
+	public LineageMap getMap() {
+		return _map;
+	}
+	
 	public static void resetInternalState() {
 		LineageItem.resetIDSequence();
 		LineageCache.resetCache();

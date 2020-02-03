@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.hadoop.io.LongWritable;
@@ -46,6 +47,10 @@ import org.tugraz.sysds.runtime.controlprogram.parfor.stat.InfrastructureAnalyze
 import org.tugraz.sysds.runtime.controlprogram.parfor.stat.Stat;
 import org.tugraz.sysds.runtime.controlprogram.parfor.util.IDHandler;
 import org.tugraz.sysds.runtime.instructions.cp.Data;
+import org.tugraz.sysds.runtime.lineage.LineageItem;
+import org.tugraz.sysds.runtime.lineage.LineageMap;
+import org.tugraz.sysds.runtime.lineage.LineageParser;
+import static org.tugraz.sysds.utils.Explain.explain;
 import org.tugraz.sysds.runtime.util.LocalFileUtils;
 import org.tugraz.sysds.runtime.util.ProgramConverter;
 import org.tugraz.sysds.utils.Statistics;
@@ -59,6 +64,9 @@ import scala.Tuple2;
  */
 public class RemoteParForUtils 
 {
+	public static String SEPARATOR = "~";
+	public static String LVM_PREFIX = "lvm" + SEPARATOR;
+	public static String LIN_PREFIX = "lin" + SEPARATOR;
 
 	public static void incrementParForMRCounters(Reporter reporter, long deltaTasks, long deltaIterations)
 	{
@@ -184,6 +192,22 @@ public class RemoteParForUtils
 	}
 	
 	/**
+	 * For remote Spark parfor workers. This is a simplified version compared to MR.
+	 *
+	 * @return list of lineage items
+	 */
+	public static ArrayList<Tuple2<String, String>> exportLineageItems(long workerID, LineageMap lms) {
+		ArrayList<Tuple2<String, String>> ret = new ArrayList<>();
+		for (Map.Entry<String, LineageItem> entry : lms.getTraces().entrySet()) {
+			Tuple2<String, String> tuple = new Tuple2<>(
+					RemoteParForUtils.LIN_PREFIX + workerID + RemoteParForUtils.SEPARATOR + entry.getKey(),
+					explain(entry.getValue()));
+			ret.add(tuple);
+		}
+		return ret;
+	}
+	
+	/**
 	 * Cleanup all temporary files created by this SystemDS process.
 	 */
 	public static void cleanupWorkingDirectories()
@@ -237,6 +261,68 @@ public class RemoteParForUtils
 		
 		//create return array
 		return tmp.values().toArray(new LocalVariableMap[0]);	
+	}
+	
+	public static LineageMap[] getLineageMaps( List<Tuple2<String,String>> out, Log LOG )
+	{
+		HashMap<String,LineageMap> tmp = new HashMap<>();
+		
+		int countAll = 0;
+		for( Tuple2<String,String> entry : out )
+		{
+			// check if starts with lin
+			String key = entry._1();
+			if (!key.startsWith(LIN_PREFIX))
+				continue;
+			
+			String[] parts = key.split(SEPARATOR);
+			if( !tmp.containsKey(parts[1]) )
+				tmp.put(parts[1], new LineageMap ());
+			
+			System.out.println(parts[2]);
+			System.out.print(entry._2);
+			LineageItem li = LineageParser.parseLineageTrace(entry._2);
+			tmp.get(parts[1]).set(parts[2], li);
+			countAll++;
+		}
+		
+		if( LOG != null ) {
+			LOG.debug("Num remote worker results (before deduplication): "+countAll);
+			LOG.debug("Num remote worker results: "+tmp.size());
+		}
+		
+		//create return array
+		return tmp.values().toArray(new LineageMap[0]);
+	}
+	
+	
+	public static LocalVariableMap[] getLocalVariableMaps(List<Tuple2<String,String>> out, Log LOG )
+	{
+		HashMap<String,LocalVariableMap> tmp = new HashMap<>();
+		
+		int countAll = 0;
+		for( Tuple2<String,String> entry : out )
+		{
+			// check if starts with lvm
+			String key = entry._1();
+			if (!key.startsWith(LVM_PREFIX))
+				continue;
+			
+			String val = entry._2();
+			if( !tmp.containsKey( key ) )
+				tmp.put(key, new LocalVariableMap ());
+			Object[] dat = ProgramConverter.parseDataObject( val );
+			tmp.get(key).put((String)dat[0], (Data)dat[1]);
+			countAll++;
+		}
+		
+		if( LOG != null ) {
+			LOG.debug("Num remote worker results (before deduplication): "+countAll);
+			LOG.debug("Num remote worker results: "+tmp.size());
+		}
+		
+		//create return array
+		return tmp.values().toArray(new LocalVariableMap[0]);
 	}
 
 	/**

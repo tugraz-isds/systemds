@@ -115,6 +115,10 @@ public class LineageMap {
 		_literals.clear();
 	}
 	
+	public Map<String, LineageItem> getTraces() {
+		return _traces;
+	}
+	
 	private void trace(Instruction inst, ExecutionContext ec, LineageItem li) {
 		if (inst instanceof VariableCPInstruction) {
 			VariableCPInstruction vcp_inst = ((VariableCPInstruction) inst);
