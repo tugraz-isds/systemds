@@ -66,7 +66,8 @@ public class CNodeOuterProduct extends CNodeTpl
 	public void renameInputs() {
 		rRenameDataNode(_output, _inputs.get(0), "a");
 		rRenameDataNode(_output, _inputs.get(1), "a1"); // u
-		if(_mmtsj == MMTSJ.MMTSJType.NONE) {
+//		if(_mmtsj == MMTSJ.MMTSJType.NONE) {
+		if(_mmtsj != MMTSJ.MMTSJType.LEFT) {
 			rRenameDataNode(_output, _inputs.get(2), "a2"); // v
 			renameInputs(_inputs, 3);
 		}

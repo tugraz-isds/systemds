@@ -84,15 +84,30 @@ public abstract class SpoofOuterProduct extends SpoofOperator
 			return new DoubleObject(0);
 		
 		//input preparation
-		DenseBlock[] ab = getDenseMatrices(prepInputMatrices(inputs, 1, 2, true, false));
-		SideInput[] b = prepInputMatrices(inputs, 3, false);
+//		DenseBlock[] ab = getDenseMatrices(prepInputMatrices(inputs, 1, 2, true, false));
+//		SideInput[] b = prepInputMatrices(inputs, 3, false);
+		DenseBlock[] ab;
+		SideInput[] b;
+		if(_mmtsjType == MMTSJ.MMTSJType.NONE) {
+			ab = getDenseMatrices(prepInputMatrices(inputs, 1, 2, true, false));
+			b = prepInputMatrices(inputs, 3, false);
+		}
+		else {
+			ab = getDenseMatrices(prepInputMatrices(inputs, 1, 1, true, true));
+			b = prepInputMatrices(inputs, 2, false);
+		}
 		double[] scalars = prepInputScalars(scalarObjects);
 		
 		//core sequential execute
 		final int m = inputs.get(0).getNumRows();
 		final int n = inputs.get(0).getNumColumns();
-		final int k = inputs.get(1).getNumColumns(); // rank
-		
+//		final int k = inputs.get(1).getNumColumns(); // rank
+		int k;
+		if(_mmtsjType != MMTSJ.MMTSJType.LEFT)
+			k = inputs.get(1).getNumColumns(); // rank
+		else
+			k = inputs.get(1).getNumRows(); // rank
+
 		MatrixBlock a = inputs.get(0);
 		MatrixBlock out = new MatrixBlock(1, 1, false);
 		out.allocateDenseBlock();
@@ -117,14 +132,33 @@ public abstract class SpoofOuterProduct extends SpoofOperator
 			return execute(inputs, scalarObjects); //sequential
 		
 		//input preparation
-		DenseBlock[] ab = getDenseMatrices(prepInputMatrices(inputs, 1, 2, true, false));
-		SideInput[] b = prepInputMatrices(inputs, 3, false);
+//		DenseBlock[] ab = getDenseMatrices(prepInputMatrices(inputs, 1, 2, true, false));
+//		SideInput[] b = prepInputMatrices(inputs, 3, false);
+
+		DenseBlock[] ab;
+		SideInput[] b;
+		if(_mmtsjType == MMTSJ.MMTSJType.NONE) {
+			ab = getDenseMatrices(prepInputMatrices(inputs, 1, 2, true, false));
+			b = prepInputMatrices(inputs, 3, false);
+		}
+		else {
+			ab = getDenseMatrices(prepInputMatrices(inputs, 1, 1, true, true));
+			b = prepInputMatrices(inputs, 2, false);
+		}
+
+
 		double[] scalars = prepInputScalars(scalarObjects);
 		
 		//core sequential execute
 		final int m = inputs.get(0).getNumRows();
 		final int n = inputs.get(0).getNumColumns();
-		final int k = inputs.get(1).getNumColumns(); // rank
+//		final int k = inputs.get(1).getNumColumns(); // rank
+		int k;
+		if(_mmtsjType != MMTSJ.MMTSJType.LEFT)
+			k = inputs.get(1).getNumColumns(); // rank
+		else
+			k = inputs.get(1).getNumRows(); // rank
+
 		final long nnz = inputs.get(0).getNonZeros();
 		double sum = 0;
 		
@@ -190,7 +224,8 @@ public abstract class SpoofOuterProduct extends SpoofOperator
 
 		DenseBlock[] ab;
 		SideInput[] b;
-		if(_mmtsjType == MMTSJ.MMTSJType.NONE) {
+//		if(_mmtsjType == MMTSJ.MMTSJType.NONE) {
+		if(_mmtsjType != MMTSJ.MMTSJType.LEFT) {
 			ab = getDenseMatrices(prepInputMatrices(inputs, 1, 2, true, false));
 			b = prepInputMatrices(inputs, 3, false);
 		}
@@ -204,24 +239,44 @@ public abstract class SpoofOuterProduct extends SpoofOperator
 		//core sequential execute
 		final int m = inputs.get(0).getNumRows();
 		final int n = inputs.get(0).getNumColumns();
-		final int k = inputs.get(1).getNumColumns(); // rank
-		
+//		final int k = inputs.get(1).getNumColumns(); // rank
+
+		int k;
+//		if(_mmtsjType == MMTSJ.MMTSJType.NONE)
+		if(_mmtsjType != MMTSJ.MMTSJType.LEFT)
+			k = inputs.get(1).getNumColumns(); // rank
+		else
+			k = inputs.get(1).getNumRows(); // rank
+
 		MatrixBlock a = inputs.get(0);
 		
 		switch(_outerProductType) {
 			case LEFT_OUTER_PRODUCT:
 			case RIGHT_OUTER_PRODUCT:
 				if( !a.isInSparseFormat() )
-					executeDense(a.getDenseBlock(), ab[0], ab[1], b, scalars, out.getDenseBlock(), m, n, k, _outerProductType, 0, m, 0, n);
+					if(_mmtsjType == MMTSJ.MMTSJType.NONE)
+						executeDense(a.getDenseBlock(), ab[0], ab[1], b, scalars, out.getDenseBlock(), m, n, k, _outerProductType, 0, m, 0, n);
+					else
+						executeDense(a.getDenseBlock(), ab[0], ab[0], b, scalars, out.getDenseBlock(), m, n, k, _outerProductType, 0, m, 0, n);
 				else
-					executeSparse(a.getSparseBlock(), ab[0], ab[1], b, scalars, out.getDenseBlock(), m, n, k, a.getNonZeros(), _outerProductType, 0, m, 0, n);
+					if(_mmtsjType == MMTSJ.MMTSJType.NONE)
+						executeSparse(a.getSparseBlock(), ab[0], ab[1], b, scalars, out.getDenseBlock(), m, n, k, a.getNonZeros(), _outerProductType, 0, m, 0, n);
+					else
+						executeSparse(a.getSparseBlock(), ab[0], ab[0], b, scalars, out.getDenseBlock(), m, n, k, a.getNonZeros(), _outerProductType, 0, m, 0, n);
 				break;
 				
 			case CELLWISE_OUTER_PRODUCT:
 				if( !a.isInSparseFormat() )
-					executeCellwiseDense(a.getDenseBlock(), ab[0], ab[1], b, scalars, out.getDenseBlock(), m, n, k, _outerProductType, 0, m, 0, n);
-				else 
-					executeCellwiseSparse(a.getSparseBlock(), ab[0], ab[1], b, scalars, out, m, n, k, a.getNonZeros(), _outerProductType, 0, m, 0, n);
+//					if(_mmtsjType == MMTSJ.MMTSJType.NONE)
+					if(_mmtsjType != MMTSJ.MMTSJType.LEFT)
+						executeCellwiseDense(a.getDenseBlock(), ab[0], ab[1], b, scalars, out.getDenseBlock(), m, n, k, _outerProductType, 0, m, 0, n);
+					else
+						executeCellwiseDense(a.getDenseBlock(), ab[0], ab[0], b, scalars, out.getDenseBlock(), m, n, k, _outerProductType, 0, m, 0, n);
+				else
+					if(_mmtsjType == MMTSJ.MMTSJType.NONE)
+						executeCellwiseSparse(a.getSparseBlock(), ab[0], ab[1], b, scalars, out, m, n, k, a.getNonZeros(), _outerProductType, 0, m, 0, n);
+					else
+						executeCellwiseSparse(a.getSparseBlock(), ab[0], ab[0], b, scalars, out, m, n, k, a.getNonZeros(), _outerProductType, 0, m, 0, n);
 				break;
 	
 			case AGG_OUTER_PRODUCT:
@@ -316,7 +371,8 @@ public abstract class SpoofOuterProduct extends SpoofOperator
 					if (_mmtsjType == MMTSJ.MMTSJType.NONE) {
 						tasks.add(new ParExecTask(a, ab[0], ab[1], b, scalars, out, m, n, k,
 								_outerProductType, i * blklen, Math.min((i + 1) * blklen, m), 0, n));
-					} else {
+					}
+					else {
 						tasks.add(new ParExecTask(a, ab[0], ab[0], b, scalars, out, m, n, k,
 								_outerProductType, i * blklen, Math.min((i + 1) * blklen, m), 0, n));
 					}
