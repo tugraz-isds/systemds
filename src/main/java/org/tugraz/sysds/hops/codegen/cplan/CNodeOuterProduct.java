@@ -1,4 +1,6 @@
 /*
+ * Modifications Copyright 2019 Graz University of Technology
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -6,9 +8,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -43,7 +45,6 @@ public class CNodeOuterProduct extends CNodeTpl
 			+ "    super(OutProdType.%TYPE%, MMTSJ.MMTSJType.%MMTSJ_TYPE%);\n"
 			+ "  }\n"
 			+ "  protected void genexecDense(double a, double[] a1, int a1i, double[] a2, int a2i, SideInput[] b, double[] scalars, double[] c, int ci, int m, int n, int len, int rix, int cix) { \n"
-					  + "System.out.println(\"a1i=\" + a1i);\n"
 			+ "%BODY_dense%"
 			+ "  }\n"
 			+ "  protected double genexecCellwise(double a, double[] a1, int a1i, double[] a2, int a2i, SideInput[] b, double[] scalars, int m, int n, int len, int rix, int cix) { \n"
@@ -66,8 +67,7 @@ public class CNodeOuterProduct extends CNodeTpl
 	public void renameInputs() {
 		rRenameDataNode(_output, _inputs.get(0), "a");
 		rRenameDataNode(_output, _inputs.get(1), "a1"); // u
-//		if(_mmtsj == MMTSJ.MMTSJType.NONE) {
-		if(_mmtsj != MMTSJ.MMTSJType.LEFT) {
+		if(_mmtsj == MMTSJ.MMTSJType.NONE) {
 			rRenameDataNode(_output, _inputs.get(2), "a2"); // v
 			renameInputs(_inputs, 3);
 		}

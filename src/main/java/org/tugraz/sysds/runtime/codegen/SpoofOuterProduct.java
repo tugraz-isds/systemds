@@ -1,4 +1,6 @@
 /*
+ * Modifications Copyright 2020 Graz University of Technology
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -6,9 +8,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -84,24 +86,25 @@ public abstract class SpoofOuterProduct extends SpoofOperator
 			return new DoubleObject(0);
 		
 		//input preparation
-//		DenseBlock[] ab = getDenseMatrices(prepInputMatrices(inputs, 1, 2, true, false));
-//		SideInput[] b = prepInputMatrices(inputs, 3, false);
 		DenseBlock[] ab;
 		SideInput[] b;
-		if(_mmtsjType == MMTSJ.MMTSJType.NONE) {
-			ab = getDenseMatrices(prepInputMatrices(inputs, 1, 2, true, false));
-			b = prepInputMatrices(inputs, 3, false);
-		}
-		else {
+		if(_mmtsjType == MMTSJ.MMTSJType.LEFT) {
 			ab = getDenseMatrices(prepInputMatrices(inputs, 1, 1, true, true));
 			b = prepInputMatrices(inputs, 2, false);
+		}
+		else if(_mmtsjType == MMTSJ.MMTSJType.RIGHT) {
+			ab = getDenseMatrices(prepInputMatrices(inputs, 1, 1, true, false));
+			b = prepInputMatrices(inputs, 2, false);
+		}
+		else {
+			ab = getDenseMatrices(prepInputMatrices(inputs, 1, 2, true, false));
+			b = prepInputMatrices(inputs, 3, false);
 		}
 		double[] scalars = prepInputScalars(scalarObjects);
 		
 		//core sequential execute
 		final int m = inputs.get(0).getNumRows();
 		final int n = inputs.get(0).getNumColumns();
-//		final int k = inputs.get(1).getNumColumns(); // rank
 		int k;
 		if(_mmtsjType != MMTSJ.MMTSJType.LEFT)
 			k = inputs.get(1).getNumColumns(); // rank
@@ -113,9 +116,16 @@ public abstract class SpoofOuterProduct extends SpoofOperator
 		out.allocateDenseBlock();
 		
 		if( !a.isInSparseFormat() )
-			executeCellwiseDense(a.getDenseBlock(), ab[0], ab[1], b, scalars, out.getDenseBlock(), m, n, k, _outerProductType, 0, m, 0, n);
+			if(_mmtsjType == MMTSJ.MMTSJType.NONE)
+				executeCellwiseDense(a.getDenseBlock(), ab[0], ab[1], b, scalars, out.getDenseBlock(), m, n, k, _outerProductType, 0, m, 0, n);
+			else
+				executeCellwiseDense(a.getDenseBlock(), ab[0], ab[0], b, scalars, out.getDenseBlock(), m, n, k, _outerProductType, 0, m, 0, n);
 		else
-			executeCellwiseSparse(a.getSparseBlock(), ab[0], ab[1], b, scalars, out, m, n, k, a.getNonZeros(), _outerProductType, 0, m, 0, n);
+			if(_mmtsjType == MMTSJ.MMTSJType.NONE)
+				executeCellwiseSparse(a.getSparseBlock(), ab[0], ab[1], b, scalars, out, m, n, k, a.getNonZeros(), _outerProductType, 0, m, 0, n);
+			else
+				executeCellwiseSparse(a.getSparseBlock(), ab[0], ab[0], b, scalars, out, m, n, k, a.getNonZeros(), _outerProductType, 0, m, 0, n);
+
 		return new DoubleObject(out.getDenseBlock().get(0, 0));
 	}
 	
@@ -132,27 +142,25 @@ public abstract class SpoofOuterProduct extends SpoofOperator
 			return execute(inputs, scalarObjects); //sequential
 		
 		//input preparation
-//		DenseBlock[] ab = getDenseMatrices(prepInputMatrices(inputs, 1, 2, true, false));
-//		SideInput[] b = prepInputMatrices(inputs, 3, false);
-
 		DenseBlock[] ab;
 		SideInput[] b;
-		if(_mmtsjType == MMTSJ.MMTSJType.NONE) {
-			ab = getDenseMatrices(prepInputMatrices(inputs, 1, 2, true, false));
-			b = prepInputMatrices(inputs, 3, false);
-		}
-		else {
+		if(_mmtsjType == MMTSJ.MMTSJType.LEFT) {
 			ab = getDenseMatrices(prepInputMatrices(inputs, 1, 1, true, true));
 			b = prepInputMatrices(inputs, 2, false);
 		}
-
-
+		else if(_mmtsjType == MMTSJ.MMTSJType.RIGHT) {
+			ab = getDenseMatrices(prepInputMatrices(inputs, 1, 1, true, false));
+			b = prepInputMatrices(inputs, 2, false);
+		}
+		else {
+			ab = getDenseMatrices(prepInputMatrices(inputs, 1, 2, true, false));
+			b = prepInputMatrices(inputs, 3, false);
+		}
 		double[] scalars = prepInputScalars(scalarObjects);
 		
 		//core sequential execute
 		final int m = inputs.get(0).getNumRows();
 		final int n = inputs.get(0).getNumColumns();
-//		final int k = inputs.get(1).getNumColumns(); // rank
 		int k;
 		if(_mmtsjType != MMTSJ.MMTSJType.LEFT)
 			k = inputs.get(1).getNumColumns(); // rank
@@ -169,8 +177,12 @@ public abstract class SpoofOuterProduct extends SpoofOperator
 			int numThreads2 = getPreferredNumberOfTasks(m, n, nnz, k, numThreads);
 			int blklen = (int)(Math.ceil((double)m/numThreads2));
 			for( int i=0; i<numThreads2 & i*blklen<m; i++ )
-				tasks.add(new ParOuterProdAggTask(inputs.get(0), ab[0], ab[1], b, scalars, 
+				if(_mmtsjType == MMTSJ.MMTSJType.NONE)
+					tasks.add(new ParOuterProdAggTask(inputs.get(0), ab[0], ab[1], b, scalars,
 					m, n, k, _outerProductType, i*blklen, Math.min((i+1)*blklen,m), 0, n));
+				else
+					tasks.add(new ParOuterProdAggTask(inputs.get(0), ab[0], ab[0], b, scalars,
+							m, n, k, _outerProductType, i*blklen, Math.min((i+1)*blklen,m), 0, n));
 			//execute tasks
 			List<Future<Double>> taskret = pool.invokeAll(tasks);
 			pool.shutdown();
@@ -218,31 +230,26 @@ public abstract class SpoofOuterProduct extends SpoofOperator
 		out.allocateBlock();
 		
 		//input preparation
-//		DenseBlock[] ab = getDenseMatrices(prepInputMatrices(inputs, 1, 2, true, false));
-//		SideInput[] b = prepInputMatrices(inputs, 3, false);
-
-
 		DenseBlock[] ab;
 		SideInput[] b;
-//		if(_mmtsjType == MMTSJ.MMTSJType.NONE) {
-		if(_mmtsjType != MMTSJ.MMTSJType.LEFT) {
-			ab = getDenseMatrices(prepInputMatrices(inputs, 1, 2, true, false));
-			b = prepInputMatrices(inputs, 3, false);
-		}
-		else {
+		if(_mmtsjType == MMTSJ.MMTSJType.LEFT) {
 			ab = getDenseMatrices(prepInputMatrices(inputs, 1, 1, true, true));
 			b = prepInputMatrices(inputs, 2, false);
 		}
-
+		else if(_mmtsjType == MMTSJ.MMTSJType.RIGHT) {
+			ab = getDenseMatrices(prepInputMatrices(inputs, 1, 1, true, false));
+			b = prepInputMatrices(inputs, 2, false);
+		}
+		else {
+			ab = getDenseMatrices(prepInputMatrices(inputs, 1, 2, true, false));
+			b = prepInputMatrices(inputs, 3, false);
+		}
 		double[] scalars = prepInputScalars(scalarObjects);
 		
 		//core sequential execute
 		final int m = inputs.get(0).getNumRows();
 		final int n = inputs.get(0).getNumColumns();
-//		final int k = inputs.get(1).getNumColumns(); // rank
-
 		int k;
-//		if(_mmtsjType == MMTSJ.MMTSJType.NONE)
 		if(_mmtsjType != MMTSJ.MMTSJType.LEFT)
 			k = inputs.get(1).getNumColumns(); // rank
 		else
@@ -267,8 +274,7 @@ public abstract class SpoofOuterProduct extends SpoofOperator
 				
 			case CELLWISE_OUTER_PRODUCT:
 				if( !a.isInSparseFormat() )
-//					if(_mmtsjType == MMTSJ.MMTSJType.NONE)
-					if(_mmtsjType != MMTSJ.MMTSJType.LEFT)
+					if(_mmtsjType == MMTSJ.MMTSJType.NONE)
 						executeCellwiseDense(a.getDenseBlock(), ab[0], ab[1], b, scalars, out.getDenseBlock(), m, n, k, _outerProductType, 0, m, 0, n);
 					else
 						executeCellwiseDense(a.getDenseBlock(), ab[0], ab[0], b, scalars, out.getDenseBlock(), m, n, k, _outerProductType, 0, m, 0, n);
@@ -324,16 +330,20 @@ public abstract class SpoofOuterProduct extends SpoofOperator
 		if( 2*inputs.get(0).getNonZeros()*inputs.get(1).getNumColumns() < PAR_MINFLOP_THRESHOLD )
 			return execute(inputs, scalarObjects, out); //sequential
 
+		//input preparation
 		DenseBlock[] ab;
 		SideInput[] b;
-		//input preparation
-		if(_mmtsjType == MMTSJ.MMTSJType.NONE) {
-			ab = getDenseMatrices(prepInputMatrices(inputs, 1, 2, true, false));
-			b = prepInputMatrices(inputs, 3, false);
-		}
-		else {
+		if(_mmtsjType == MMTSJ.MMTSJType.LEFT) {
 			ab = getDenseMatrices(prepInputMatrices(inputs, 1, 1, true, true));
 			b = prepInputMatrices(inputs, 2, false);
+		}
+		else if(_mmtsjType == MMTSJ.MMTSJType.RIGHT) {
+			ab = getDenseMatrices(prepInputMatrices(inputs, 1, 1, true, false));
+			b = prepInputMatrices(inputs, 2, false);
+		}
+		else {
+			ab = getDenseMatrices(prepInputMatrices(inputs, 1, 2, true, false));
+			b = prepInputMatrices(inputs, 3, false);
 		}
 		double[] scalars = prepInputScalars(scalarObjects);
 		
@@ -368,14 +378,12 @@ public abstract class SpoofOuterProduct extends SpoofOperator
 				int numThreads2 = getPreferredNumberOfTasks(m, n, nnz, k, numThreads);
 				int blklen = (int) (Math.ceil((double) m / numThreads2));
 				for (int i = 0; i < numThreads2 & i * blklen < m; i++) {
-					if (_mmtsjType == MMTSJ.MMTSJType.NONE) {
+					if (_mmtsjType == MMTSJ.MMTSJType.NONE)
 						tasks.add(new ParExecTask(a, ab[0], ab[1], b, scalars, out, m, n, k,
 								_outerProductType, i * blklen, Math.min((i + 1) * blklen, m), 0, n));
-					}
-					else {
+					else
 						tasks.add(new ParExecTask(a, ab[0], ab[0], b, scalars, out, m, n, k,
 								_outerProductType, i * blklen, Math.min((i + 1) * blklen, m), 0, n));
-					}
 				}
 			}
 			List<Future<Long>> taskret = pool.invokeAll(tasks);
