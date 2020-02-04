@@ -27,6 +27,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 import org.tugraz.sysds.hops.OptimizerUtils;
+import org.tugraz.sysds.lops.MMTSJ;
 import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.data.DenseBlock;
 import org.tugraz.sysds.runtime.data.SparseBlock;
@@ -50,14 +51,19 @@ public abstract class SpoofOuterProduct extends SpoofOperator
 	}
 	
 	protected OutProdType _outerProductType;
+
+	protected MMTSJ.MMTSJType _mmtsjType;
 	
-	public SpoofOuterProduct(OutProdType type) {
+	public SpoofOuterProduct(OutProdType type, MMTSJ.MMTSJType mmtsj_type) {
 		setOuterProdType(type);
+		setMMTSJType(mmtsj_type);
 	}
 	
 	public void setOuterProdType(OutProdType type) {
 		_outerProductType = type;
 	}
+
+	public void setMMTSJType(MMTSJ.MMTSJType mmtsjType) { _mmtsjType = mmtsjType; }
 	
 	public OutProdType getOuterProdType() {
 		return _outerProductType;
@@ -178,8 +184,21 @@ public abstract class SpoofOuterProduct extends SpoofOperator
 		out.allocateBlock();
 		
 		//input preparation
-		DenseBlock[] ab = getDenseMatrices(prepInputMatrices(inputs, 1, 2, true, false));
-		SideInput[] b = prepInputMatrices(inputs, 3, false);
+//		DenseBlock[] ab = getDenseMatrices(prepInputMatrices(inputs, 1, 2, true, false));
+//		SideInput[] b = prepInputMatrices(inputs, 3, false);
+
+
+		DenseBlock[] ab;
+		SideInput[] b;
+		if(_mmtsjType == MMTSJ.MMTSJType.NONE) {
+			ab = getDenseMatrices(prepInputMatrices(inputs, 1, 2, true, false));
+			b = prepInputMatrices(inputs, 3, false);
+		}
+		else {
+			ab = getDenseMatrices(prepInputMatrices(inputs, 1, 1, true, true));
+			b = prepInputMatrices(inputs, 2, false);
+		}
+
 		double[] scalars = prepInputScalars(scalarObjects);
 		
 		//core sequential execute
@@ -249,16 +268,28 @@ public abstract class SpoofOuterProduct extends SpoofOperator
 		
 		if( 2*inputs.get(0).getNonZeros()*inputs.get(1).getNumColumns() < PAR_MINFLOP_THRESHOLD )
 			return execute(inputs, scalarObjects, out); //sequential
-		
+
+		DenseBlock[] ab;
+		SideInput[] b;
 		//input preparation
-		DenseBlock[] ab = getDenseMatrices(prepInputMatrices(inputs, 1, 2, true, false));
-		SideInput[] b = prepInputMatrices(inputs, 3, false);
+		if(_mmtsjType == MMTSJ.MMTSJType.NONE) {
+			ab = getDenseMatrices(prepInputMatrices(inputs, 1, 2, true, false));
+			b = prepInputMatrices(inputs, 3, false);
+		}
+		else {
+			ab = getDenseMatrices(prepInputMatrices(inputs, 1, 1, true, true));
+			b = prepInputMatrices(inputs, 2, false);
+		}
 		double[] scalars = prepInputScalars(scalarObjects);
 		
 		//core sequential execute
 		final int m = inputs.get(0).getNumRows();
 		final int n = inputs.get(0).getNumColumns();
-		final int k = inputs.get(1).getNumColumns(); // rank
+		int k;
+		if(_mmtsjType != MMTSJ.MMTSJType.LEFT)
+			 k = inputs.get(1).getNumColumns(); // rank
+		else
+			k = inputs.get(1).getNumRows(); // rank
 		final long nnz = inputs.get(0).getNonZeros();
 		
 		MatrixBlock a = inputs.get(0);
@@ -280,10 +311,16 @@ public abstract class SpoofOuterProduct extends SpoofOperator
 			else { //right or cell-wise
 				//parallelize over row partitions
 				int numThreads2 = getPreferredNumberOfTasks(m, n, nnz, k, numThreads);
-				int blklen = (int)(Math.ceil((double)m/numThreads2));
-				for( int i=0; i<numThreads2 & i*blklen<m; i++ )
-					tasks.add(new ParExecTask(a, ab[0], ab[1], b, scalars, out, m, n, k,
-						_outerProductType, i*blklen, Math.min((i+1)*blklen,m), 0, n));
+				int blklen = (int) (Math.ceil((double) m / numThreads2));
+				for (int i = 0; i < numThreads2 & i * blklen < m; i++) {
+					if (_mmtsjType == MMTSJ.MMTSJType.NONE) {
+						tasks.add(new ParExecTask(a, ab[0], ab[1], b, scalars, out, m, n, k,
+								_outerProductType, i * blklen, Math.min((i + 1) * blklen, m), 0, n));
+					} else {
+						tasks.add(new ParExecTask(a, ab[0], ab[0], b, scalars, out, m, n, k,
+								_outerProductType, i * blklen, Math.min((i + 1) * blklen, m), 0, n));
+					}
+				}
 			}
 			List<Future<Long>> taskret = pool.invokeAll(tasks);
 			pool.shutdown();

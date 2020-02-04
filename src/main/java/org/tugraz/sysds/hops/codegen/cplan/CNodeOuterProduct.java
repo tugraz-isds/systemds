@@ -22,6 +22,7 @@ package org.tugraz.sysds.hops.codegen.cplan;
 import java.util.ArrayList;
 
 import org.tugraz.sysds.hops.codegen.SpoofFusedOp.SpoofOutputDimsType;
+import org.tugraz.sysds.lops.MMTSJ;
 import org.tugraz.sysds.runtime.codegen.SpoofOuterProduct.OutProdType;
 import org.tugraz.sysds.runtime.util.UtilFunctions;
 
@@ -34,13 +35,15 @@ public class CNodeOuterProduct extends CNodeTpl
 			+ "import org.tugraz.sysds.runtime.codegen.SpoofOperator.SideInput;\n"
 			+ "import org.tugraz.sysds.runtime.codegen.SpoofOuterProduct;\n"
 			+ "import org.tugraz.sysds.runtime.codegen.SpoofOuterProduct.OutProdType;\n"
+		  	+ "import org.tugraz.sysds.lops.MMTSJ;\n"
 			+ "import org.apache.commons.math3.util.FastMath;\n"
 			+ "\n"
 			+ "public final class %TMP% extends SpoofOuterProduct { \n"
 			+ "  public %TMP%() {\n"
-			+ "    super(OutProdType.%TYPE%);\n"
+			+ "    super(OutProdType.%TYPE%, MMTSJ.MMTSJType.%MMTSJ_TYPE%);\n"
 			+ "  }\n"
 			+ "  protected void genexecDense(double a, double[] a1, int a1i, double[] a2, int a2i, SideInput[] b, double[] scalars, double[] c, int ci, int m, int n, int len, int rix, int cix) { \n"
+					  + "System.out.println(\"a1i=\" + a1i);\n"
 			+ "%BODY_dense%"
 			+ "  }\n"
 			+ "  protected double genexecCellwise(double a, double[] a1, int a1i, double[] a2, int a2i, SideInput[] b, double[] scalars, int m, int n, int len, int rix, int cix) { \n"
@@ -50,18 +53,25 @@ public class CNodeOuterProduct extends CNodeTpl
 			+ "}\n";
 	
 	private OutProdType _type = null;
+	MMTSJ.MMTSJType _mmtsj;
+
 	private boolean _transposeOutput = false;
 	
-	public CNodeOuterProduct(ArrayList<CNode> inputs, CNode output ) {
+	public CNodeOuterProduct(ArrayList<CNode> inputs, CNode output, MMTSJ.MMTSJType mmtsj) {
 		super(inputs,output);
+		_mmtsj = mmtsj;
 	}
 	
 	@Override
 	public void renameInputs() {
 		rRenameDataNode(_output, _inputs.get(0), "a");
 		rRenameDataNode(_output, _inputs.get(1), "a1"); // u
-		rRenameDataNode(_output, _inputs.get(2), "a2"); // v
-		renameInputs(_inputs, 3);
+		if(_mmtsj == MMTSJ.MMTSJType.NONE) {
+			rRenameDataNode(_output, _inputs.get(2), "a2"); // v
+			renameInputs(_inputs, 3);
+		}
+		else
+			renameInputs(_inputs, 2);
 	}
 	
 	@Override
@@ -92,6 +102,8 @@ public class CNodeOuterProduct extends CNodeTpl
 		tmp = tmp.replace("%POSOUT%", "ci");
 		
 		tmp = tmp.replace("%TYPE%", _type.toString());
+
+		tmp = tmp.replace("%MMTSJ_TYPE%", _mmtsj.toString());
 
 		return tmp;
 	}
@@ -138,7 +150,7 @@ public class CNodeOuterProduct extends CNodeTpl
 
 	@Override
 	public CNodeTpl clone() {
-		return new CNodeOuterProduct(_inputs, _output);
+		return new CNodeOuterProduct(_inputs, _output, _mmtsj);
 	}
 	
 	@Override

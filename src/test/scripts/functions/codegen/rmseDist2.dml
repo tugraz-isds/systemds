@@ -22,26 +22,26 @@
 #-------------------------------------------------------------
 
 
-# # does not work
-# # Caused by: java.lang.ArrayIndexOutOfBoundsException: 45000
-# U = matrix( 5, rows=2, cols=300)
-# X = t(U) %*% U
-# X[1:150,] = matrix(0,150,300);
-# while(FALSE){}
-# D = sqrt(-2 * t(U) %*% U + rowSums(t(U)^2) + colSums(U^2));
-# S = as.matrix(sum(rowSums((X != 0) * (X - D))^2));
-# write(S,$1)
-
-#works
-U = matrix( 5, rows=300, cols=2)
-X = U %*% t(U)
+# does not work
+# Caused by: java.lang.ArrayIndexOutOfBoundsException: 45000
+U = matrix( 5, rows=2, cols=300)
+X = t(U) %*% U
 X[1:150,] = matrix(0,150,300);
 while(FALSE){}
-D = sqrt(-2 * U %*% t(U) + rowSums(U^2) + colSums(t(U)^2));
+D = sqrt(-2 * t(U) %*% U + rowSums(t(U)^2) + colSums(U^2));
 S = as.matrix(sum(rowSums((X != 0) * (X - D))^2));
 write(S,$1)
 
-stop("enough!")
+# #works
+# U = matrix( 5, rows=300, cols=2)
+# X = U %*% t(U)
+# X[1:150,] = matrix(0,150,300);
+# while(FALSE){}
+# D = sqrt(-2 * U %*% t(U) + rowSums(U^2) + colSums(t(U)^2));
+# S = as.matrix(sum(rowSums((X != 0) * (X - D))^2));
+# write(S,$1)
+
+# stop("enough!")
 
 
 rmse = function(Matrix[Double] U, Matrix[Double] V, Matrix[Double] X) return(Matrix[Double] S)
@@ -59,7 +59,7 @@ S = as.matrix(sum(rowSums((X != 0) * (X - D))^2))
 # write(S,$1)
 
 # # works
-# V = matrix( 5, rows=2, cols=300)
+# V = matrix(5, rows=2, cols=300)
 # U = t(V)
 # X = U %*% V
 # X[1:150,] = matrix(0,150,300);

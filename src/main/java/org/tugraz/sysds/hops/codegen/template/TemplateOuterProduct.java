@@ -42,11 +42,14 @@ import org.tugraz.sysds.hops.codegen.cplan.CNodeBinary.BinType;
 import org.tugraz.sysds.hops.codegen.cplan.CNodeUnary.UnaryType;
 import org.tugraz.sysds.hops.codegen.template.CPlanMemoTable.MemoTableEntry;
 import org.tugraz.sysds.hops.rewrite.HopRewriteUtils;
+import org.tugraz.sysds.lops.MMTSJ;
 import org.tugraz.sysds.runtime.codegen.SpoofOuterProduct.OutProdType;
 import org.tugraz.sysds.runtime.matrix.data.Pair;
 
 public class TemplateOuterProduct extends TemplateBase {
-	
+
+	MMTSJ.MMTSJType mmtsj = MMTSJ.MMTSJType.NONE;
+
 	public TemplateOuterProduct() {
 		super(TemplateType.OUTER);
 	}
@@ -140,7 +143,7 @@ public class TemplateOuterProduct extends TemplateBase {
 				inputs.add(tmp.get(in.getHopID()));
 
 		CNode output = tmp.get(hop.getHopID());
-		CNodeOuterProduct tpl = new CNodeOuterProduct(inputs, output);
+		CNodeOuterProduct tpl = new CNodeOuterProduct(inputs, output, mmtsj);
 		tpl.setOutProdType(TemplateUtils.getOuterProductType(X, U, V, hop));
 		tpl.setTransposeOutput(!HopRewriteUtils.isTransposeOperation(hop)
 			&& tpl.getOutProdType()==OutProdType.LEFT_OUTER_PRODUCT);
@@ -208,12 +211,20 @@ public class TemplateOuterProduct extends TemplateBase {
 			if( HopRewriteUtils.isOuterProductLikeMM(hop) )
 			{
 				//keep U and V for later reference
-				inHops2.put("_U", hop.getInput().get(0));
+//				inHops2.put("_U", hop.getInput().get(0));
+				if( HopRewriteUtils.isTransposeOperation(hop.getInput().get(0)) )
+					inHops2.put("_U", hop.getInput().get(0).getInput().get(0));
+				else
+					inHops2.put("_U", hop.getInput().get(0));
+
 				if( HopRewriteUtils.isTransposeOperation(hop.getInput().get(1)) )
 					inHops2.put("_V", hop.getInput().get(1).getInput().get(0));
 				else
 					inHops2.put("_V", hop.getInput().get(1));
-				
+
+				if(hop instanceof AggBinaryOp)
+					mmtsj = ((AggBinaryOp) hop).checkTransposeSelf(); //determine tsmm pattern
+
 				out = new CNodeBinary(cdata1, cdata2, BinType.DOT_PRODUCT);
 			}
 			//final left/right matrix mult, see close
