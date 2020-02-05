@@ -139,7 +139,7 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 					mc.setRows(mtd.getLong(DataExpression.READROWPARAM));
 					mc.setCols(mtd.getLong(DataExpression.READCOLPARAM));
 					String format = mtd.getString(DataExpression.FORMAT_TYPE);
-					oi = OutputInfo.stringToOutputInfo(format);
+					oi = OutputInfo.outputInfoFromStringExternal(format);
 					ii = OutputInfo.getMatchingInputInfo(oi);
 				}
 			}
@@ -173,7 +173,7 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 		// TODO other datatypes
 		AggregateBinaryOperator ab_op = new AggregateBinaryOperator(
 			Multiply.getMultiplyFnObject(), new AggregateOperator(0, Plus.getPlusFnObject()));
-		MatrixBlock result = isMatVecMult ? 
+		MatrixBlock result = isMatVecMult ?
 			matBlock1.aggregateBinaryOperations(matBlock1, vector, new MatrixBlock(), ab_op) :
 			vector.aggregateBinaryOperations(vector, matBlock1, new MatrixBlock(), ab_op);
 		return new FederatedResponse(FederatedResponse.Type.SUCCESS, result);

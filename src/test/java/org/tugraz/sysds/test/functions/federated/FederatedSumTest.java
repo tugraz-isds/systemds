@@ -80,8 +80,6 @@ public class FederatedSumTest extends AutomatedTestBase {
 			getAndLoadTestConfiguration(TEST_NAME);
 			String HOME = SCRIPT_DIR + TEST_DIR;
 			
-			// empty script name because we don't execute any script, just start the worker
-			fullDMLScriptName = "";
 			programArgs = new String[] {"-w", Integer.toString(port)};
 			
 			double[][] A = getRandomMatrix(rows, cols, -10, 10, 1, 1);

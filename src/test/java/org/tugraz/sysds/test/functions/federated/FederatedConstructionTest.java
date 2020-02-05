@@ -79,9 +79,6 @@ public class FederatedConstructionTest extends AutomatedTestBase {
 			getAndLoadTestConfiguration(TEST_NAME);
 			String HOME = SCRIPT_DIR + TEST_DIR;
 			
-			// FIXME thread is not stopped
-			// empty script name because we don't execute any script, just start the worker
-			fullDMLScriptName = "";
 			programArgs = new String[] {"-w", Integer.toString(port)};
 			
 			// write input matrix

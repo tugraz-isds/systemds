@@ -2294,4 +2294,8 @@ public class TestUtils
 			}
 		}
 	}
+	
+	public static String federatedAddress(String host, int port, String input) {
+		return host + ':' + port + '/' + input;
+	}
 }

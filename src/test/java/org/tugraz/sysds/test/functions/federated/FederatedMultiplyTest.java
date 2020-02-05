@@ -33,18 +33,18 @@ import java.util.Collection;
 import static java.lang.Thread.sleep;
 
 @RunWith(value = Parameterized.class)
-public class FederatedL2SVMTest extends AutomatedTestBase {
+public class FederatedMultiplyTest extends AutomatedTestBase {
 	
 	private final static String TEST_DIR = "functions/federated/";
-	private final static String TEST_NAME = "FederatedL2SVMTest";
-	private final static String TEST_CLASS_DIR = TEST_DIR + FederatedL2SVMTest.class.getSimpleName() + "/";
+	private final static String TEST_NAME = "FederatedMultiplyTest";
+	private final static String TEST_CLASS_DIR = TEST_DIR + FederatedMultiplyTest.class.getSimpleName() + "/";
 	
 	private final static int blocksize = 1024;
 	private final static int port1 = 1222;
 	private final static int port2 = 1223;
 	private int rows, cols;
 	
-	public FederatedL2SVMTest(int rows, int cols) {
+	public FederatedMultiplyTest(int rows, int cols) {
 		this.rows = rows;
 		this.cols = cols;
 	}
@@ -63,17 +63,17 @@ public class FederatedL2SVMTest extends AutomatedTestBase {
 	}
 	
 	@Test
-	public void federatedL2SVMCP() {
-		federatedL2SVM(Types.ExecMode.SINGLE_NODE);
+	public void federatedMultiplyCP() {
+		federatedMultiply(Types.ExecMode.SINGLE_NODE);
 	}
 	
-	/*TODO support SPARK execution mode -> RDDs and SPARK instructions lead to quite a few problems
+	/* FIXME spark execution mode support
 	@Test
-	public void federatedL2SVMSP() {
-		federatedL2SVM(Types.ExecMode.SPARK);
+	public void federatedMultiplySP() {
+		federatedMultiply(Types.ExecMode.SPARK);
 	}*/
 	
-	public void federatedL2SVM(Types.ExecMode execMode) {
+	public void federatedMultiply(Types.ExecMode execMode) {
 		boolean sparkConfigOld = DMLScript.USE_LOCAL_SPARK_CONFIG;
 		Types.ExecMode platformOld = rtplatform;
 		rtplatform = execMode;
@@ -90,15 +90,26 @@ public class FederatedL2SVMTest extends AutomatedTestBase {
 			// We have two matrices handled by a single federated worker
 			double[][] X1 = getRandomMatrix(halfRows, cols, 0, 1, 1, 42);
 			double[][] X2 = getRandomMatrix(halfRows, cols, 0, 1, 1, 1340);
-			double[][] Y = getRandomMatrix(rows, 1, -1, 1, 1, 1233);
-			for (int i = 0; i < rows; i++)
-				Y[i][0] = (Y[i][0] > 0) ? 1 : -1;
+			// And another two matrices handled by a single federated worker
+			double[][] Y1 = getRandomMatrix(cols, halfRows, 0, 1, 1, 44);
+			double[][] Y2 = getRandomMatrix(cols, halfRows, 0, 1, 1, 21);
 			
-			writeInputMatrixWithMTD("X1", X1, false,
-				new MatrixCharacteristics(halfRows, cols, blocksize, halfRows * cols));
-			writeInputMatrixWithMTD("X2", X2, false,
-				new MatrixCharacteristics(halfRows, cols, blocksize, halfRows * cols));
-			writeInputMatrixWithMTD("Y", Y, false, new MatrixCharacteristics(rows, 1, blocksize, rows));
+			writeInputMatrixWithMTD("X1",
+					X1,
+					false,
+					new MatrixCharacteristics(halfRows, cols, blocksize, halfRows * cols));
+			writeInputMatrixWithMTD("X2",
+					X2,
+					false,
+					new MatrixCharacteristics(halfRows, cols, blocksize, halfRows * cols));
+			writeInputMatrixWithMTD("Y1",
+					Y1,
+					false,
+					new MatrixCharacteristics(cols, halfRows, blocksize, halfRows * cols));
+			writeInputMatrixWithMTD("Y2",
+					Y2,
+					false,
+					new MatrixCharacteristics(cols, halfRows, blocksize, halfRows * cols));
 			
 			programArgs = new String[] {"-w", Integer.toString(port1)};
 			t1 = new Thread(() -> runTest(true, false, null, -1));
@@ -114,14 +125,18 @@ public class FederatedL2SVMTest extends AutomatedTestBase {
 			
 			// Run reference dml script with normal matrix
 			fullDMLScriptName = HOME + TEST_NAME + "Reference.dml";
-			programArgs = new String[] {"-args", input("X1"), input("X2"), input("Y"), expected("Z")};
+			programArgs = new String[] {"-nvargs", "X1=" + input("X1"), "X2=" + input("X2"), "Y1=" + input("Y1"),
+					"Y2=" + input("Y2"), "Z=" + expected("Z")};
 			runTest(true, false, null, -1);
 			
 			// Run actual dml script with federated matrix
 			fullDMLScriptName = HOME + TEST_NAME + ".dml";
-			programArgs = new String[] {"-explain", "-args", "\"localhost:" + port1 + "/" + input("X1") + "\"",
-					"\"localhost:" + port2 + "/" + input("X2") + "\"", Integer.toString(rows), Integer.toString(cols),
-					Integer.toString(halfRows), input("Y"), output("Z")};
+			programArgs = new String[] {"-explain", "-nvargs",
+					"X1=" + TestUtils.federatedAddress("localhost", port1, input("X1")),
+					"X2=" + TestUtils.federatedAddress("localhost", port2, input("X2")),
+					"Y1=" + TestUtils.federatedAddress("localhost", port1, input("Y1")),
+					"Y2=" + TestUtils.federatedAddress("localhost", port2, input("Y2")), "r=" + rows, "c=" + cols,
+					"hr=" + halfRows, "Z=" + output("Z")};
 			runTest(true, false, null, -1);
 			
 			// compare via files
