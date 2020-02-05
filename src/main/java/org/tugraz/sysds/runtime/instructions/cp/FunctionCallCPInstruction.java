@@ -38,6 +38,11 @@ import org.tugraz.sysds.runtime.instructions.Instruction;
 import org.tugraz.sysds.runtime.instructions.InstructionUtils;
 import org.tugraz.sysds.runtime.io.IOUtilFunctions;
 import org.tugraz.sysds.runtime.lineage.Lineage;
+import org.tugraz.sysds.runtime.lineage.LineageCache;
+import org.tugraz.sysds.runtime.lineage.LineageCacheStatistics;
+import org.tugraz.sysds.runtime.lineage.LineageItem;
+import org.tugraz.sysds.runtime.lineage.LineageItemUtils;
+import org.tugraz.sysds.utils.Statistics;
 
 public class FunctionCallCPInstruction extends CPInstruction {
 	private final String _functionName;
@@ -108,6 +113,12 @@ public class FunctionCallCPInstruction extends CPInstruction {
 			throw new DMLRuntimeException("Number of bound input parameters does not match the function signature "
 				+ "("+_boundInputs.length+", but "+fpb.getInputParams().size()+" expected)");
 		}
+		
+		// check if function outputs can be reused from cache
+		LineageItem[] liInputs = DMLScript.LINEAGE ?
+			LineageItemUtils.getLineage(ec, _boundInputs) : null;
+		if( reuseFunctionOutputs(liInputs, fpb, ec) )
+			return; //only if all the outputs are found in cache
 		
 		// create bindings to formal parameters for given function call
 		// These are the bindings passed to the FunctionProgramBlock for function execution 
@@ -211,6 +222,9 @@ public class FunctionCallCPInstruction extends CPInstruction {
 			if( lineage != null ) //unchanged ref
 				ec.getLineage().set(boundVarName, lineage.get(retVarName));
 		}
+
+		//update lineage cache with the functions outputs
+		LineageCache.putValue(_boundOutputNames, numOutputs, liInputs, _functionName, ec);
 	}
 
 	@Override
@@ -243,5 +257,17 @@ public class FunctionCallCPInstruction extends CPInstruction {
 		}
 
 		return sb.substring( 0, sb.length()-Lop.OPERAND_DELIMITOR.length() );
+	}
+	
+	private boolean reuseFunctionOutputs(LineageItem[] liInputs, FunctionProgramBlock fpb, ExecutionContext ec) {
+		int numOutputs = Math.min(_boundOutputNames.size(), fpb.getOutputParams().size());
+		boolean reuse = LineageCache.reuse(_boundOutputNames, numOutputs, liInputs, _functionName, ec);
+
+		if (reuse && DMLScript.STATISTICS) {
+			//decrement the call count for this function
+			Statistics.maintainCPFuncCallStats(this.getExtendedOpcode());
+			LineageCacheStatistics.incrementFuncHits();
+		}
+		return reuse;
 	}
 }

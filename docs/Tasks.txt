@@ -77,7 +77,7 @@ SYSTEMDS-100 Various Fixes
  * 105 Fix all application/function tests (various issues)            OK
  * 106 Fix correctness of as.integer for negative numbers             OK
  * 107 Fix correctness IPA check dimension-preserving                 OK
- * 108 Fix codegen optimizer (early costing abort)                    OK 
+ * 108 Fix codegen optimizer (early costing abort)                    OK
  * 109 Fix update-in-place w/ udf function calls                      OK
  
 SYSTEMDS-110 New Builtin Functions
@@ -146,11 +146,17 @@ SYSTEMDS-190 New Builtin Functions III
  * 191 Builtin function multi logreg                                  OK
  * 192 Extended cmdline interface -b for calling builtin functions
  * 193 New outlierBySds builtin function (delete row/cell)
- * 194 New outlierByIQR builtin function (delte row/cell)
+ * 194 New outlierByIQR builtin function (delete row/cell)
+ * 195 Builtin function mice for nominal features
+ * 196 Builtin function intersect (set intersection)                  OK
+ * 197 Builtin function for functional dependency discovery
 
 SYSTEMDS-200 Various Fixes
  * 201 Fix spark append instruction zero columns                      OK
  * 202 Fix rewrite split DAG multiple removeEmpty (pending op)        OK
+ * 203 Fix codegen outer compilation (MV operations)                  OK
+ * 204 Fix rewrite simplify sequences of binary comparisons           OK
+ * 205 Fix scoping of builtin dml-bodied functions (vs user-defined)
 
 SYSTEMDS-210 Extended lists Operations
  * 211 Cbind and Rbind over lists of matrices                         OK
@@ -169,7 +175,15 @@ SYSTEMDS-220 Federated Tensors and Instructions
 
 SYSTEMDS-230 Lineage Integration
  * 231 Use lineage in buffer pool
- * 232 Lineage of generated operators
+ * 232 Lineage of code generated operators
+ * 233 Lineage cache and reuse of function results                    OK
+ * 234 Lineage tracing for spark instructions                         OK
+
+SYSTEMDS-240 GPU Backend Improvements
+ * 241 Dense GPU cumulative aggregates 
+
+SYSTEMDS-250 Large-Scale Slice Finding
+ * 251 Initial data slicing implementation Python
 
 Others:
  * Break append instruction to cbind and rbind 
