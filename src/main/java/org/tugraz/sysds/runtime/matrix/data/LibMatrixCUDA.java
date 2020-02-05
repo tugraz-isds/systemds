@@ -2719,7 +2719,7 @@ public class LibMatrixCUDA {
 	 * @return	the matrix object
 	 */
 	public static MatrixObject getDenseMatrixOutputForGPUInstruction(ExecutionContext ec, String instName, String name, long numRows, long numCols) {
-		return ec.getDenseMatrixOutputForGPUInstruction(name, instName, numRows, numCols).getKey();
+		return ec.getDenseMatrixOutputForGPUInstruction(name, numRows, numCols).getKey();
 	}
 
 	/**

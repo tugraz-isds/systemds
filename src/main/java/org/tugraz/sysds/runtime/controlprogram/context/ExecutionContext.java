@@ -326,26 +326,23 @@ public class ExecutionContext {
 	 * @param numCols number of columns of matrix object
 	 * @return a pair containing the wrapping {@link MatrixObject} and a boolean indicating whether a cuda memory allocation took place (as opposed to the space already being allocated)
 	 */
-	public Pair<MatrixObject, Boolean> getDenseMatrixOutputForGPUInstruction(String varName, String instName, long numRows, long numCols) {
-		MatrixObject mo = allocateGPUMatrixObject(varName, instName, numRows, numCols);
+	public Pair<MatrixObject, Boolean> getDenseMatrixOutputForGPUInstruction(String varName, long numRows, long numCols) {
+		MatrixObject mo = allocateGPUMatrixObject(varName, numRows, numCols);
 		boolean allocated = mo.getGPUObject(getGPUContext(0)).acquireDeviceModifyDense();
 		mo.getDataCharacteristics().setNonZeros(-1);
 		return new Pair<>(mo, allocated);
 	}
 
-	public Pair<MatrixObject, Boolean> getDenseMatrixOutputForGPUInstruction(String varName, long numRows, long numCols) {
-		return getDenseMatrixOutputForGPUInstruction(varName, "", numRows, numCols);
-	}
-		/**
-         * Allocates a sparse matrix in CSR format on the GPU.
-         * Assumes that mat.getNumRows() returns a valid number
-         *
-         * @param varName variable name
-         * @param numRows number of rows of matrix object
-         * @param numCols number of columns of matrix object
-         * @param nnz number of non zeroes
-         * @return matrix object
-         */
+	/**
+	 * Allocates a sparse matrix in CSR format on the GPU.
+	 * Assumes that mat.getNumRows() returns a valid number
+	 *
+	 * @param varName variable name
+	 * @param numRows number of rows of matrix object
+	 * @param numCols number of columns of matrix object
+	 * @param nnz number of non zeroes
+	 * @return matrix object
+	 */
 	public Pair<MatrixObject, Boolean> getSparseMatrixOutputForGPUInstruction(String varName, long numRows, long numCols, long nnz) {
 		MatrixObject mo = allocateGPUMatrixObject(varName, numRows, numCols);
 		mo.getDataCharacteristics().setNonZeros(nnz);
@@ -353,9 +350,6 @@ public class ExecutionContext {
 		return new Pair<>(mo, allocated);
 	}
 
-	public MatrixObject allocateGPUMatrixObject(String varName, long numRows, long numCols) {
-		return allocateGPUMatrixObject(varName,"", numRows, numCols);
-	}
 	/**
 	 * Allocates the {@link GPUObject} for a given LOPS Variable (eg. _mVar3)
 	 * @param varName variable name
@@ -363,36 +357,29 @@ public class ExecutionContext {
 	 * @param numCols number of columns of matrix object
 	 * @return matrix object
 	 */
-	public MatrixObject allocateGPUMatrixObject(String varName, String instName, long numRows, long numCols) {
+	public MatrixObject allocateGPUMatrixObject(String varName, long numRows, long numCols) {
 		MatrixObject mo = getMatrixObject(varName);
 		long dim1 = -1; long dim2 = -1;
-		DMLRuntimeException e = null;
+
 		try {
 			dim1 = validateDimensions(mo.getNumRows(), numRows);
-		} catch(DMLRuntimeException e1) {
-			e = e1;
+			dim2 = validateDimensions(mo.getNumColumns(), numCols);
 		}
-		try {
-			// ToDo: fix this hack
-			if(instName.equals("gpu_ucumk+*"))
-				dim2 = validateDimensions(1, numCols);
-			else
-				dim2 = validateDimensions(mo.getNumColumns(), numCols);
-		} catch(DMLRuntimeException e1) {
-			e = e1;
+		catch(DMLRuntimeException e) {
+			throw new DMLRuntimeException("Incorrect dimensions given to allocateGPUMatrixObject: [" + numRows + "," +
+					numCols + "], " + "[" + mo.getNumRows() + "," + mo.getNumColumns() + "]", e);
 		}
-		if(e != null) {
-			throw new DMLRuntimeException("Incorrect dimensions given to allocateGPUMatrixObject: [" + numRows + "," + numCols + "], "
-					+ "[" + mo.getNumRows() + "," + mo.getNumColumns() + "]", e);
-		}
+
 		if(dim1 != mo.getNumRows() || dim2 != mo.getNumColumns()) {
 			// Set unknown dimensions
 			mo.getDataCharacteristics().setDimension(dim1, dim2);
 		}
+
 		if( mo.getGPUObject(getGPUContext(0)) == null ) {
 			GPUObject newGObj = getGPUContext(0).createGPUObject(mo);
 			mo.setGPUObject(getGPUContext(0), newGObj);
 		}
+
 		// The lock is added here for an output block
 		// so that any block currently in use is not deallocated by eviction on the GPU
 		mo.getGPUObject(getGPUContext(0)).addWriteLock();

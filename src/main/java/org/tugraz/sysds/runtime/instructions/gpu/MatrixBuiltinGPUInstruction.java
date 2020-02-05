@@ -44,7 +44,8 @@ public class MatrixBuiltinGPUInstruction extends BuiltinUnaryGPUInstruction {
 
 		String opcode = getOpcode();
 		MatrixObject mat = getMatrixInputForGPUInstruction(ec, _input.getName());
-		ec.setMetaData(_output.getName(), mat.getNumRows(), mat.getNumColumns());
+		if(opcode != "ucumk+*")
+			ec.setMetaData(_output.getName(), mat.getNumRows(), mat.getNumColumns());
 
 		Timing time = new Timing(true);
 		switch(opcode) {
@@ -87,17 +88,26 @@ public class MatrixBuiltinGPUInstruction extends BuiltinUnaryGPUInstruction {
 			case "softmax":
 				LibMatrixCuDNN.softmax(ec, ec.getGPUContext(0), getExtendedOpcode(), mat, _output.getName()); break;
 			case "ucumk+":
-				LibMatrixCUDA.cumulativeScan(ec, ec.getGPUContext(0), getExtendedOpcode(), "cumulative_sum", mat, _output.getName()); break;
+				LibMatrixCUDA.cumulativeScan(ec, ec.getGPUContext(0), getExtendedOpcode(), "cumulative_sum", mat,
+						_output.getName());
+				break;
 			case "ucum*":
-				LibMatrixCUDA.cumulativeScan(ec, ec.getGPUContext(0), getExtendedOpcode(), "cumulative_prod", mat, _output.getName()); break;
+				LibMatrixCUDA.cumulativeScan(ec, ec.getGPUContext(0), getExtendedOpcode(), "cumulative_prod", mat,
+						_output.getName());
+				break;
 			case "ucumk+*":
-				LibMatrixCUDA.cumulativeSumProduct(ec, ec.getGPUContext(0), getExtendedOpcode(), "cumulative_sum_prod", mat, _output.getName()); break;
+				ec.setMetaData(_output.getName(), mat.getNumRows(), 1);
+				LibMatrixCUDA.cumulativeSumProduct(ec, ec.getGPUContext(0), getExtendedOpcode(), "cumulative_sum_prod",
+						mat, _output.getName());
+				break;
 			case "ucummin":
-				LibMatrixCUDA.cumulativeScan(ec, ec.getGPUContext(0), getExtendedOpcode(), "cumulative_min", mat, _output.getName()); break;
+				LibMatrixCUDA.cumulativeScan(ec, ec.getGPUContext(0), getExtendedOpcode(), "cumulative_min", mat,
+						_output.getName());
+				break;
 			case "ucummax":
-				LibMatrixCUDA.cumulativeScan(ec, ec.getGPUContext(0), getExtendedOpcode(), "cumulative_max", mat, _output.getName()); break;
-
-
+				LibMatrixCUDA.cumulativeScan(ec, ec.getGPUContext(0), getExtendedOpcode(), "cumulative_max", mat,
+						_output.getName());
+				break;
 			default:
 				throw new DMLRuntimeException("Unsupported GPU operator:" + opcode);
 		}
