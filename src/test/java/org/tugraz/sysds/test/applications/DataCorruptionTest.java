@@ -21,6 +21,8 @@ package org.tugraz.sysds.test.applications;
 
 import static org.junit.Assert.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 import org.junit.Test;
@@ -31,8 +33,47 @@ import org.tugraz.sysds.utils.DataAugmentation;
 public class DataCorruptionTest{
 
 	// Split into multiple test
+	
+//	@Test
+//	public void testDataCorruption() {
+//		ValueType[] schema = new ValueType[] {ValueType.STRING, ValueType.INT32};
+//		FrameBlock ori = new FrameBlock(schema);
+//		String[] strings = new String[] { 
+//				  "Toyota", "Mercedes", "BMW", "Volkswagen", "Skoda" };
+//		Random rand = new Random();
+//		
+//		for(int i = 0; i<1000; i++) {
+//			Object[] row = new Object[2];
+//			row[0] = strings[rand.nextInt(strings.length)];
+//			row[1] = rand.nextInt(10000);
+//			
+//			ori.appendRow(row);
+//		}
+//		
+//		FrameBlock changed = DataAugmentation.dataCorruption(ori, 0.2, 0.4, 0.8, 0.6);
+//		
+//		for(int i = 0; i<1000; i++) {
+//			switch((String) changed.get(i, changed.getNumColumns()-1)) {
+//			case "typo":
+//				String or = (String) ori.get(i, 0);
+//				String ch = (String) changed.get(i, 0);
+//				System.out.println(ori.get(i, 0) + " -> " + changed.get(i, 0));
+//				assertNotEquals("Typo test", or, ch);
+//				break;
+//			case "missing":
+//				break;
+//			case "outlier":
+//				Integer nor = (Integer) ori.get(i, 1);
+//				Integer nch = (Integer) changed.get(i, 1);
+//				assertTrue(nch/nor==100);
+//			}
+//		}
+//	}
+	
+	
+	
 	@Test
-	public void testDataCorruption() {
+	public void testOutliers() {
 		ValueType[] schema = new ValueType[] {ValueType.STRING, ValueType.INT32};
 		FrameBlock ori = new FrameBlock(schema);
 		String[] strings = new String[] { 
@@ -42,28 +83,26 @@ public class DataCorruptionTest{
 		for(int i = 0; i<1000; i++) {
 			Object[] row = new Object[2];
 			row[0] = strings[rand.nextInt(strings.length)];
-			row[1] = rand.nextInt(10000);
+			row[1] = rand.nextInt(1000);
 			
 			ori.appendRow(row);
 		}
 		
-		FrameBlock changed = DataAugmentation.dataCorruption(ori, 0.2, 0.4, 0.8, 0.6);
+		List<Integer> numerics = new ArrayList<Integer>();
+		List<Integer> stringpos = new ArrayList<Integer>();
+		FrameBlock changed = DataAugmentation.preprocessing(ori, numerics, stringpos);
+		changed = DataAugmentation.outlier(changed, 0.2, 3);
 		
-		for(int i = 0; i<1000; i++) {
-			switch((String) changed.get(i, changed.getNumColumns()-1)) {
-			case "typo":
-				String or = (String) ori.get(i, 0);
-				String ch = (String) changed.get(i, 0);
-				System.out.println(ori.get(i, 0) + " -> " + changed.get(i, 0));
-				assertNotEquals("Typo test", or, ch);
-				break;
-			case "missing":
-				break;
-			case "outlier":
-				Integer nor = (Integer) ori.get(i, 1);
-				Integer nch = (Integer) changed.get(i, 1);
-				assertTrue(nch/nor==100);
+		int numch = 0;
+		for(int i=0;i<changed.getNumRows();i++) {
+			String label = (String) changed.get(i, changed.getNumColumns()-1);
+			if(label.equals("outlier")) {
+				numch++;
+				Integer val = (Integer) ori.get(i, 1);
+				Integer valch = (Integer) changed.get(i, 1);
+				assertTrue(val!=valch); 
 			}
 		}
+		System.out.println("Number of changed rows: " + numch);
 	}
 }

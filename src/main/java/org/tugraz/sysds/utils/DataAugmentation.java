@@ -2,7 +2,9 @@ package org.tugraz.sysds.utils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import org.tugraz.sysds.common.Types.ValueType;
@@ -11,93 +13,49 @@ import org.tugraz.sysds.runtime.matrix.data.FrameBlock;
 public class DataAugmentation {
 	
 	// Refactoring, separate methods for each kind of error
-	// Enum error types
+	
+	/**
+	 * This function returns a new frame block with error introduced in the data:
+	 * Typos in string values, null values, outliers in numeric data and swapped elements 
+	 * 
+	 * @param input Original frame block
+	 * @param pTypo Probability of introducing a typo in a row
+	 * @param pMiss Probability of introducing missing values in a row
+	 * @param pOut Probability of introducing outliers in a row
+	 * @param pSwap Probability swapping two elements in a row
+	 * @return A new frameblock with corrupted elements
+	 * 
+	 */
 	public static FrameBlock dataCorruption(FrameBlock input, double pTypo, double pMiss, double pOut, double pSwap) {
-		FrameBlock res = new FrameBlock(input);
-		ValueType[] schema = res.getSchema();
 		List<Integer> numerics = new ArrayList<>();
 		List<Integer> strings = new ArrayList<>();
 
-		res = preprocessing(res, numerics, strings);
+		FrameBlock res = preprocessing(input, numerics, strings);
 		
 		res = typos(res, pTypo);
 		
+		res = miss(res, pMiss);
 		
-//		Random rand = new Random();
-//		for(int r=0;r<res.getNumRows();r++) {
-//			if(!strings.isEmpty() && rand.nextDouble()<=pTypo) {
-//				int c = strings.get(rand.nextInt(strings.size()));
-//				String s = (String) res.get(r, c);
-//				int i = rand.nextInt(s.length());
-//				if(i!=s.length()-1 && rand.nextDouble()<=0.5) s = swap(s, i, i+1);
-//				else if(i!=0) s = swap(s, i-1, i);
-//				else {labels[r] = "none"; continue;}
-//				res.set(r, c, s);
-//				labels[r] = "typo";
-//				continue;
-//			}
-//			// Drop multiple values on row, column
-//			if(rand.nextDouble()<=pMiss) {
-//				int c = rand.nextInt(schema.length);
-//				res.set(r, c, null);
-//				labels[r] = "missing";
-//				continue;
-//			}
-//			// Standard deviation
-//			if(!numerics.isEmpty() && rand.nextDouble()<=pOut) {
-//				int c = numerics.get(rand.nextInt(numerics.size()));
-//				// separate ValueTypes
-//				if(schema[c].equals(ValueType.FP32) || schema[c].equals(ValueType.FP64)) {
-//					Double n = (Double) res.get(r, c);
-//					n = n*100;
-//					res.set(r, c, n);
-//				}else if(schema[c].equals(ValueType.INT32) || schema[c].equals(ValueType.INT64)) {
-//					Integer n = (Integer) res.get(r, c);
-//					n = n*100;
-//					res.set(r, c, n);
-//				}
-//				
-//				labels[r] = "outlier";
-//				continue;
-//			}
-//			
-////			if(res.getNumColumns()>1 && rand.nextDouble()<=pSwap) {
-////				int c = rand.nextInt(schema.length);
-////				Object tmp = res.get(r, c);
-////				if(c!=res.getNumColumns()-1 && rand.nextDouble()<=0.5) {
-////					res.set(r, c, res.get(r, c+1));
-////					res.set(r, c, tmp);
-////				}else {
-////					res.set(r, c, res.get(r, c-1));
-////					res.set(r, c, tmp);
-////				}
-////				
-////				labels[r] = "swap";
-////			}
-//			
-//			labels[r] = "none";
-//			
-//		}
-//		
-//		res.appendColumn(labels);
-//		
+		res = outlier(res, pOut, 3);
+		
 		return res;
 	}
 	
 	public static FrameBlock preprocessing(FrameBlock frame, List<Integer> numerics, List<Integer> strings) {
-		for(int i=0;i<frame.getNumColumns();i++) {
-			if(frame.getSchema()[i].isNumeric()) { 
+		FrameBlock res = new FrameBlock(frame);
+		for(int i=0;i<res.getNumColumns();i++) {
+			if(res.getSchema()[i].isNumeric()) { 
 				numerics.add(i);
-			}else if(frame.getSchema()[i].equals(ValueType.STRING)) {
+			}else if(res.getSchema()[i].equals(ValueType.STRING)) {
 				strings.add(i);
 			}
 		}
 		
-		String[] labels = new String[frame.getNumRows()];
+		String[] labels = new String[res.getNumRows()];
 		Arrays.fill(labels, "");
-		frame.appendColumn(labels);
+		res.appendColumn(labels);
 		
-		return frame;
+		return res;
 	}
 	
 	public static FrameBlock typos(FrameBlock frame, double pTypo) {
@@ -118,11 +76,158 @@ public class DataAugmentation {
 				if(i!=s.length()-1 && rand.nextDouble()<=0.5) s = swap(s, i, i+1);
 				else s = swap(s, i-1, i);
 				frame.set(r, c, s);
+				
 				String label = (String) frame.get(r, frame.getNumColumns()-1);
 				if(label.equals("")) frame.set(r, frame.getNumColumns()-1, "typo");
 				else frame.set(r, frame.getNumColumns()-1, label + ",typo");
 			}
 		}
+		return frame;
+	}
+	
+	public static FrameBlock miss(FrameBlock frame, double pMiss) {
+		Random rand = new Random();
+		for(int r=0;r<frame.getNumRows();r++) {
+			if(rand.nextDouble()<=pMiss) {
+				int c = rand.nextInt(frame.getSchema().length);
+				frame.set(r, c, null);
+				
+				String label = (String) frame.get(r, frame.getNumColumns()-1);
+				if(label.equals("")) frame.set(r, frame.getNumColumns()-1, "missing");
+				else frame.set(r, frame.getNumColumns()-1, label + ",missing");
+			}
+		}
+		return frame;
+	}
+	
+	public static FrameBlock outlier(FrameBlock frame, double pOut, int times) {
+		List<Integer> numerics = new ArrayList<Integer>();
+		for(int i=0;i<frame.getNumColumns();i++) {
+			if(frame.getSchema()[i].isNumeric()) { 
+				numerics.add(i);
+			}
+		}
+		
+		Map<Integer, Double> stds = new HashMap<Integer, Double>();
+		Random rand = new Random();
+		for(int r=0;r<frame.getNumRows();r++) {
+			if(rand.nextDouble()>pOut) continue;
+			int c = numerics.get(rand.nextInt(numerics.size()));
+			if(!stds.containsKey(c)) {
+				switch(frame.getSchema()[c]) {
+				case INT32:{
+					List<Integer> l = new ArrayList<Integer>();
+					for(int i=0;i<frame.getNumRows();i++) {
+						l.add((Integer) frame.get(i, c));
+					}
+					
+					Double sum = 0.;
+					
+					for(int i=0; i<l.size();i++) {
+						sum += l.get(i);
+					}
+					Double mean = sum/l.size();
+					sum = 0.;
+					for(int i=0; i<l.size();i++) {
+						Double diff = l.get(i)-mean;
+						sum += diff*diff;
+					}
+					
+					stds.put(c, Math.sqrt(sum/l.size()));
+				}
+					break;
+				case INT64:{
+					List<Long> l = new ArrayList<Long>();
+					for(int i=0;i<frame.getNumRows();i++) {
+						l.add((Long) frame.get(i, c));
+					}
+					
+					Double sum = 0.;
+					
+					for(int i=0; i<l.size();i++) {
+						sum += l.get(i);
+					}
+					Double mean = sum/l.size();
+					sum = 0.;
+					for(int i=0; i<l.size();i++) {
+						Double diff = l.get(i)-mean;
+						sum += diff*diff;
+					}
+					
+					stds.put(c, Math.sqrt(sum/l.size()));
+				}
+					break;
+				case FP32:{
+					List<Float> l = new ArrayList<Float>();
+					for(int i=0;i<frame.getNumRows();i++) {
+						l.add((Float) frame.get(i, c));
+					}
+					
+					Double sum = 0.;
+					
+					for(int i=0; i<l.size();i++) {
+						sum += l.get(i);
+					}
+					Double mean = sum/l.size();
+					sum = 0.;
+					for(int i=0; i<l.size();i++) {
+						Double diff = l.get(i)-mean;
+						sum += diff*diff;
+					}
+					
+					stds.put(c, Math.sqrt(sum/l.size()));
+				}
+					break;
+				case FP64:{
+					List<Double> l = new ArrayList<Double>();
+					for(int i=0;i<frame.getNumRows();i++) {
+						l.add((Double) frame.get(i, c));
+					}
+					
+					Double sum = 0.;
+					
+					for(int i=0; i<l.size();i++) {
+						sum += l.get(i);
+					}
+					Double mean = sum/l.size();
+					sum = 0.;
+					for(int i=0; i<l.size();i++) {
+						Double diff = l.get(i)-mean;
+						sum += diff*diff;
+					}
+					
+					stds.put(c, Math.sqrt(sum/l.size()));
+				}
+					break;
+				default:
+					break;
+				}				
+			}
+			
+			Double std = stds.get(c);
+			if(frame.getSchema()[c].equals(ValueType.INT32)) {
+				Integer val = (Integer) frame.get(r, c);
+				val += (int) Math.round(times*std);
+				frame.set(r, c, val);
+			} else if(frame.getSchema()[c].equals(ValueType.INT64)) {
+				Long val = (Long) frame.get(r, c);
+				val += Math.round(times*std);
+				frame.set(r, c, val);
+			} else if(frame.getSchema()[c].equals(ValueType.FP32)) {
+				Float val = (Float) frame.get(r, c);
+				val += (float) (times*std);
+				frame.set(r, c, val);
+			} else if(frame.getSchema()[c].equals(ValueType.FP64)) {
+				Double val = (Double) frame.get(r, c);
+				val += times*std;
+				frame.set(r, c, val);
+			}
+			
+			String label = (String) frame.get(r, frame.getNumColumns()-1);
+			if(label.equals("")) frame.set(r, frame.getNumColumns()-1, "outlier");
+			else frame.set(r, frame.getNumColumns()-1, label + ",outlier");
+		}
+		
 		return frame;
 	}
 	
