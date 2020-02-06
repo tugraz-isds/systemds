@@ -40,7 +40,7 @@
 
 
 
-m_outlier_by_IQR = function(Matrix[Double] X, Integer k =1.5, Integer repairMethod = 2, Integer max_iterations, Boolean verbose = TRUE)
+m_outlier_by_IQR = function(Matrix[Double] X, Double k =1.5, Integer repairMethod = 1, Integer max_iterations, Boolean verbose = TRUE)
   return(Matrix[Double] Y) 
 {
 
@@ -55,8 +55,9 @@ m_outlier_by_IQR = function(Matrix[Double] X, Integer k =1.5, Integer repairMeth
   {
     [Q1, Q3, IQR] = compute_quartiles(X)
     upperBound = (Q3 + (k * IQR));
-    lowerBound = (Q3 - (k * IQR));
-    outlierFilter = outer(X, lowerBound, "<") | outer(X, upperBound, ">")
+    lowerBound = (Q1 - (k * IQR));
+    outlierFilter = X < lowerBound | X > upperBound
+
     if(sum(outlierFilter) > 1 & sum(X) != 0 & sumPrevious != sumNext )
     {
       sumPrevious = sum(X)
@@ -81,11 +82,11 @@ m_outlier_by_IQR = function(Matrix[Double] X, Integer k =1.5, Integer repairMeth
     print("Anything less than the lower-bound and greater than the upper-bound was treated as outlier")
     if(sum(Y) == 0)
     print("output is a zero matrix due to iterative evaluation of outliers ")
-    print("output:\n"+ toString(X))
+    print("output:\n"+ toString(Y))
   }
 }
   
-fix_outliers = function(Matrix[Double] X, Matrix[Double] outlierFilter, Integer repairMethod = 2)
+fix_outliers = function(Matrix[Double] X, Matrix[Double] outlierFilter, Integer repairMethod = 1)
     return(Matrix[Double] fixed_X)
 {
 
