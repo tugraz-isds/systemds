@@ -21,10 +21,14 @@ import org.tugraz.sysds.runtime.controlprogram.context.ExecutionContext;
 import org.tugraz.sysds.runtime.instructions.Instruction;
 import org.tugraz.sysds.runtime.instructions.cp.CPOperand;
 import org.tugraz.sysds.runtime.lineage.LineageCacheConfig.ReuseCacheType;
+import org.tugraz.sysds.runtime.util.ProgramConverter;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Stack;
+import java.util.StringTokenizer;
+
+import static org.tugraz.sysds.utils.Explain.explain;
 
 public class Lineage {
 	private final LineageMap _map;
@@ -71,6 +75,10 @@ public class Lineage {
 		_map.set(varName, li);
 	}
 	
+	public void setLiteral(String varName, LineageItem li) {
+		_map.setLiteral(varName, li);
+	}
+	
 	public LineageItem get(CPOperand variable) {
 		return _initDedupBlock.empty() ?
 			_map.get(variable) :
@@ -95,8 +103,60 @@ public class Lineage {
 		_activeDedupBlock.pop();
 	}
 	
-	public LineageMap getMap() {
-		return _map;
+	public String serialize() {
+		StringBuilder sb = new StringBuilder();
+		int count = 0;
+		for (Map.Entry<String, LineageItem> e : _map.getTraces().entrySet()) {
+			if (count != 0)
+				sb.append (ProgramConverter.ELEMENT_DELIM);
+			
+			sb.append(e.getKey());
+			sb.append(ProgramConverter.COMPONENTS_DELIM);
+			sb.append(explain(e.getValue()));
+			count++;
+		}
+
+		sb.append(ProgramConverter.ELEMENT_DELIM2);
+		
+		count = 0;
+		for (Map.Entry<String, LineageItem> e : _map.getLiterals().entrySet()) {
+			if (count != 0)
+				sb.append (ProgramConverter.ELEMENT_DELIM);
+			
+			sb.append(e.getKey());
+			sb.append(ProgramConverter.COMPONENTS_DELIM);
+			sb.append(explain(e.getValue()));
+			count++;
+		}
+		
+		return sb.toString();
+	}
+	
+	public static Lineage deserialize(String lingStr) {
+		StringTokenizer tokenizer = new StringTokenizer(lingStr, ProgramConverter.ELEMENT_DELIM2);
+		Lineage ling = new Lineage();
+		
+		String traces = tokenizer.nextToken().trim();
+		String literals = tokenizer.nextToken().trim();
+		
+		tokenizer = new StringTokenizer(traces, ProgramConverter.ELEMENT_DELIM);
+		while (tokenizer.hasMoreTokens()) {
+			String tmp = tokenizer.nextToken().trim();
+			String name = tmp.substring(0, tmp.indexOf(ProgramConverter.COMPONENTS_DELIM));
+			tmp = tmp.substring(tmp.indexOf(ProgramConverter.COMPONENTS_DELIM)+1);
+			LineageItem item = LineageParser.parseLineageTrace(tmp);
+			ling.set(name, item);
+		}
+		
+		tokenizer = new StringTokenizer(literals, ProgramConverter.ELEMENT_DELIM);
+		while (tokenizer.hasMoreTokens()) {
+			String tmp = tokenizer.nextToken().trim();
+			String name = tmp.substring(0, tmp.indexOf(ProgramConverter.COMPONENTS_DELIM));
+			tmp = tmp.substring(tmp.indexOf(ProgramConverter.COMPONENTS_DELIM)+1);
+			LineageItem item = LineageParser.parseLineageTrace(tmp);
+			ling.setLiteral(name, item);
+		}
+		return ling;
 	}
 	
 	public static void resetInternalState() {

@@ -50,8 +50,6 @@ import org.tugraz.sysds.utils.Statistics;
 
 import scala.Tuple2;
 
-import static org.tugraz.sysds.utils.Explain.explain;
-
 /**
  * This class serves two purposes: (1) isolating Spark imports to enable running in 
  * environments where no Spark libraries are available, and (2) to follow the same

@@ -96,6 +96,10 @@ public class LineageMap {
 		return _traces.put(varName, li);
 	}
 	
+	public LineageItem setLiteral(String varName, LineageItem li) {
+		return _literals.put(varName, li);
+	}
+	
 	public LineageItem get(CPOperand variable) {
 		if (variable == null)
 			return null;
@@ -117,6 +121,10 @@ public class LineageMap {
 	
 	public Map<String, LineageItem> getTraces() {
 		return _traces;
+	}
+	
+	public Map<String, LineageItem> getLiterals() {
+		return _literals;
 	}
 	
 	private void trace(Instruction inst, ExecutionContext ec, LineageItem li) {

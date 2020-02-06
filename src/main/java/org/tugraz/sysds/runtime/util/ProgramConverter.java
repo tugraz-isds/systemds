@@ -127,8 +127,10 @@ public class ProgramConverter
 	
 	public static final String PROG_BEGIN = " PROG" + LEVELIN;
 	public static final String PROG_END = LEVELOUT;
-	public static final String VARS_BEGIN = "VARS: ";
-	public static final String VARS_END = "";
+	public static final String VARS_BEGIN = "VARS" + LEVELIN;
+	public static final String VARS_END = LEVELOUT;
+	public static final String LING_BEGIN = "LING" + LEVELIN;
+	public static final String LING_END = LEVELOUT;
 	public static final String PBS_BEGIN = " PBS" + LEVELIN;
 	public static final String PBS_END = LEVELOUT;
 	public static final String INST_BEGIN = " INST: ";
@@ -821,6 +823,18 @@ public class ProgramConverter
 		sb.append(VARS_END);
 		return sb.toString();
 	}
+	
+	private static String serializeLineage(Lineage ling) {
+		if (DMLScript.LINEAGE_DEDUP)
+			throw new DMLRuntimeException("Lineage serialization does not support Lineage Dedup");
+		if (!DMLScript.LINEAGE)
+			return "";
+		StringBuilder sb = new StringBuilder();
+		sb.append(LING_BEGIN);
+		sb.append(ling.serialize());
+		sb.append(LING_END);
+		return sb.toString();
+	}
 
 	public static String serializeDataObject(String key, Data dat) 
 	{
@@ -903,7 +917,15 @@ public class ProgramConverter
 	}
 
 	private static String serializeExecutionContext( ExecutionContext ec ) {
-		return (ec != null) ? serializeVariables( ec.getVariables() ) : EMPTY;
+		StringBuilder sb = new StringBuilder();
+		
+		if (ec != null) {
+			sb.append(serializeVariables(ec.getVariables()));
+			sb.append(serializeLineage(ec.getLineage()));
+		}
+		else
+			sb.append(EMPTY);
+		return sb.toString();
 	}
 
 	@SuppressWarnings("all")
@@ -1276,7 +1298,7 @@ public class ProgramConverter
 	private static LocalVariableMap parseVariables(String in) {
 		LocalVariableMap ret = null;
 		if( in.length()> VARS_BEGIN.length() + VARS_END.length()) {
-			String varStr = in.substring( VARS_BEGIN.length(),in.length()- VARS_END.length()).trim();
+			String varStr = in.substring(VARS_BEGIN.length(),in.indexOf(VARS_END));
 			ret = LocalVariableMap.deserialize(varStr);
 		}
 		else { //empty input symbol table
@@ -1284,6 +1306,20 @@ public class ProgramConverter
 		}
 		return ret;
 	}
+	
+	private static Lineage parseLineage(String in) {
+		if (DMLScript.LINEAGE_DEDUP)
+			throw new DMLRuntimeException("Lineage serialization does not support Lineage Dedup");
+		if (!DMLScript.LINEAGE)
+			return new Lineage();
+		
+		if( in.length()> LING_BEGIN.length() + LING_END.length()) {
+			String lingStr = in.substring(LING_BEGIN.length(),in.indexOf(LING_END));
+			return Lineage.deserialize(lingStr);
+		}
+		return new Lineage();
+	}
+	
 
 	private static HashMap<String,FunctionProgramBlock> parseFunctionProgramBlocks( String in, Program prog, int id ) {
 		HashMap<String,FunctionProgramBlock> ret = new HashMap<>();
@@ -1588,8 +1624,12 @@ public class ProgramConverter
 		String lin = in.substring(EC_BEGIN.length(),in.length()- EC_END.length()).trim();
 		if( !lin.equals( EMPTY ) ) {
 			LocalVariableMap vars = parseVariables(lin);
+			lin = lin.substring(lin.indexOf(VARS_END)+1);
+			Lineage ling = parseLineage(lin);
+			
 			ec = ExecutionContextFactory.createContext( false, prog );
 			ec.setVariables(vars);
+			ec.setLineage(ling);
 		}
 		return ec;
 	}

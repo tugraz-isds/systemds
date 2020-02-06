@@ -22,8 +22,6 @@ import java.util.List;
 
 import org.junit.Test;
 import org.tugraz.sysds.api.DMLScript;
-import org.tugraz.sysds.common.Types;
-import org.tugraz.sysds.hops.OptimizerUtils;
 import org.tugraz.sysds.hops.recompile.Recompiler;
 import org.tugraz.sysds.runtime.controlprogram.caching.MatrixObject;
 import org.tugraz.sysds.runtime.instructions.cp.Data;
@@ -40,8 +38,9 @@ import org.tugraz.sysds.test.TestUtils;
 public class LineageTraceParforTest extends AutomatedTestBase {
 	
 	protected static final String TEST_DIR = "functions/lineage/";
-	protected static final String TEST_NAME1 = "LineageTraceParfor1"; //rand - matrix result
-	protected static final String TEST_NAME2 = "LineageTraceParfor2"; //rand - matrix result
+	protected static final String TEST_NAME1 = "LineageTraceParfor1"; //rand - matrix result - local parfor
+	protected static final String TEST_NAME2 = "LineageTraceParfor2"; //rand - matrix result - remote spark parfor
+	protected static final String TEST_NAME3 = "LineageTraceParfor3"; //rand - matrix result - remote spark parfor
 	
 	protected String TEST_CLASS_DIR = TEST_DIR + LineageTraceParforTest.class.getSimpleName() + "/";
 	
@@ -56,11 +55,17 @@ public class LineageTraceParforTest extends AutomatedTestBase {
 		TestUtils.clearAssertionInformation();
 		addTestConfiguration( TEST_NAME1, new TestConfiguration(TEST_CLASS_DIR, TEST_NAME1, new String[] {"R"}) );
 		addTestConfiguration( TEST_NAME2, new TestConfiguration(TEST_CLASS_DIR, TEST_NAME2, new String[] {"R"}) );
+		addTestConfiguration( TEST_NAME3, new TestConfiguration(TEST_CLASS_DIR, TEST_NAME3, new String[] {"R"}) );
 	}
 	
 	@Test
 	public void testLineageTraceParFor1_1() {
 		testLineageTraceParFor(1, TEST_NAME1);
+	}
+	
+	@Test
+	public void testLineageTraceParFor1_2() {
+		testLineageTraceParFor(2, TEST_NAME1);
 	}
 	
 	@Test
@@ -74,13 +79,33 @@ public class LineageTraceParforTest extends AutomatedTestBase {
 	}
 	
 	@Test
+	public void testLineageTraceParFor2_1() {
+		testLineageTraceParFor(1, TEST_NAME2);
+	}
+	
+	@Test
+	public void testLineageTraceParFor2_2() {
+		testLineageTraceParFor(2, TEST_NAME2);
+	}
+	
+	@Test
 	public void testLineageTraceParFor2_8() {
 		testLineageTraceParFor(8, TEST_NAME2);
 	}
 	
 	@Test
-	public void testLineageTraceParFor2_2() {
-		testLineageTraceParFor(4, TEST_NAME2);
+	public void testLineageTraceParFor2_32() {
+		testLineageTraceParFor(8, TEST_NAME2);
+	}
+	
+	@Test
+	public void testLineageTraceParFor3_8() {
+		testLineageTraceParFor(8, TEST_NAME3);
+	}
+	
+	@Test
+	public void testLineageTraceParFor3_32() {
+		testLineageTraceParFor(8, TEST_NAME3);
 	}
 	
 	private void testLineageTraceParFor(int ncol, String testname) {
@@ -107,16 +132,16 @@ public class LineageTraceParforTest extends AutomatedTestBase {
 			Lineage.resetInternalState();
 			runTest(true, EXCEPTION_NOT_EXPECTED, null, -1);
 			
-//			//get lineage and generate program
-//			String Rtrace = readDMLLineageFromHDFS("R");
-//			LineageItem R = LineageParser.parseLineageTrace(Rtrace);
-//
-//			Data ret = LineageItemUtils.computeByLineage(R);
-//
+			//get lineage and generate program
+			String Rtrace = readDMLLineageFromHDFS("R");
+			LineageItem R = LineageParser.parseLineageTrace(Rtrace);
+			
+			Data ret = LineageItemUtils.computeByLineage(R);
+
 			HashMap<CellIndex, Double> dmlfile = readDMLMatrixFromHDFS("R");
 			System.out.println(dmlfile);
-//			MatrixBlock tmp = ((MatrixObject) ret).acquireReadAndRelease();
-//			TestUtils.compareMatrices(dmlfile, tmp, 1e-6);
+			MatrixBlock tmp = ((MatrixObject) ret).acquireReadAndRelease();
+			TestUtils.compareMatrices(dmlfile, tmp, 1e-6);
 			
 		} finally {
 			Recompiler.reinitRecompiler();

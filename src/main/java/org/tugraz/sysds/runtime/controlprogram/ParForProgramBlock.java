@@ -101,7 +101,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.tugraz.sysds.utils.Explain.explain;
 
 
 /**
@@ -870,6 +869,7 @@ public class ParForProgramBlock extends ForProgramBlock
 		
 		//lineage maintenance
 		mergeLineage(ec, ret.getLineages());
+		// TODO: remove duplicate lineage items in ec.getLineage()
 		
 		//consolidate results into global symbol table
 		consolidateAndCheckResults( ec, numIterations, numCreatedTasks,
@@ -1347,28 +1347,12 @@ public class ParForProgramBlock extends ForProgramBlock
 		//stack lineage traces on top of each other (e.g., indexing)
 		for( ResultVar var : _resultVars ) {
 			LineageItem retIn = ec.getLineage().get(var._name);
-
-			System.out.println("Start...");
-			System.out.println(explain(retIn));
-			
 			LineageItem current = lineages[0].get(var._name);
-			System.out.println("index: " + 0);
-			System.out.println(explain(current));
-			
 			for( int i=1; i<lineages.length; i++ ) {
 				LineageItem next = lineages[i].get(var._name);
-				System.out.println("index: " + i);
-				System.out.println(explain(next));
-				
 				current = LineageItemUtils.replace(next, retIn, current);
-				System.out.println("current: " + i);
-				System.out.println(explain(current));
-				
 			}
 			ec.getLineage().set(var._name, current);
-
-			System.out.println("Done...");
-			System.out.println(explain(current));
 		}
 	}
 

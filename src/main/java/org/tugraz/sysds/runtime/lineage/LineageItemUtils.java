@@ -425,7 +425,7 @@ public class LineageItemUtils {
 		//process children until old item found, then replace
 		for(int i=0; i<current.getInputs().length; i++) {
 			LineageItem tmp = current.getInputs()[i];
-			if( tmp == liOld )
+			if( tmp.equals(liOld) )
 				current.getInputs()[i] = liNew;
 			else
 				rReplace(tmp, liOld, liNew);

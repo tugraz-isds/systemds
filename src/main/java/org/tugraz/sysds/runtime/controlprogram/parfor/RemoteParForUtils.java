@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.hadoop.io.LongWritable;
@@ -49,7 +48,6 @@ import org.tugraz.sysds.runtime.controlprogram.parfor.util.IDHandler;
 import org.tugraz.sysds.runtime.instructions.cp.Data;
 import org.tugraz.sysds.runtime.lineage.Lineage;
 import org.tugraz.sysds.runtime.lineage.LineageItem;
-import org.tugraz.sysds.runtime.lineage.LineageMap;
 import org.tugraz.sysds.runtime.lineage.LineageParser;
 import static org.tugraz.sysds.utils.Explain.explain;
 import org.tugraz.sysds.runtime.util.LocalFileUtils;
@@ -193,7 +191,7 @@ public class RemoteParForUtils
 	}
 	
 	/**
-	 * For remote Spark parfor workers. This is a simplified version compared to MR.
+	 * Export lineage for remote Spark parfor workers.
 	 *
 	 * @return list of lineage items
 	 */
@@ -201,8 +199,14 @@ public class RemoteParForUtils
 		ArrayList<Tuple2<String, String>> ret = new ArrayList<>();
 		for( ResultVar var : resultVars ) {
 			LineageItem item = lineage.get(var._name);
-			Tuple2<String, String> tuple = new Tuple2<>(
-					RemoteParForUtils.LIN_PREFIX + workerID + RemoteParForUtils.SEPARATOR + var._name, explain(item));
+			StringBuilder sb = new StringBuilder();
+			sb.append(RemoteParForUtils.LIN_PREFIX);
+			sb.append(workerID);
+			sb.append(RemoteParForUtils.SEPARATOR);
+			sb.append(var._name);
+			sb.append(RemoteParForUtils.SEPARATOR);
+			sb.append(item.getName());
+			Tuple2<String, String> tuple = new Tuple2<>(sb.toString(), explain(item));
 			ret.add(tuple);
 		}
 		return ret;
@@ -280,7 +284,7 @@ public class RemoteParForUtils
 			if( !tmp.containsKey(parts[1]) )
 				tmp.put(parts[1], new Lineage ());
 			
-			LineageItem li = LineageParser.parseLineageTrace(entry._2);
+			LineageItem li = LineageParser.parseLineageTrace(entry._2, parts[3]);
 			tmp.get(parts[1]).set(parts[2], li);
 			countAll++;
 		}
