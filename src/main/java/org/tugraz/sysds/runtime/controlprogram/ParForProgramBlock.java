@@ -80,6 +80,7 @@ import org.tugraz.sysds.runtime.instructions.cp.IntObject;
 import org.tugraz.sysds.runtime.instructions.cp.ListObject;
 import org.tugraz.sysds.runtime.instructions.cp.StringObject;
 import org.tugraz.sysds.runtime.instructions.cp.VariableCPInstruction;
+import org.tugraz.sysds.runtime.lineage.Lineage;
 import org.tugraz.sysds.runtime.lineage.LineageItem;
 import org.tugraz.sysds.runtime.lineage.LineageItemUtils;
 import org.tugraz.sysds.runtime.matrix.data.OutputInfo;
@@ -100,6 +101,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static org.tugraz.sysds.utils.Explain.explain;
 
 
 /**
@@ -777,7 +779,10 @@ public class ParForProgramBlock extends ForProgramBlock
 				numExecutedIterations += workers[i].getExecutedIterations();
 			}
 			//lineage maintenance
-			mergeWorkerLineage(ec, workers);
+			Lineage [] lineages = Arrays.stream(workers)
+					.map(w -> w.getExecutionContext().getLineage())
+					.toArray(Lineage[]::new);
+			mergeLineage(ec, lineages);
 
 			//consolidate results into global symbol table
 			consolidateAndCheckResults( ec, numIterations, numCreatedTasks,
@@ -862,6 +867,9 @@ public class ParForProgramBlock extends ForProgramBlock
 		// Step 4) collecting results from each parallel worker
 		int numExecutedTasks = ret.getNumExecutedTasks();
 		int numExecutedIterations = ret.getNumExecutedIterations();
+		
+		//lineage maintenance
+		mergeLineage(ec, ret.getLineages());
 		
 		//consolidate results into global symbol table
 		consolidateAndCheckResults( ec, numIterations, numCreatedTasks,
@@ -1333,18 +1341,34 @@ public class ParForProgramBlock extends ForProgramBlock
 			_childBlocks, tid, new HashSet<String>(), null);
 	}
 	
-	private void mergeWorkerLineage(ExecutionContext ec, LocalParWorker[] workers) {
+	private void mergeLineage(ExecutionContext ec, Lineage[] lineages) {
 		if( !DMLScript.LINEAGE )
 			return;
 		//stack lineage traces on top of each other (e.g., indexing)
 		for( ResultVar var : _resultVars ) {
 			LineageItem retIn = ec.getLineage().get(var._name);
-			LineageItem current = workers[0].getExecutionContext().getLineage().get(var._name);
-			for( int i=1; i<workers.length; i++ ) {
-				LineageItem next = workers[i].getExecutionContext().getLineage().get(var._name);
+
+			System.out.println("Start...");
+			System.out.println(explain(retIn));
+			
+			LineageItem current = lineages[0].get(var._name);
+			System.out.println("index: " + 0);
+			System.out.println(explain(current));
+			
+			for( int i=1; i<lineages.length; i++ ) {
+				LineageItem next = lineages[i].get(var._name);
+				System.out.println("index: " + i);
+				System.out.println(explain(next));
+				
 				current = LineageItemUtils.replace(next, retIn, current);
+				System.out.println("current: " + i);
+				System.out.println(explain(current));
+				
 			}
 			ec.getLineage().set(var._name, current);
+
+			System.out.println("Done...");
+			System.out.println(explain(current));
 		}
 	}
 

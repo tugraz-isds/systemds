@@ -20,7 +20,7 @@
 package org.tugraz.sysds.runtime.controlprogram.parfor;
 
 import org.tugraz.sysds.runtime.controlprogram.LocalVariableMap;
-import org.tugraz.sysds.runtime.lineage.LineageMap;
+import org.tugraz.sysds.runtime.lineage.Lineage;
 
 /**
  * Wrapper for job return of ParFor REMOTE for transferring statistics and result symbol table.
@@ -34,17 +34,17 @@ public class RemoteParForJobReturn
 	private int     _numTasks    = -1;
 	private int     _numIters    = -1;
 	private LocalVariableMap [] _variables = null;
-	private LineageMap[] _lineageMaps = null;
+	private Lineage[] _lineages = null;
 	
 	public RemoteParForJobReturn( boolean successful, int numTasks, int numIters, LocalVariableMap [] variables) {this(successful, numIters, numTasks, variables, null);}
 	
-	public RemoteParForJobReturn( boolean successful, int numTasks, int numIters, LocalVariableMap [] variables, LineageMap [] lineageMaps)
+	public RemoteParForJobReturn( boolean successful, int numTasks, int numIters, LocalVariableMap [] variables, Lineage [] lineages)
 	{
 		_successful  = successful;
 		_numTasks    = numTasks;
 		_numIters    = numIters;
 		_variables   = variables;
-		_lineageMaps = lineageMaps;
+		_lineages    = lineages;
 	}
 
 	public boolean isSuccessful()
@@ -67,9 +67,9 @@ public class RemoteParForJobReturn
 		return _variables;
 	}
 
-	public LineageMap [] geLineageMaps()
+	public Lineage [] getLineages()
 	{
-		return _lineageMaps;
+		return _lineages;
 	}
 
 	public void setVariables (LocalVariableMap [] variables)

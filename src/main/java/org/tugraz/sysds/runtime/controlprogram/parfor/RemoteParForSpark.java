@@ -45,8 +45,7 @@ import org.tugraz.sysds.runtime.controlprogram.parfor.stat.InfrastructureAnalyze
 import org.tugraz.sysds.runtime.controlprogram.parfor.util.IDSequence;
 import org.tugraz.sysds.runtime.instructions.cp.Data;
 import org.tugraz.sysds.runtime.instructions.cp.ScalarObject;
-import org.tugraz.sysds.runtime.lineage.LineageItem;
-import org.tugraz.sysds.runtime.lineage.LineageMap;
+import org.tugraz.sysds.runtime.lineage.Lineage;
 import org.tugraz.sysds.utils.Statistics;
 
 import scala.Tuple2;
@@ -103,19 +102,15 @@ public class RemoteParForSpark
 				clsMap, cpCaching, aTasks, aIters, brInputs, topLevelPF))
 			.collect(); //execute and get output handles
 		
-		for (Map.Entry<String, LineageItem> entry : ec.getLineage().getMap().getTraces().entrySet()) {
-			System.out.println(entry.getKey());
-			System.out.print(explain(entry.getValue()));
-		}
 		//de-serialize results
 		LocalVariableMap[] results = RemoteParForUtils.getLocalVariableMaps(out, LOG);
-		LineageMap[] lineageMaps = RemoteParForUtils.getLineageMaps(out, LOG);
+		Lineage[] lineages = RemoteParForUtils.getLineages(out, LOG);
 		
 		int numTasks = aTasks.value().intValue(); //get accumulator value
 		int numIters = aIters.value().intValue(); //get accumulator value
 		
 		//create output symbol table entries
-		RemoteParForJobReturn ret = new RemoteParForJobReturn(true, numTasks, numIters, results, lineageMaps);
+		RemoteParForJobReturn ret = new RemoteParForJobReturn(true, numTasks, numIters, results, lineages);
 		
 		//maintain statistics
 		Statistics.incrementNoOfCompiledSPInst();

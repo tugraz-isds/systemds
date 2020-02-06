@@ -18,11 +18,10 @@
 
 X = rand(rows=$3, cols=$4, seed=7);
 
-R = matrix(0, nrow(X), ncol(X));
+R = matrix(0, 1, ncol(X));
 parfor(i in 1:ncol(X), check=0, opt=None, mode=REMOTE_SPARK) {
-  Xi = X[,i];
-	Xi = Xi + Xi - 2 * sqrt(Xi) + Xi * Xi;
-	R[,i] = rowSums(Xi)+colSums(Xi);
+    Xi = matrix(i, rows=2, cols=4)
+    R[1, i] = sum(Xi)
 }
 
 print(lineage(R));

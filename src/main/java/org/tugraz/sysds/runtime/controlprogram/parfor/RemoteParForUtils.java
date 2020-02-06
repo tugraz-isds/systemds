@@ -47,6 +47,7 @@ import org.tugraz.sysds.runtime.controlprogram.parfor.stat.InfrastructureAnalyze
 import org.tugraz.sysds.runtime.controlprogram.parfor.stat.Stat;
 import org.tugraz.sysds.runtime.controlprogram.parfor.util.IDHandler;
 import org.tugraz.sysds.runtime.instructions.cp.Data;
+import org.tugraz.sysds.runtime.lineage.Lineage;
 import org.tugraz.sysds.runtime.lineage.LineageItem;
 import org.tugraz.sysds.runtime.lineage.LineageMap;
 import org.tugraz.sysds.runtime.lineage.LineageParser;
@@ -196,12 +197,12 @@ public class RemoteParForUtils
 	 *
 	 * @return list of lineage items
 	 */
-	public static ArrayList<Tuple2<String, String>> exportLineageItems(long workerID, LineageMap lms) {
+	public static ArrayList<Tuple2<String, String>> exportLineageItems(long workerID, Lineage lineage, ArrayList<ResultVar> resultVars) {
 		ArrayList<Tuple2<String, String>> ret = new ArrayList<>();
-		for (Map.Entry<String, LineageItem> entry : lms.getTraces().entrySet()) {
+		for( ResultVar var : resultVars ) {
+			LineageItem item = lineage.get(var._name);
 			Tuple2<String, String> tuple = new Tuple2<>(
-					RemoteParForUtils.LIN_PREFIX + workerID + RemoteParForUtils.SEPARATOR + entry.getKey(),
-					explain(entry.getValue()));
+					RemoteParForUtils.LIN_PREFIX + workerID + RemoteParForUtils.SEPARATOR + var._name, explain(item));
 			ret.add(tuple);
 		}
 		return ret;
@@ -263,9 +264,9 @@ public class RemoteParForUtils
 		return tmp.values().toArray(new LocalVariableMap[0]);	
 	}
 	
-	public static LineageMap[] getLineageMaps( List<Tuple2<String,String>> out, Log LOG )
+	public static Lineage[] getLineages( List<Tuple2<String,String>> out, Log LOG )
 	{
-		HashMap<String,LineageMap> tmp = new HashMap<>();
+		HashMap<String,Lineage> tmp = new HashMap<>();
 		
 		int countAll = 0;
 		for( Tuple2<String,String> entry : out )
@@ -277,10 +278,8 @@ public class RemoteParForUtils
 			
 			String[] parts = key.split(SEPARATOR);
 			if( !tmp.containsKey(parts[1]) )
-				tmp.put(parts[1], new LineageMap ());
+				tmp.put(parts[1], new Lineage ());
 			
-			System.out.println(parts[2]);
-			System.out.print(entry._2);
 			LineageItem li = LineageParser.parseLineageTrace(entry._2);
 			tmp.get(parts[1]).set(parts[2], li);
 			countAll++;
@@ -292,7 +291,7 @@ public class RemoteParForUtils
 		}
 		
 		//create return array
-		return tmp.values().toArray(new LineageMap[0]);
+		return tmp.values().toArray(new Lineage[0]);
 	}
 	
 	

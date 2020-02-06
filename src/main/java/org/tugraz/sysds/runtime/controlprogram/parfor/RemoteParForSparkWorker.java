@@ -98,7 +98,7 @@ public class RemoteParForSparkWorker extends ParWorker implements PairFlatMapFun
 				.stream()
 				.map(s -> new Tuple2<>(RemoteParForUtils.LVM_PREFIX + _workerID, s))
 				.collect(Collectors.toList());
-		data.addAll(RemoteParForUtils.exportLineageItems(_workerID, _ec.getLineage().getMap()));
+		data.addAll(RemoteParForUtils.exportLineageItems(_workerID, _ec.getLineage(), _resultVars));
 		return data.iterator();
 	}
 	
