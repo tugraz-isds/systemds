@@ -52,6 +52,7 @@ import org.tugraz.sysds.runtime.instructions.cp.DataGenCPInstruction;
 import org.tugraz.sysds.runtime.instructions.cp.ScalarObjectFactory;
 import org.tugraz.sysds.runtime.instructions.cp.VariableCPInstruction;
 import org.tugraz.sysds.runtime.instructions.spark.SPInstruction.SPType;
+import org.tugraz.sysds.runtime.instructions.cp.CPInstruction;
 import org.tugraz.sysds.runtime.instructions.cp.CPInstruction.CPType;
 import org.tugraz.sysds.runtime.util.HDFSTool;
 
@@ -439,12 +440,19 @@ public class LineageItemUtils {
 			return false;
 
 		boolean isND = false;
-		DataGenCPInstruction ins = (DataGenCPInstruction)InstructionParser.parseSingleInstruction(li.getData());
+		CPInstruction CPins = (CPInstruction) InstructionParser.parseSingleInstruction(li.getData());
+		if (!(CPins instanceof DataGenCPInstruction))
+			return false;
+
+		DataGenCPInstruction ins = (DataGenCPInstruction)CPins;
 		switch(li.getOpcode().toUpperCase())
 		{
 			case "RAND":
 				if ((ins.getMinValue() != ins.getMaxValue()) || (ins.getSparsity() != 1))
 					isND = true;
+					//NOTE:It is hard to detect in runtime if rand was called with unspecified seed
+					//as -1 is already replaced by computed seed. Solution is to unmark for caching in 
+					//compile time. That way we can differentiate between given and unspecified seed.
 				break;
 			case "SAMPLE":
 				isND = true;

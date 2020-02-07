@@ -24,6 +24,14 @@ import org.tugraz.sysds.hops.recompile.Recompiler;
 import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.controlprogram.context.ExecutionContext;
 import org.tugraz.sysds.runtime.instructions.Instruction;
+import org.tugraz.sysds.runtime.instructions.cp.CPOperand;
+import org.tugraz.sysds.runtime.instructions.cp.Data;
+import org.tugraz.sysds.runtime.instructions.cp.ScalarObject;
+import org.tugraz.sysds.runtime.lineage.LineageCache;
+import org.tugraz.sysds.runtime.lineage.LineageCacheConfig.ReuseCacheType;
+import org.tugraz.sysds.runtime.lineage.LineageCacheStatistics;
+import org.tugraz.sysds.runtime.lineage.LineageItem;
+import org.tugraz.sysds.runtime.lineage.LineageItemUtils;
 import org.tugraz.sysds.utils.Statistics;
 
 public class BasicProgramBlock extends ProgramBlock 
@@ -96,8 +104,37 @@ public class BasicProgramBlock extends ProgramBlock
 		{
 			throw new DMLRuntimeException("Unable to recompile program block.", ex);
 		}
+		
+		LineageItem[] liInputs = _sb != null ? LineageItemInputstoSB(_sb.getInputstoSB(), ec) : null;
+		if (_sb != null && liInputs != null && !ReuseCacheType.isNone()) {
+			String name = "SB" + String.valueOf(_sb.getSBID());
+			boolean reuse = LineageCache.reuse(_sb.getOutputsofSB(), _sb.getOutputsofSB().size(), liInputs, name, ec);
+			if (reuse && DMLScript.STATISTICS)
+					LineageCacheStatistics.incrementSBHits();
+
+			if (reuse) 
+				return; 
+		}
 
 		//actual instruction execution
 		executeInstructions(tmp, ec);
+		
+		if (_sb != null && liInputs != null) {
+			String name = "SB" + String.valueOf(_sb.getSBID());
+			LineageCache.putValue(_sb.getOutputsofSB(), _sb.getOutputsofSB().size(), liInputs, name, ec);
+		}
+	}
+	
+	private LineageItem[] LineageItemInputstoSB(ArrayList<String> inputs, ExecutionContext ec) {
+		ArrayList<CPOperand> CPOpInputs = inputs.size() > 0 ? new ArrayList<>() : null;
+			for (int i=0; i<inputs.size(); i++) {
+				Data value = ec.getVariable(inputs.get(i));
+				if (value != null) {
+					CPOpInputs.add(new CPOperand(value instanceof ScalarObject ? value.toString() : inputs.get(i),
+							value.getValueType(), value.getDataType()));
+				}
+			}
+			return(CPOpInputs != null ? LineageItemUtils.getLineage(ec, 
+					CPOpInputs.toArray(new CPOperand[CPOpInputs.size()])) : null);
 	}
 }
