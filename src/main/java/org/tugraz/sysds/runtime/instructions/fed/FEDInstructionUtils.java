@@ -76,6 +76,12 @@ public class FEDInstructionUtils {
 				return VariableCPInstruction.parseInstruction(instruction.getInstructionString());
 			}
 		}
+		else if (inst instanceof AggregateUnaryCPInstruction) {
+			AggregateUnaryCPInstruction instruction = (AggregateUnaryCPInstruction) inst;
+			MatrixObject mo1 = ec.getMatrixObject(instruction.input1);
+			if (mo1.isFederated() && instruction.getAUType() == AggregateUnaryCPInstruction.AUType.DEFAULT)
+				return AggregateUnaryFEDInstruction.parseInstruction(inst.getInstructionString());
+		}
 		return inst;
 	}
 }
