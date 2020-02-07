@@ -1,5 +1,5 @@
 /*
- * Modifications Copyright 2019 Graz University of Technology
+ * Modifications Copyright 2020 Graz University of Technology
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -37,12 +37,11 @@ public class CNodeOuterProduct extends CNodeTpl
 			+ "import org.tugraz.sysds.runtime.codegen.SpoofOperator.SideInput;\n"
 			+ "import org.tugraz.sysds.runtime.codegen.SpoofOuterProduct;\n"
 			+ "import org.tugraz.sysds.runtime.codegen.SpoofOuterProduct.OutProdType;\n"
-		  	+ "import org.tugraz.sysds.lops.MMTSJ;\n"
 			+ "import org.apache.commons.math3.util.FastMath;\n"
 			+ "\n"
 			+ "public final class %TMP% extends SpoofOuterProduct { \n"
 			+ "  public %TMP%() {\n"
-			+ "    super(OutProdType.%TYPE%, MMTSJ.MMTSJType.%MMTSJ_TYPE%);\n"
+			+ "    super(OutProdType.%TYPE%);\n"
 			+ "  }\n"
 			+ "  protected void genexecDense(double a, double[] a1, int a1i, double[] a2, int a2i, SideInput[] b, double[] scalars, double[] c, int ci, int m, int n, int len, int rix, int cix) { \n"
 			+ "%BODY_dense%"
@@ -108,8 +107,6 @@ public class CNodeOuterProduct extends CNodeTpl
 		tmp = tmp.replace("%POSOUT%", "ci");
 		
 		tmp = tmp.replace("%TYPE%", _type.toString());
-
-		tmp = tmp.replace("%MMTSJ_TYPE%", _mmtsj.toString());
 
 		return tmp;
 	}
