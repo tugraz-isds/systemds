@@ -28,12 +28,10 @@ import org.tugraz.sysds.lops.Lop;
 import org.tugraz.sysds.parser.DMLProgram;
 import org.tugraz.sysds.parser.DataIdentifier;
 import org.tugraz.sysds.common.Types.DataType;
-import org.tugraz.sysds.common.Types.ValueType;
 import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.DMLScriptException;
 import org.tugraz.sysds.runtime.controlprogram.FunctionProgramBlock;
 import org.tugraz.sysds.runtime.controlprogram.LocalVariableMap;
-import org.tugraz.sysds.runtime.controlprogram.caching.MatrixObject;
 import org.tugraz.sysds.runtime.controlprogram.context.ExecutionContext;
 import org.tugraz.sysds.runtime.controlprogram.context.ExecutionContextFactory;
 import org.tugraz.sysds.runtime.instructions.Instruction;
@@ -224,16 +222,6 @@ public class FunctionCallCPInstruction extends CPInstruction {
 			//map lineage of function returns back to calling site
 			if( lineage != null ) //unchanged ref
 				ec.getLineage().set(boundVarName, lineage.get(retVarName));
-
-			if (!ReuseCacheType.isNone()) {
-				String opcode = _functionName + String.valueOf(i+1);
-				LineageItem li = new LineageItem(_boundOutputNames.get(i), opcode, liInputs);
-				if (boundValue instanceof ScalarObject) //TODO: cache scalar objects
-					LineageCache.removeEntry(li);  //remove the placeholder
-				else 
-					LineageCache.putValue(li, lineage.get(retVarName), (MatrixObject)boundValue);
-					//TODO: Unmark for caching in compiler if function contains rand()
-			}
 		}
 
 		//update lineage cache with the functions outputs
