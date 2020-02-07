@@ -215,8 +215,12 @@ SYSTEMDS-250 Large-Scale Slice Finding
 =======
  * 232 Lineage of code generated operators
  * 233 Lineage cache and reuse of function results                    OK
+<<<<<<< HEAD
  * 234 Lineage tracing for spark instructions													OK
 >>>>>>> 134d8d1a... [MINOR] Simplified handling of aggregate operator correction info
+=======
+ * 234 Lineage tracing for spark instructions                         OK
+>>>>>>> fd208ffe... [SYSTEMDS-204] Fix corrupted rewrite binary comparison chains
 
 SYSTEMDS-240 GPU Backend Improvements
  * 241 Dense GPU cumulative aggregates 
