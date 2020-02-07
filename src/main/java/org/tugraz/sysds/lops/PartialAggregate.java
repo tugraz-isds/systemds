@@ -240,7 +240,11 @@ public class PartialAggregate extends Lop
 		return sb.toString();
 	}
 
+<<<<<<< HEAD
 	public static String getOpcode(AggOp op, Direction dir)
+=======
+	public static String getOpcode(AggOp op, Direction dir) 
+>>>>>>> 24a1f2cf... [SYSTEMDS-12] Remove hop-lop indirections (type consolidation)
 	{
 		switch( op )
 		{
@@ -252,7 +256,11 @@ public class PartialAggregate extends Lop
 					return "uak+";
 				else if( dir == Direction.Row )
 					return "uark+";
+<<<<<<< HEAD
 				else if( dir == Direction.Col )
+=======
+				else if( dir == Direction.Col ) 
+>>>>>>> 24a1f2cf... [SYSTEMDS-12] Remove hop-lop indirections (type consolidation)
 					return "uack+";
 				break;
 			}
@@ -304,9 +312,15 @@ public class PartialAggregate extends Lop
 			}
 			
 			case MAX: {
+<<<<<<< HEAD
 				if( dir == Direction.RowCol )
 					return "uamax";
 				else if( dir == Direction.Row )
+=======
+				if( dir == Direction.RowCol ) 
+					return "uamax";
+				else if( dir == Direction.Row ) 
+>>>>>>> 24a1f2cf... [SYSTEMDS-12] Remove hop-lop indirections (type consolidation)
 					return "uarmax";
 				else if( dir == Direction.Col )
 					return "uacmax";
@@ -314,11 +328,19 @@ public class PartialAggregate extends Lop
 			}
 			
 			case MIN: {
+<<<<<<< HEAD
 				if( dir == Direction.RowCol )
 					return "uamin";
 				else if( dir == Direction.Row )
 					return "uarmin";
 				else if( dir == Direction.Col )
+=======
+				if( dir == Direction.RowCol ) 
+					return "uamin";
+				else if( dir == Direction.Row ) 
+					return "uarmin";
+				else if( dir == Direction.Col ) 
+>>>>>>> 24a1f2cf... [SYSTEMDS-12] Remove hop-lop indirections (type consolidation)
 					return "uacmin";
 				break;
 			}
@@ -336,7 +358,11 @@ public class PartialAggregate extends Lop
 			}
 			
 			case TRACE: {
+<<<<<<< HEAD
 				if( dir == Direction.RowCol )
+=======
+				if( dir == Direction.RowCol ) 
+>>>>>>> 24a1f2cf... [SYSTEMDS-12] Remove hop-lop indirections (type consolidation)
 					return "uaktrace";
 				break;
 			}
