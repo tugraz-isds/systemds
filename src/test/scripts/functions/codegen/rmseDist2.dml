@@ -21,7 +21,6 @@
 #
 #-------------------------------------------------------------
 
-
 rmse = function(Matrix[Double] U, Matrix[Double] V, Matrix[Double] X) return(Double S) {
   D = sqrt(-2 * U %*% V + rowSums(U^2) + colSums(V^2))
   S = sum(rowSums((X != 0) * (X - D))^2)
@@ -61,7 +60,6 @@ V4 = t(U4)
 X4 = U4 %*% V4
 X4[1:150,] = matrix(0,150,300);
 S4 = rmse(U4, V4, X4)
-
 
 # -------------------------------------------------------------------
 if(S == S2 == S3 == S4)  {

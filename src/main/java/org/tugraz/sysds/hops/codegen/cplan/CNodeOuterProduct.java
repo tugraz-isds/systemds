@@ -54,6 +54,11 @@ public class CNodeOuterProduct extends CNodeTpl
 			+ "}\n";
 	
 	private OutProdType _type = null;
+
+	public MMTSJ.MMTSJType getMMTSJtype() {
+		return _mmtsj;
+	}
+
 	MMTSJ.MMTSJType _mmtsj;
 
 	private boolean _transposeOutput = false;
@@ -61,18 +66,18 @@ public class CNodeOuterProduct extends CNodeTpl
 	public CNodeOuterProduct(ArrayList<CNode> inputs, CNode output, MMTSJ.MMTSJType mmtsj) {
 		super(inputs,output);
 		_mmtsj = mmtsj;
+
+		// In case of a self transpose we need to add a duplicate input
+		if(_mmtsj != MMTSJ.MMTSJType.NONE)
+			_inputs.add(1,inputs.get(1));
 	}
 	
 	@Override
 	public void renameInputs() {
 		rRenameDataNode(_output, _inputs.get(0), "a");
 		rRenameDataNode(_output, _inputs.get(1), "a1"); // u
-		if(_mmtsj == MMTSJ.MMTSJType.NONE) {
-			rRenameDataNode(_output, _inputs.get(2), "a2"); // v
-			renameInputs(_inputs, 3);
-		}
-		else
-			renameInputs(_inputs, 2);
+		rRenameDataNode(_output, _inputs.get(2), "a2"); // v
+		renameInputs(_inputs, 3);
 	}
 	
 	@Override

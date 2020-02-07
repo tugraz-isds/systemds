@@ -3099,13 +3099,15 @@ public class LibMatrixMult
 	{
 		double val = 0;
 		final int bn = len%8;
-		
+
+//		System.out.println("ai=" + ai + " bi=" + bi + " len=" + len);
+
 		//compute rest
-		for( int i = 0; i < bn; i++, ai++, bi++ )
+		for(int i = 0; i < bn; i++, ai++, bi++)
 			val += a[ ai ] * b[ bi ];
 		
 		//unrolled 8-block (for better instruction-level parallelism)
-		for( int i = bn; i < len; i+=8, ai+=8, bi+=8 )
+		for(int i = bn; i < len; i+=8, ai+=8, bi+=8)
 		{
 			//read 64B cachelines of a and b
 			//compute cval' = sum(a * b) + cval

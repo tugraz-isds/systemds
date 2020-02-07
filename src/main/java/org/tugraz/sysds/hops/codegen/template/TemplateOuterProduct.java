@@ -132,10 +132,13 @@ public class TemplateOuterProduct extends TemplateBase {
 		Hop U = inHops2.get("_U");
 		Hop V = inHops2.get("_V");
 		LinkedList<Hop> sinHops = new LinkedList<>(inHops);
-		sinHops.remove(V); sinHops.addFirst(V);
-		sinHops.remove(U); sinHops.addFirst(U);
-		sinHops.remove(X); sinHops.addFirst(X);
-		
+		sinHops.remove(V);
+		sinHops.remove(U);
+		sinHops.remove(X);
+		sinHops.addFirst(V);
+		sinHops.addFirst(U);
+		sinHops.addFirst(X);
+
 		//construct template node
 		ArrayList<CNode> inputs = new ArrayList<>();
 		for( Hop in : sinHops )

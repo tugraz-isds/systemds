@@ -70,6 +70,7 @@ import org.tugraz.sysds.hops.rewrite.ProgramRewriteStatus;
 import org.tugraz.sysds.hops.rewrite.ProgramRewriter;
 import org.tugraz.sysds.hops.rewrite.RewriteCommonSubexpressionElimination;
 import org.tugraz.sysds.hops.rewrite.RewriteRemoveUnnecessaryCasts;
+import org.tugraz.sysds.lops.MMTSJ;
 import org.tugraz.sysds.parser.DMLProgram;
 import org.tugraz.sysds.parser.ForStatement;
 import org.tugraz.sysds.parser.ForStatementBlock;
@@ -602,10 +603,12 @@ public class SpoofCompiler
 			hnew = new SpoofFusedOp(hop.getName(), hop.getDataType(), hop.getValueType(), 
 					tmpCla.getValue(), false, tmpCNode.getOutputDimType());
 			Hop[] inHops = tmpCla.getKey();
-			for( int i=0; i<inHops.length; i++ ) {
-				if( tmpCNode instanceof CNodeOuterProduct 
+
+			for(int i=0; i<inHops.length; i++) {
+				if(tmpCNode instanceof CNodeOuterProduct
 					&& inHops[i].getHopID()==((CNodeData)tmpCNode.getInput().get(2)).getHopID()
-					&& !TemplateUtils.hasTransposeParentUnderOuterProduct(inHops[i]) ) {
+					&& (!TemplateUtils.hasTransposeParentUnderOuterProduct(inHops[i]) ||
+						(((CNodeOuterProduct) tmpCNode).getMMTSJtype() == MMTSJ.MMTSJType.LEFT))) {
 					hnew.addInput(HopRewriteUtils.createTranspose(inHops[i]));
 				}
 				else
