@@ -165,12 +165,17 @@ SYSTEMDS-200 Various Fixes
  * 201 Fix spark append instruction zero columns                      OK
  * 202 Fix rewrite split DAG multiple removeEmpty (pending op)        OK
 <<<<<<< HEAD
+<<<<<<< HEAD
  * 203 Fix codegen outer compilation (MV operations)                  OK
  * 204 Fix rewrite simplify sequences of binary comparisons           OK
  * 205 Fix scoping of builtin dml-bodied functions (vs user-defined)
 =======
  * 203 Fix codegen outer compilation (MV operations)
 >>>>>>> fa897a13... [SYSTEMDS-196] New rewrite for eliminating unnecessary rmEmpty ops
+=======
+ * 203 Fix codegen outer compilation (MV operations)                  OK
+ * 204 Fix rewrite simplify sequences of binary comparisons           OK
+>>>>>>> 134d8d1a... [MINOR] Simplified handling of aggregate operator correction info
 
 SYSTEMDS-210 Extended lists Operations
  * 211 Cbind and Rbind over lists of matrices                         OK
@@ -190,6 +195,7 @@ SYSTEMDS-220 Federated Tensors and Instructions
 SYSTEMDS-230 Lineage Integration
  * 231 Use lineage in buffer pool
 <<<<<<< HEAD
+<<<<<<< HEAD
  * 232 Lineage of code generated operators
  * 233 Lineage cache and reuse of function results                    OK
  * 234 Lineage tracing for spark instructions                         OK
@@ -202,6 +208,11 @@ SYSTEMDS-250 Large-Scale Slice Finding
 =======
  * 232 Lineage of generated operators
 >>>>>>> 24a1f2cf... [SYSTEMDS-12] Remove hop-lop indirections (type consolidation)
+=======
+ * 232 Lineage of code generated operators
+ * 233 Lineage cache and reuse of function results                    OK
+ * 234 Lineage tracing for spark instructions													OK
+>>>>>>> 134d8d1a... [MINOR] Simplified handling of aggregate operator correction info
 
 SYSTEMDS-240 GPU Backend Improvements
  * 241 Dense GPU cumulative aggregates 
