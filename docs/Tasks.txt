@@ -147,6 +147,7 @@ SYSTEMDS-190 New Builtin Functions III
  * 192 Extended cmdline interface -b for calling builtin functions
  * 193 New outlierBySds builtin function (delete row/cell)
 <<<<<<< HEAD
+<<<<<<< HEAD
  * 194 New outlierByIQR builtin function (delete row/cell)
  * 195 Builtin function mice for nominal features
  * 196 Builtin function intersect (set intersection)                  OK
@@ -154,13 +155,22 @@ SYSTEMDS-190 New Builtin Functions III
 =======
  * 194 New outlierByIQR builtin function (delte row/cell)
 >>>>>>> 24a1f2cf... [SYSTEMDS-12] Remove hop-lop indirections (type consolidation)
+=======
+ * 194 New outlierByIQR builtin function (delete row/cell)
+ * 195 Builtin function mice for nominal features
+ * 196 Builtin function intersect (set intersection)
+>>>>>>> fa897a13... [SYSTEMDS-196] New rewrite for eliminating unnecessary rmEmpty ops
 
 SYSTEMDS-200 Various Fixes
  * 201 Fix spark append instruction zero columns                      OK
  * 202 Fix rewrite split DAG multiple removeEmpty (pending op)        OK
+<<<<<<< HEAD
  * 203 Fix codegen outer compilation (MV operations)                  OK
  * 204 Fix rewrite simplify sequences of binary comparisons           OK
  * 205 Fix scoping of builtin dml-bodied functions (vs user-defined)
+=======
+ * 203 Fix codegen outer compilation (MV operations)
+>>>>>>> fa897a13... [SYSTEMDS-196] New rewrite for eliminating unnecessary rmEmpty ops
 
 SYSTEMDS-210 Extended lists Operations
  * 211 Cbind and Rbind over lists of matrices                         OK
@@ -193,8 +203,11 @@ SYSTEMDS-250 Large-Scale Slice Finding
  * 232 Lineage of generated operators
 >>>>>>> 24a1f2cf... [SYSTEMDS-12] Remove hop-lop indirections (type consolidation)
 
- SYSTEMDS-240 Student Projects
- * 241 Hidden Markov Models for Missing Value Imputation              OK
- 
+SYSTEMDS-240 GPU Backend Improvements
+ * 241 Dense GPU cumulative aggregates 
+
+SYSTEMDS-250 Large-Scale Slice Finding
+ * 251 Initial data slicing implementation Python
+
 Others:
  * Break append instruction to cbind and rbind 

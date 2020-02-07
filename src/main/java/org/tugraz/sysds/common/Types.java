@@ -159,13 +159,10 @@ public class Types
 				(this==LASTTWOROWS || this==LASTTWOCOLUMNS) ? 2 :
 				(this==LASTFOURROWS || this==LASTFOURCOLUMNS) ? 4 : 0;
 		}
-<<<<<<< HEAD
 		
 		public boolean isRows() {
 			return this == LASTROW || this == LASTTWOROWS || this == LASTFOURROWS;
 		}
-=======
->>>>>>> 24a1f2cf... [SYSTEMDS-12] Remove hop-lop indirections (type consolidation)
 	}
 	
 	public enum AggOp {
