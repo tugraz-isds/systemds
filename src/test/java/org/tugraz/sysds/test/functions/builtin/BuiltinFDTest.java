@@ -74,10 +74,14 @@ public class BuiltinFDTest extends AutomatedTestBase {
 			String HOME = SCRIPT_DIR + TEST_DIR;
 			fullDMLScriptName = HOME + TEST_NAME + ".dml";
 <<<<<<< HEAD
+<<<<<<< HEAD
 			programArgs = new String[]{"-stats","-args", input("X")};
 =======
 			programArgs = new String[]{"-args", input("X")};
 >>>>>>> 6589c93d... [SYSTEMDS-197] Builtin function for functional dependency discovery
+=======
+			programArgs = new String[]{"-stats","-args", input("X")};
+>>>>>>> f4b1afa5... [SYSTEMDS-197] Performance improvements functional dependency discovery
 			writeInputMatrixWithMTD("X", X, true);
 			runTest(true, false, null, -1);
 		}
