@@ -175,7 +175,11 @@ SYSTEMDS-200 Various Fixes
 =======
  * 203 Fix codegen outer compilation (MV operations)                  OK
  * 204 Fix rewrite simplify sequences of binary comparisons           OK
+<<<<<<< HEAD
 >>>>>>> 134d8d1a... [MINOR] Simplified handling of aggregate operator correction info
+=======
+ * 205 Fix scoping of builtin dml-bodied functions (vs user-defined)
+>>>>>>> afa6862b... [SYSTEMDS-185] Fix test conflict w/ dml-bodied pnmf builtin function
 
 SYSTEMDS-210 Extended lists Operations
  * 211 Cbind and Rbind over lists of matrices                         OK
