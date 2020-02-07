@@ -80,12 +80,6 @@ public class DMLConfig
 	public static final String EAGER_CUDA_FREE      = "sysds.gpu.eager.cudaFree"; // boolean: whether to perform eager CUDA free on rmvar
 	public static final String GPU_EVICTION_POLICY  = "sysds.gpu.eviction.policy"; // string: can be lru, lfu, min_evict
 	
-	// Yarn Specific static refs
-	public static final String YARN_APPMASTER       = "sysds.yarn.appmaster";
-	public static final String YARN_APPMASTERMEM    = "sysds.yarn.appmaster.mem";
-	public static final String YARN_MAPREDUCEMEM    = "sysds.yarn.mapreduce.mem";
-	public static final String YARN_APPQUEUE        = "sysds.yarn.app.queue"; 
-
 	// Fraction of available memory to use. The available memory is computer when the GPUContext is created
 	// to handle the tradeoff on calling cudaMemGetInfo too often.
 	public static final String GPU_MEMORY_UTILIZATION_FACTOR = "sysds.gpu.memory.util.factor";
