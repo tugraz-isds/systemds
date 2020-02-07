@@ -272,7 +272,7 @@ public class DMLOptions {
 		Option lineageOpt = OptionBuilder.withDescription("computes lineage traces")
 			.hasOptionalArgs().create("lineage");
 		Option fedOpt = OptionBuilder.withDescription("starts a federated worker with the given argument as the port.")
-			.hasArg().create("w");
+			.hasOptionalArg().create("w");
 		
 		options.addOption(configOpt);
 		options.addOption(cleanOpt);

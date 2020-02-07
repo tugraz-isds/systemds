@@ -88,7 +88,7 @@ public class DMLConfig
 	public static final String PRINT_GPU_MEMORY_INFO = "sysds.gpu.print.memoryInfo";
 	public static final String EVICTION_SHADOW_BUFFERSIZE = "sysds.gpu.eviction.shadow.bufferSize";
 	
-	public static final String DEFAULT_FEDERATED_PORT = "25501";
+	public static final String DEFAULT_FEDERATED_PORT = "4040"; // borrowed default Spark Port
 	public static final String DEFAULT_NUMBER_OF_FEDERATED_WORKER_THREADS = "10";
 
 	//internal config

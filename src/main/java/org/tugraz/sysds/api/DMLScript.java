@@ -148,19 +148,16 @@ public class DMLScript
 	}
 
 	/**
+	 *
 	 * @param args command-line arguments
+	 * @throws IOException if an IOException occurs
 	 */
 	public static void main(String[] args)
+		throws IOException
 	{
 		Configuration conf = new Configuration(ConfigurationManager.getCachedJobConf());
-		try{
-			String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
-			DMLScript.executeScript(conf, otherArgs);
-			
-		} catch (IOException e){
-			LOG.error(e);
-		}
-		
+		String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
+		DMLScript.executeScript(conf, otherArgs);
 	}
 
 	/**
@@ -171,7 +168,7 @@ public class DMLScript
 	 * @param args arguments
 	 * @return true if success, false otherwise
 	 */
-	//@SuppressWarnings("null")
+	@SuppressWarnings("null")
 	public static boolean executeScript( Configuration conf, String[] args ) {
 		//parse arguments and set execution properties
 		ExecMode oldrtplatform  = EXEC_MODE;  //keep old rtplatform
@@ -211,8 +208,8 @@ public class DMLScript
 				return true;
 			}
 			
-			if( dmlOptions.fedWorker ) {
-				startFederatedWorker(dmlOptions.fedWorkerPort);
+			if (dmlOptions.fedWorker) {
+				new FederatedWorker(dmlOptions.fedWorkerPort).run();
 				return true;
 			}
 			
@@ -533,17 +530,6 @@ public class DMLScript
 		}
 		catch(Exception ex) {
 			throw new DMLException("Failed to run SystemDS workspace cleanup.", ex);
-		}
-	}
-	
-	private static void startFederatedWorker(int port) {
-		try {
-			new FederatedWorker(port).run();
-		} catch (ParseException e) {
-			LOG.error("-w flag should be followed by valid port number");
-		}
-		catch (Exception e) {
-			LOG.error(e.getMessage());
 		}
 	}
 	

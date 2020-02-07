@@ -39,19 +39,24 @@ import java.util.Map;
 public class FederatedWorker {
 	protected static Logger log = Logger.getLogger(FederatedWorker.class);
 
-	public int _port;
+	private int _port;
+	private int _nrThreads = Integer.parseInt(DMLConfig.DEFAULT_NUMBER_OF_FEDERATED_WORKER_THREADS);
 	private IDSequence _seq = new IDSequence();
 	private Map<Long, CacheableData<?>> _vars = new HashMap<>();
 
 	public FederatedWorker(int port) {
-		_port = port;
+		if (port == -1) {
+			_port = Integer.parseInt(DMLConfig.DEFAULT_FEDERATED_PORT);
+		}
+		else {
+			_port = port;
+		}
 	}
 
 	public void run() throws Exception {
 		log.info("Setting up Federated Worker");
-		int nrThreads = Integer.parseInt(DMLConfig.DEFAULT_NUMBER_OF_FEDERATED_WORKER_THREADS);
-		EventLoopGroup bossGroup = new NioEventLoopGroup(nrThreads);
-		EventLoopGroup workerGroup = new NioEventLoopGroup(nrThreads);
+		EventLoopGroup bossGroup = new NioEventLoopGroup(_nrThreads);
+		EventLoopGroup workerGroup = new NioEventLoopGroup(_nrThreads);
 		ServerBootstrap b = new ServerBootstrap();
 		b.group(bossGroup, workerGroup).channel(NioServerSocketChannel.class)
 				.childHandler(new ChannelInitializer<SocketChannel>() {

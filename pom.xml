@@ -38,7 +38,7 @@
 			<url>http://www.apache.org/licenses/LICENSE-2.0.html</url>
 		</license>
 	</licenses>
-
+	
 	<properties>
 		<hadoop.version>2.6.0</hadoop.version>
 		<antlr.version>4.5.3</antlr.version>
@@ -316,9 +316,8 @@
 				</executions>
 			</plugin>
 
-
-			<!-- Currently, all tests are integration tests. -->
-			<plugin>
+			
+			<plugin> <!-- unit tests -->
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>2.18</version><!--$NO-MVN-MAN-VER$ -->
@@ -336,6 +335,7 @@
 			<plugin> <!-- integration tests -->
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-failsafe-plugin</artifactId>
+	
 				<executions>
 					<execution>
 						<goals>
@@ -433,10 +433,6 @@
 					</execution>
 				</executions>
 			</plugin>
-
-
-
-
 
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -613,7 +609,8 @@
 												</goals>
 											</pluginExecutionFilter>
 											<action>
-												<ignore></ignore>
+												<ignore>
+												</ignore>
 											</action>
 										</pluginExecution>
 										<pluginExecution>
@@ -626,7 +623,8 @@
 												</goals>
 											</pluginExecutionFilter>
 											<action>
-												<ignore></ignore>
+												<ignore>
+												</ignore>
 											</action>
 										</pluginExecution>
 										<pluginExecution>
@@ -639,7 +637,8 @@
 												</goals>
 											</pluginExecutionFilter>
 											<action>
-												<ignore></ignore>
+												<ignore>
+												</ignore>
 											</action>
 										</pluginExecution>
 										<pluginExecution>
@@ -654,7 +653,8 @@
 												</goals>
 											</pluginExecutionFilter>
 											<action>
-												<ignore></ignore>
+												<ignore>
+												</ignore>
 											</action>
 										</pluginExecution>
 										<pluginExecution>
@@ -667,7 +667,8 @@
 												</goals>
 											</pluginExecutionFilter>
 											<action>
-												<ignore></ignore>
+												<ignore>
+												</ignore>
 											</action>
 										</pluginExecution>
 									</pluginExecutions>
@@ -755,9 +756,9 @@
 			</properties>
 		</profile>
 
-		<!-- Profile to create binary distributions. Execute with `mvn clean package 
-			-P distribution` -->
 		<profile>
+			<!-- Profile to create binary distributions. Execute with `mvn clean package 
+				-P distribution` -->
 			<id>distribution</id>
 			<build>
 				<plugins>
@@ -918,6 +919,13 @@
 					</plugin>
 				</plugins>
 			</build>
+			<dependencies>
+				<dependency>
+					<groupId>io.netty</groupId>
+					<artifactId>netty-all</artifactId>
+					<version>4.0.42.Final</version>
+				</dependency>
+			</dependencies>
 		</profile>
 
 	</profiles>
@@ -930,12 +938,12 @@
 			<version>${jcuda.version}</version>
 			<scope>${jcuda.scope}</scope>
 			<exclusions>
-				<exclusion>
-					<!-- always exclude recursive fetching of native libraries -->
-					<groupId>org.jcuda</groupId>
+	        	<exclusion>  
+	        		<!-- always exclude recursive fetching of native libraries -->
+	          		<groupId>org.jcuda</groupId>
 					<artifactId>jcuda-natives</artifactId>
-				</exclusion>
-			</exclusions>
+	        	</exclusion>
+	      	</exclusions> 
 		</dependency>
 		<dependency>
 			<groupId>org.jcuda</groupId>
@@ -943,12 +951,12 @@
 			<version>${jcuda.version}</version>
 			<scope>${jcuda.scope}</scope>
 			<exclusions>
-				<exclusion>
-					<!-- always exclude recursive fetching of native libraries -->
-					<groupId>org.jcuda</groupId>
+	        	<exclusion>  
+	        		<!-- always exclude recursive fetching of native libraries -->
+	          		<groupId>org.jcuda</groupId>
 					<artifactId>jcublas-natives</artifactId>
-				</exclusion>
-			</exclusions>
+	        	</exclusion>
+	      	</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.jcuda</groupId>
@@ -956,12 +964,12 @@
 			<version>${jcuda.version}</version>
 			<scope>${jcuda.scope}</scope>
 			<exclusions>
-				<exclusion>
-					<!-- always exclude recursive fetching of native libraries -->
-					<groupId>org.jcuda</groupId>
+	        	<exclusion>  
+	        		<!-- always exclude recursive fetching of native libraries -->
+	          		<groupId>org.jcuda</groupId>
 					<artifactId>jcusparse-natives</artifactId>
-				</exclusion>
-			</exclusions>
+	        	</exclusion>
+	      	</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.jcuda</groupId>
@@ -969,12 +977,12 @@
 			<version>${jcuda.version}</version>
 			<scope>${jcuda.scope}</scope>
 			<exclusions>
-				<exclusion>
-					<!-- always exclude recursive fetching of native libraries -->
-					<groupId>org.jcuda</groupId>
+	        	<exclusion>  
+	        		<!-- always exclude recursive fetching of native libraries -->
+	          		<groupId>org.jcuda</groupId>
 					<artifactId>jcusolver-natives</artifactId>
-				</exclusion>
-			</exclusions>
+	        	</exclusion>
+	      	</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.jcuda</groupId>
@@ -982,12 +990,12 @@
 			<version>${jcuda.version}</version>
 			<scope>${jcuda.scope}</scope>
 			<exclusions>
-				<exclusion>
-					<!-- always exclude recursive fetching of native libraries -->
-					<groupId>org.jcuda</groupId>
+	        	<exclusion>  
+	        		<!-- always exclude recursive fetching of native libraries -->
+	          		<groupId>org.jcuda</groupId>
 					<artifactId>jcudnn-natives</artifactId>
-				</exclusion>
-			</exclusions>
+	        	</exclusion>
+	      	</exclusions>
 		</dependency>
 
 		<!-- for all platforms, to be included in the extra jar -->
@@ -1100,8 +1108,8 @@
 			<scope>${jcuda.scope}</scope>
 		</dependency>
 		 -->
-
-		<!-- Commented until the MacOS jcuda libraries are deployed for 0.9.0 version
+		 
+		 <!-- Commented until the MacOS jcuda libraries are deployed for 0.9.0 version
 		<dependency>
 			<groupId>org.jcuda</groupId>
 			<artifactId>jcuda-natives</artifactId>
@@ -1226,7 +1234,7 @@
 			<groupId>org.codehaus.janino</groupId>
 			<artifactId>janino</artifactId>
 			<version>3.0.8</version>
-			<!--<scope>provided</scope>-->
+			<scope>provided</scope>
 		</dependency>
 
 		<dependency>
@@ -1293,8 +1301,7 @@
 			<groupId>io.netty</groupId>
 			<artifactId>netty-all</artifactId>
 			<version>4.0.42.Final</version>
-			<!--<scope>provided</scope>-->
-
+			<scope>provided</scope>
 		</dependency>
 	</dependencies>
 
