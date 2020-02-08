@@ -44,7 +44,7 @@ extern "C" __global__ void cumulative_sum_down_sweep_d(double *g_idata, double *
     uint cols, uint block_height)
 {
 	SumOp<double> op;
-	cumulative_scan_down_sweep<SumOp<double>, double>(g_idata, g_odata, g_tdata, rows, cols, block_height, op);
+	cumulative_scan_down_sweep<SumOp<double>, SumNeutralElement<double>, double>(g_idata, g_odata, g_tdata, rows, cols, block_height, op);
 }
 
 /**
@@ -54,7 +54,7 @@ extern "C" __global__ void cumulative_sum_down_sweep_f(float *g_idata, float *g_
     uint cols, uint block_height)
 {
 	SumOp<float> op;
-	cumulative_scan_down_sweep<SumOp<float>, float>(g_idata, g_odata, g_tdata, rows, cols, block_height, op);
+	cumulative_scan_down_sweep<SumOp<float>, SumNeutralElement<float>, float>(g_idata, g_odata, g_tdata, rows, cols, block_height, op);
 }
 
 #endif // __CUM_SUM_H

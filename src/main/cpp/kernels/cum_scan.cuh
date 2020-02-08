@@ -40,7 +40,7 @@ __device__ void cumulative_scan_up_sweep(T *g_idata, T *g_tdata, uint rows, uint
 }
 
 // --------------------------------------------------------
-template<typename scanOp, typename T>
+template<typename scanOp, typename NeutralElement, typename T>
 __device__ void cumulative_scan_down_sweep(T *g_idata, T *g_odata, T *g_tdata, uint rows, uint cols, uint block_height, 
 	scanOp scan_op)
 {
@@ -52,7 +52,7 @@ __device__ void cumulative_scan_down_sweep(T *g_idata, T *g_odata, T *g_tdata, u
 	int offset_idx = blockIdx.y * cols + blockIdx.x * blockDim.x + threadIdx.x;
 	
     // initial accumulator value
-	T acc = (gridDim.y > 1) ? ((blockIdx.y > 0) ? g_tdata[offset_idx-1] : 0.0) : 0.0;
+	T acc = (gridDim.y > 1) ? ((blockIdx.y > 0) ? g_tdata[offset_idx-1] : NeutralElement::get()) : NeutralElement::get();
 
 	// if(threadIdx.x == 0)
 	// {
