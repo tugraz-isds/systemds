@@ -56,7 +56,7 @@ public class FederatedUrlParserTest {
         String[] values = InitFEDInstruction.parseURL("192.13.4.2:132/file.txt");
         assertEquals("192.13.4.2", values[0]);
         assertEquals("132", values[1]);
-        assertEquals("/file.txt", values[2]);
+        assertEquals("file.txt", values[2]);
     }
 
     @Test
@@ -65,7 +65,7 @@ public class FederatedUrlParserTest {
         String[] values = InitFEDInstruction.parseURL("123.123.41.22/file.txt");
         assertEquals("123.123.41.22", values[0]);
         assertEquals(DMLConfig.DEFAULT_FEDERATED_PORT, values[1]);
-        assertEquals("/file.txt", values[2]);
+        assertEquals("file.txt", values[2]);
     }
 
     @Test
@@ -74,7 +74,7 @@ public class FederatedUrlParserTest {
         String[] values = InitFEDInstruction.parseURL("hello.com:132/file.txt");
         assertEquals("hello.com", values[0]);
         assertEquals("132", values[1]);
-        assertEquals("/file.txt", values[2]);
+        assertEquals("file.txt", values[2]);
     }
 
     @Test
@@ -83,7 +83,7 @@ public class FederatedUrlParserTest {
         String[] values = InitFEDInstruction.parseURL("hello.com/file.txt");
         assertEquals("hello.com", values[0]);
         assertEquals(DMLConfig.DEFAULT_FEDERATED_PORT, values[1]);
-        assertEquals("/file.txt", values[2]);
+        assertEquals("file.txt", values[2]);
     }
 
     @Test
@@ -93,28 +93,49 @@ public class FederatedUrlParserTest {
         String[] values = InitFEDInstruction.parseURL("今日は.世界/file.txt");
         assertEquals("今日は.世界", values[0]);
         assertEquals(DMLConfig.DEFAULT_FEDERATED_PORT, values[1]);
-        assertEquals("/file.txt", values[2]);
+        assertEquals("file.txt", values[2]);
     }
 
     @Test
     public void parseFilePath_1() {
         // Parse Filepath even if it is nested.
         String[] values = InitFEDInstruction.parseURL("今日は.世界/fu_u_u/bar.txt");
-        assertEquals("/fu_u_u/bar.txt", values[2]);
+        assertEquals("fu_u_u/bar.txt", values[2]);
     }
 
     @Test
     public void parseFilePath_2() {
         // Parse Filepath even if it is a folder out.
         String[] values = InitFEDInstruction.parseURL("今日は.世界/../bar.txt");
-        assertEquals("/../bar.txt", values[2]);
+        assertEquals("../bar.txt", values[2]);
     }
 
     @Test
     public void parseFilePath_3() {
         // Parse Filepath with special characters.
         String[] values = InitFEDInstruction.parseURL("今日は.世界/../bar世界.txt");
-        assertEquals("/../bar世界.txt", values[2]);
+        assertEquals("../bar世界.txt", values[2]);
+    }
+
+    @Test
+    public void parseStaticFilePath_1() {
+        // Parse Filepath even if it is nested.
+        String[] values = InitFEDInstruction.parseURL("今日は.世界//fu_u_u/bar.txt");
+        assertEquals("/fu_u_u/bar.txt", values[2]);
+    }
+
+    @Test
+    public void parseStaticFilePath_2() {
+        // Parse Filepath even if it is a folder out.
+        String[] values = InitFEDInstruction.parseURL("今日は.世界//bar.txt");
+        assertEquals("/bar.txt", values[2]);
+    }
+
+    @Test
+    public void parseStaticFilePath_3() {
+        // Parse Filepath with special characters.
+        String[] values = InitFEDInstruction.parseURL("今日は.世界//bar世界.txt");
+        assertEquals("/bar世界.txt", values[2]);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -135,13 +156,12 @@ public class FederatedUrlParserTest {
         InitFEDInstruction.parseURL("今日は.世界/../bar世界.txt?please#dont");
     }
 
-
     @Test
-    public void checkDefaultPortIsValid(){
+    public void checkDefaultPortIsValid() {
         int defaultPort = Integer.parseInt(DMLConfig.DEFAULT_FEDERATED_PORT);
-        // The highest port number allowed. 
+        // The highest port number allowed.
         int IANA_limit = 49152;
-        assert(defaultPort <= IANA_limit);
-        assert(defaultPort > 0);
+        assert (defaultPort <= IANA_limit);
+        assert (defaultPort > 0);
     }
 }
