@@ -2314,24 +2314,23 @@ public class LibMatrixCUDA {
 			// storage for last value of each block
 			Pointer blk_res = gCtx.allocate(instName, cols * blocks_y * sizeOfDataType);
 
-			alloc_duration = printKernelTiming(time, "allocation of temporary buffer (" + cols * blocks_y * sizeOfDataType +
-					" bytes)", alloc_duration, 0);
+			alloc_duration = printKernelTiming(time, "allocation of temporary buffer (" +
+					cols * blocks_y * sizeOfDataType + " bytes)", alloc_duration, 0);
 
-			getCudaKernels(gCtx).launchKernel(kernelFunction, new ExecutionConfig(blocks_x, blocks_y, threads_x,
-					1, sharedMem), input, output, blk_res, rows, cols, block_height);
+			getCudaKernels(gCtx).launchKernel(kernelFunction + "_up_sweep", new ExecutionConfig(blocks_x, blocks_y,
+					threads_x, 1, 0), input, blk_res, rows, cols, block_height);
 
-			total_duration = printKernelTiming(time, kernelFunction, total_duration, 0);
+			total_duration = printKernelTiming(time, kernelFunction + "_up_sweep", total_duration, 0);
 
-			getCudaKernels(gCtx).launchKernel(kernelFunction, new ExecutionConfig(blocks_x, 1, threads_x,
-					1, sharedMem), blk_res, blk_res, 0, blocks_y, cols, blocks_y);
+			getCudaKernels(gCtx).launchKernel(kernelFunction + "_down_sweep", new ExecutionConfig(blocks_x, 1,
+					threads_x, 1, 0), blk_res, blk_res, blk_res, blocks_y, cols, blocks_y);
 
-			total_duration = printKernelTiming(time, kernelFunction, total_duration, 0);
+			total_duration = printKernelTiming(time, kernelFunction + "_down_sweep", total_duration, 0);
 
-			getCudaKernels(gCtx).launchKernel(kernelFunction + "_process_block_results", new ExecutionConfig(blocks_x,
-							blocks_y - 1, threads_x, 1, 0), blk_res, output, rows,
-							cols, block_height);
+			getCudaKernels(gCtx).launchKernel(kernelFunction + "_down_sweep", new ExecutionConfig(blocks_x,
+							blocks_y, threads_x, 1, 0), input, output, blk_res, rows, cols, block_height);
 
-			total_duration = printKernelTiming(time, "cumulative_scan_process_block_results", total_duration, 0);
+			total_duration = printKernelTiming(time, "final cumulative_scan_down_sweep", total_duration, 0);
 			if(LOG.isTraceEnabled()) { LOG.trace("total kernel execution time: " + total_duration + "ms."); }
 
 			gCtx.cudaFreeHelper(instName, blk_res, DMLScript.EAGER_CUDA_FREE);
@@ -2351,8 +2350,8 @@ public class LibMatrixCUDA {
 			Timing time = new Timing(true);
 			double duration = 0;
 
-			getCudaKernels(gCtx).launchKernel(kernelFunction, new ExecutionConfig(blocks_x, 1, threads_x,
-					1, sharedMem), input, output, 0, rows, cols, block_height);
+			getCudaKernels(gCtx).launchKernel(kernelFunction + "_down_sweep", new ExecutionConfig(blocks_x, 1, threads_x,
+					1, sharedMem), input, output, input, rows, cols, block_height);
 
 			if(LOG.isTraceEnabled()) {
 				cudaDeviceSynchronize();
