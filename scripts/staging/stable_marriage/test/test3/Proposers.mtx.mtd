@@ -1,0 +1,7 @@
+{ 
+    "data_type": "matrix",
+    "value_type": "double",
+    "rows": 40,
+    "cols": 40,
+    "format": "csv"
+}
