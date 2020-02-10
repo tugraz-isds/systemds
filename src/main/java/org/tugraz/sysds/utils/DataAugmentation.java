@@ -81,7 +81,7 @@ public class DataAugmentation {
 	 * marking them with the label typos.
 	 * 
 	 * @param frame Original frame block
-	 * @param strings List with the columns of string type, generated during preprocessing
+	 * @param strings List with the columns of string type that can be changed, generated during preprocessing or manually selected
 	 * @param pTypo Probability of adding a typo to a row
 	 * @return A new frameblock with typos
 	 * 
@@ -156,7 +156,7 @@ public class DataAugmentation {
 	 * and marking them with the label outlier.
 	 * 
 	 * @param frame Original frame block
-	 * @param numerics List with the columns of numeric type, generated during preprocessing
+	 * @param numerics List with the columns of numeric type that can be changed, generated during preprocessing or manually selected
 	 * @param pOut Probability of introducing an outlier in a row
 	 * @param pPos Probability of using positive deviation
 	 * @param times Times the standard deviation is added
@@ -177,8 +177,7 @@ public class DataAugmentation {
 			if(rand.nextDouble()>pOut) continue;
 			int c = numerics.get(rand.nextInt(numerics.size()));
 			if(!stds.containsKey(c)) {
-				switch(frame.getSchema()[c]) {
-				case INT32:{
+				if(frame.getSchema()[c].equals(ValueType.INT32)) {
 					List<Integer> l = new ArrayList<Integer>();
 					for(int i=0;i<frame.getNumRows();i++) {
 						l.add((Integer) frame.get(i, c));
@@ -197,9 +196,7 @@ public class DataAugmentation {
 					}
 					
 					stds.put(c, Math.sqrt(sum/l.size()));
-				}
-					break;
-				case INT64:{
+				} else if(frame.getSchema()[c].equals(ValueType.INT64)) {
 					List<Long> l = new ArrayList<Long>();
 					for(int i=0;i<frame.getNumRows();i++) {
 						l.add((Long) frame.get(i, c));
@@ -218,9 +215,7 @@ public class DataAugmentation {
 					}
 					
 					stds.put(c, Math.sqrt(sum/l.size()));
-				}
-					break;
-				case FP32:{
+				} else if(frame.getSchema()[c].equals(ValueType.FP32)) {
 					List<Float> l = new ArrayList<Float>();
 					for(int i=0;i<frame.getNumRows();i++) {
 						l.add((Float) frame.get(i, c));
@@ -239,9 +234,7 @@ public class DataAugmentation {
 					}
 					
 					stds.put(c, Math.sqrt(sum/l.size()));
-				}
-					break;
-				case FP64:{
+				} else if(frame.getSchema()[c].equals(ValueType.FP64)) {
 					List<Double> l = new ArrayList<Double>();
 					for(int i=0;i<frame.getNumRows();i++) {
 						l.add((Double) frame.get(i, c));
@@ -261,10 +254,7 @@ public class DataAugmentation {
 					
 					stds.put(c, Math.sqrt(sum/l.size()));
 				}
-					break;
-				default:
-					break;
-				}				
+								
 			}
 			
 			Double std = stds.get(c);

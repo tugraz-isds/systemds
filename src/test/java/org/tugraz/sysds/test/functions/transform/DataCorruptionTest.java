@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.tugraz.sysds.test.applications;
+package org.tugraz.sysds.test.functions.transform;
 
 import static org.junit.Assert.*;
 
@@ -40,23 +40,29 @@ public class DataCorruptionTest{
 	private List<Integer> stringpos;
 	private List<Integer> swappable;
 	
+	// Set input frame
 	@BeforeClass
 	public static void init() {
-		ValueType[] schema = new ValueType[] {ValueType.STRING, ValueType.INT32};
+		ValueType[] schema = new ValueType[] {ValueType.STRING, ValueType.STRING, ValueType.INT32, ValueType.FP64};
 		ori = new FrameBlock(schema);
 		String[] strings = new String[] { 
 				  "Toyota", "Mercedes", "BMW", "Volkswagen", "Skoda" };
+		String[] strings2 = new String[] { 
+				  "Austria", "Spain", "France", "United Kingdom"};
 		Random rand = new Random();
 		
 		for(int i = 0; i<1000; i++) {
-			Object[] row = new Object[2];
+			Object[] row = new Object[4];
 			row[0] = strings[rand.nextInt(strings.length)];
-			row[1] = rand.nextInt(1000);
+			row[1] = strings2[rand.nextInt(strings2.length)];
+			row[2] = rand.nextInt(1000);
+			row[3] = rand.nextGaussian();
 			
 			ori.appendRow(row);
 		}
 	}
 	
+	// Reset lists and output frame
 	@Before
 	public void testInit() {
 		numerics = new ArrayList<Integer>();
@@ -64,43 +70,6 @@ public class DataCorruptionTest{
 		swappable = new ArrayList<Integer>();
 		changed = DataAugmentation.preprocessing(ori, numerics, stringpos, swappable);
 	}
-	// Split into multiple test
-	
-//	@Test
-//	public void testDataCorruption() {
-//		ValueType[] schema = new ValueType[] {ValueType.STRING, ValueType.INT32};
-//		FrameBlock ori = new FrameBlock(schema);
-//		String[] strings = new String[] { 
-//				  "Toyota", "Mercedes", "BMW", "Volkswagen", "Skoda" };
-//		Random rand = new Random();
-//		
-//		for(int i = 0; i<1000; i++) {
-//			Object[] row = new Object[2];
-//			row[0] = strings[rand.nextInt(strings.length)];
-//			row[1] = rand.nextInt(10000);
-//			
-//			ori.appendRow(row);
-//		}
-//		
-//		FrameBlock changed = DataAugmentation.dataCorruption(ori, 0.2, 0.4, 0.8, 0.6);
-//		
-//		for(int i = 0; i<1000; i++) {
-//			switch((String) changed.get(i, changed.getNumColumns()-1)) {
-//			case "typo":
-//				String or = (String) ori.get(i, 0);
-//				String ch = (String) changed.get(i, 0);
-//				System.out.println(ori.get(i, 0) + " -> " + changed.get(i, 0));
-//				assertNotEquals("Typo test", or, ch);
-//				break;
-//			case "missing":
-//				break;
-//			case "outlier":
-//				Integer nor = (Integer) ori.get(i, 1);
-//				Integer nch = (Integer) changed.get(i, 1);
-//				assertTrue(nch/nor==100);
-//			}
-//		}
-//	}
 	
 	@Test
 	public void testTypos() {
@@ -111,9 +80,14 @@ public class DataCorruptionTest{
 			String label = (String) changed.get(i, changed.getNumColumns()-1);
 			if(label.equals("typo")) {
 				numch++;
-				String val = (String) ori.get(i, 0);
-				String valch = (String) changed.get(i, 0);
-				assertNotEquals("Row "+i+" was marked with typos, but it has not been changed.", val, valch);
+				boolean checkTypo = false;
+				for(int c:stringpos) {
+					String val = (String) ori.get(i, c);
+					String valch = (String) changed.get(i, c);
+					checkTypo = checkTypo || !val.equals(valch);
+					if(checkTypo) break;
+				}
+				assertTrue("Row "+i+" was marked with typos, but it has not been changed.", checkTypo);
 			}
 		}
 		System.out.println("Test typos: number of changed rows: " + numch);
@@ -131,7 +105,8 @@ public class DataCorruptionTest{
 			if(label.equals("missing")) {
 				int dropped = 0;
 				for(int c=0;c<ori.getNumColumns();c++) {
-					if((ori.get(i, c)!=null && !ori.get(i, c).equals(0)) && (changed.get(i, c)==null || changed.get(i, c).equals(0))) dropped++;
+					if((ori.get(i, c)!=null && !ori.get(i, c).equals(0) && !ori.get(i, c).equals(0d) && !ori.get(i, c).equals(0L) && !ori.get(i, c).equals(0f)) && 
+							(changed.get(i, c)==null || changed.get(i, c).equals(0) || changed.get(i, c).equals(0d) || changed.get(i, c).equals(0L) || changed.get(i, c).equals(0f))) dropped++;
 				}
 				numch++;
 				assertTrue("Row "+i+" was marked with missing values, but it has not been changed.", dropped>0);
@@ -150,9 +125,28 @@ public class DataCorruptionTest{
 			String label = (String) changed.get(i, changed.getNumColumns()-1);
 			if(label.equals("outlier")) {
 				numch++;
-				Integer val = (Integer) ori.get(i, 1);
-				Integer valch = (Integer) changed.get(i, 1);
-				assertNotEquals("Row "+i+" was marked with outliers, but it has not been changed.", val, valch);
+				boolean checkOut = false;
+				for(int c:numerics) {
+					if(changed.getSchema()[c].equals(ValueType.INT32)) {
+						Integer val = (Integer) ori.get(i, c);
+						Integer valch = (Integer) changed.get(i, c);
+						checkOut = checkOut || !val.equals(valch);
+					} else if(changed.getSchema()[c].equals(ValueType.INT64)) {
+						Long val = (Long) ori.get(i, c);
+						Long valch = (Long) changed.get(i, c);
+						checkOut = checkOut || !val.equals(valch);
+					} else if(changed.getSchema()[c].equals(ValueType.FP32)) {
+						Float val = (Float) ori.get(i, c);
+						Float valch = (Float) changed.get(i, c);
+						checkOut = checkOut || !val.equals(valch);
+					} else if(changed.getSchema()[c].equals(ValueType.FP64)) {
+						Double val = (Double) ori.get(i, c);
+						Double valch = (Double) changed.get(i, c);
+						checkOut = checkOut || !val.equals(valch);
+					}
+					if(checkOut) break;
+				}
+				assertTrue("Row "+i+" was marked with outliers, but it has not been changed.", checkOut);
 			}
 		}
 		System.out.println("Test outliers: number of changed rows: " + numch);
