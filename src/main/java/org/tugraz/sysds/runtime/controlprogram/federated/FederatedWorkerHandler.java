@@ -75,19 +75,19 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 
 	@Override
 	public void channelRead(ChannelHandlerContext ctx, Object msg) {
-		log.debug("[Federated Worker] Received: " + msg.getClass().getSimpleName());
+		log.debug("Received: " + msg.getClass().getSimpleName());
 		FederatedRequest request;
 		if (msg instanceof FederatedRequest)
 			request = (FederatedRequest) msg;
 		else
 			throw new DMLRuntimeException("FederatedWorkerHandler: Received object no instance of `FederatedRequest`.");
 		FederatedRequest.FedMethod method = request.getMethod();
-		log.debug("[Federated Worker] Received command: " + method.name());
+		log.debug("Received command: " + method.name());
 
 		synchronized (_seq) {
 			FederatedResponse response = constructResponse(request);
 			if (!response.isSuccessful())
-				log.error("[Federated Worker] Method " + method + " failed: " + response.getErrorMessage());
+				log.error("Method " + method + " failed: " + response.getErrorMessage());
 			ctx.writeAndFlush(response).addListener(new CloseListener());
 		}
 	}
@@ -111,7 +111,7 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 					break;
 
 				default:
-					String message = String.format("[Federated Worker] Method %s is not supported.", method);
+					String message = String.format("Method %s is not supported.", method);
 					response = new FederatedResponse(FederatedResponse.Type.ERROR, message);
 			}
 		}
@@ -307,7 +307,7 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 		@Override
 		public void operationComplete(ChannelFuture channelFuture) throws InterruptedException, DMLRuntimeException {
 			if (!channelFuture.isSuccess())
-				throw new DMLRuntimeException("[Federated Worker] Write failed");
+				throw new DMLRuntimeException("Federated Worker Write failed");
 			channelFuture.channel().close().sync();
 		}
 	}
