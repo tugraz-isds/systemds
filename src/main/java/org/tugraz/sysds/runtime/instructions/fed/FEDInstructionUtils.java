@@ -24,7 +24,6 @@ import org.tugraz.sysds.runtime.instructions.cp.AggregateUnaryCPInstruction;
 import org.tugraz.sysds.runtime.instructions.cp.Data;
 import org.tugraz.sysds.runtime.instructions.cp.VariableCPInstruction;
 import org.tugraz.sysds.runtime.instructions.spark.AggregateUnarySPInstruction;
-import org.tugraz.sysds.runtime.instructions.spark.AppendGAlignedSPInstruction;
 import org.tugraz.sysds.runtime.instructions.spark.MapmmSPInstruction;
 import org.tugraz.sysds.runtime.instructions.spark.WriteSPInstruction;
 
@@ -59,7 +58,7 @@ public class FEDInstructionUtils {
 			Data data = ec.getVariable(instruction.input1);
 			if (data instanceof MatrixObject && ((MatrixObject) data).isFederated()) {
 				return new AggregateBinaryFEDInstruction(instruction.getOperator(),
-					instruction.input1, instruction.input2, instruction.output, "ba+*", "FED...");
+					instruction.input1, instruction.input2, instruction.output, "ba+*", "FED..."); 
 				// TODO correct FED instruction string
 			}
 		}
@@ -75,14 +74,6 @@ public class FEDInstructionUtils {
 			if (data instanceof MatrixObject && ((MatrixObject) data).isFederated()) {
 				// Write spark instruction can not be executed for federeted matrix objects (tries to get rdds which do not exist)
 				return VariableCPInstruction.parseInstruction(instruction.getInstructionString());
-			}
-		}
-		else if (inst instanceof AppendGAlignedSPInstruction) {
-			// TODO other Append Spark instructions
-			AppendGAlignedSPInstruction instruction = (AppendGAlignedSPInstruction) inst;
-			Data data = ec.getVariable(instruction.input1);
-			if (data instanceof MatrixObject && ((MatrixObject) data).isFederated()) {
-				return AppendFEDInstruction.parseInstruction(instruction.getInstructionString());
 			}
 		}
 		return inst;

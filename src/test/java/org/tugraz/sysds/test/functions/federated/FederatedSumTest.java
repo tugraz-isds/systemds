@@ -114,8 +114,8 @@ public class FederatedSumTest extends AutomatedTestBase {
 			loadTestConfiguration(config);
 			fullDMLScriptName = HOME + TEST_NAME + ".dml";
 			programArgs = new String[] {"-explain", "-args", "\"localhost:" + port + "/" + input("A") + "\"",
-				Integer.toString(rows), Integer.toString(cols), Integer.toString(rows * 2), output("S"),
-				output("R"), output("C")};
+					Integer.toString(rows), Integer.toString(cols), Integer.toString(rows * 2), output("S"),
+					output("R"), output("C")};
 			
 			runTest(true, false, null, -1);
 			

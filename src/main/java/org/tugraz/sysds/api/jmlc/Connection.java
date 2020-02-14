@@ -90,7 +90,6 @@ public class Connection implements Closeable
 {
 	private final DMLConfig _dmlconf;
 	private final CompilerConfig _cconf;
-	private static FileSystem fs = null;
 	
 	/**
 	 * Connection constructor, the starting point for any other JMLC API calls.
@@ -311,9 +310,9 @@ public class Connection implements Closeable
 				|| IOUtilFunctions.isObjectStoreFileScheme(new Path(fname)) ) 
 			{ 
 				Path scriptPath = new Path(fname);
-				fs = IOUtilFunctions.getFileSystem(scriptPath);
-				in = new BufferedReader(new InputStreamReader(fs.open(scriptPath)));
-
+				try(FileSystem fs = IOUtilFunctions.getFileSystem(scriptPath) ) {
+					in = new BufferedReader(new InputStreamReader(fs.open(scriptPath)));
+				}
 			}
 			// from local file system
 			else { 
@@ -328,8 +327,6 @@ public class Connection implements Closeable
 			}
 		}
 		finally {
-			if(fs != null)
-				fs.close();
 			IOUtilFunctions.closeSilently(in);
 		}
 		
