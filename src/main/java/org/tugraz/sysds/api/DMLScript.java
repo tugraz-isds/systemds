@@ -150,7 +150,7 @@ public class DMLScript
 	/**
 	 *
 	 * @param args command-line arguments
-	 * @throws IOException if an IOException occurs
+	 * @throws IOException if an IOException occurs in the hadoop GenericOptionsParser
 	 */
 	public static void main(String[] args)
 		throws IOException
@@ -238,7 +238,6 @@ public class DMLScript
 		catch (ParseException | DMLScriptException e) {
 			// In case of DMLScriptException, simply print the error message.
 			LOG.error(e.getMessage());
-			throw e;
 		}
 		catch(Exception ex) {
 			LOG.error("Failed to execute DML script.", ex);
