@@ -239,7 +239,7 @@ public class DMLScript
 			// In case of DMLScriptException, simply print the error message.
 			LOG.error(e.getMessage());
 		}
-		catch(Exception ex) {
+		catch(IOException ex) {
 			LOG.error("Failed to execute DML script.", ex);
 			throw new DMLException(ex);
 		}

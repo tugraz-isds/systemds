@@ -53,7 +53,7 @@ public class FederatedWorker {
 		}
 	}
 
-	public void run() throws Exception {
+	public void run() {
 		log.info("Setting up Federated Worker");
 		EventLoopGroup bossGroup = new NioEventLoopGroup(_nrThreads);
 		EventLoopGroup workerGroup = new NioEventLoopGroup(_nrThreads);
