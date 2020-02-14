@@ -122,8 +122,6 @@ public enum Builtins {
 	NAIVEBAYES("naivebayes", true, false),
 	OUTER("outer", false),
 	OUTLIER("outlier", true, false), //TODO parameterize opposite
-	OUTLIER_SD("outlierBySd", true),
-	OUTLIER_IQR("outlierByIQR", true),
 	PNMF("pnmf", true),
 	PPRED("ppred", false),
 	PROD("prod", false),

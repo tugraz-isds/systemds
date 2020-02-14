@@ -97,24 +97,25 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 		FederatedResponse response;
 		try {
 			switch (method) {
-			case READ:
-				response = readMatrix(request);
-				break;
-			case MATVECMULT:
-				response = executeMatVecMult(request);
-				break;
-			case TRANSFER:
-				response = getVariableData(request);
-				break;
-			case AGGREGATE:
-				response = executeAggregation(request);
-				break;
+				case READ:
+					response = readMatrix(request);
+					break;
+				case MATVECMULT:
+					response = executeMatVecMult(request);
+					break;
+				case TRANSFER:
+					response = getVariableData(request);
+					break;
+				case AGGREGATE:
+					response = executeAggregation(request);
+					break;
 
-			default:
-				String message = String.format("Method %s is not supported.", method);
-				response = new FederatedResponse(FederatedResponse.Type.ERROR, message);
+				default:
+					String message = String.format("Method %s is not supported.", method);
+					response = new FederatedResponse(FederatedResponse.Type.ERROR, message);
 			}
-		} catch (Exception exception) {
+		}
+		catch (Exception exception) {
 			response = new FederatedResponse(FederatedResponse.Type.ERROR, ExceptionUtils.getFullStackTrace(exception));
 		}
 		return response;
@@ -146,22 +147,28 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 					String format = mtd.getString(DataExpression.FORMAT_TYPE);
 					if (format.equalsIgnoreCase(FORMAT_TYPE_VALUE_TEXT)) {
 						oi = OutputInfo.TextCellOutputInfo;
-					} else if (format.equalsIgnoreCase(FORMAT_TYPE_VALUE_BINARY)) {
+					}
+					else if (format.equalsIgnoreCase(FORMAT_TYPE_VALUE_BINARY)) {
 						oi = OutputInfo.BinaryBlockOutputInfo;
-					} else if (format.equalsIgnoreCase(FORMAT_TYPE_VALUE_MATRIXMARKET)) {
+					}
+					else if (format.equalsIgnoreCase(FORMAT_TYPE_VALUE_MATRIXMARKET)) {
 						oi = OutputInfo.MatrixMarketOutputInfo;
-					} else if (format.equalsIgnoreCase(FORMAT_TYPE_VALUE_LIBSVM)) {
+					}
+					else if (format.equalsIgnoreCase(FORMAT_TYPE_VALUE_LIBSVM)) {
 						oi = OutputInfo.LIBSVMOutputInfo;
-					} else if (format.equalsIgnoreCase(FORMAT_TYPE_VALUE_CSV)) {
+					}
+					else if (format.equalsIgnoreCase(FORMAT_TYPE_VALUE_CSV)) {
 						oi = OutputInfo.CSVOutputInfo;
-					} else {
+					}
+					else {
 						return new FederatedResponse(FederatedResponse.Type.ERROR,
 								"Could not figure out correct file format from metadata file");
 					}
 					ii = OutputInfo.getMatchingInputInfo(oi);
 				}
 			}
-		} catch (Exception ex) {
+		}
+		catch (Exception ex) {
 			throw new DMLRuntimeException(ex);
 		}
 		MetaDataFormat mdf = new MetaDataFormat(mc, oi, ii);
@@ -190,9 +197,10 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 		// TODO other datatypes
 		AggregateBinaryOperator ab_op = new AggregateBinaryOperator(Multiply.getMultiplyFnObject(),
 				new AggregateOperator(0, Plus.getPlusFnObject()));
-		MatrixBlock result = isMatVecMult
-				? matBlock1.aggregateBinaryOperations(matBlock1, vector, new MatrixBlock(), ab_op)
-				: vector.aggregateBinaryOperations(vector, matBlock1, new MatrixBlock(), ab_op);
+		MatrixBlock result = isMatVecMult ? matBlock1.aggregateBinaryOperations(matBlock1,
+				vector,
+				new MatrixBlock(),
+				ab_op) : vector.aggregateBinaryOperations(vector, matBlock1, new MatrixBlock(), ab_op);
 		return new FederatedResponse(FederatedResponse.Type.SUCCESS, result);
 	}
 
@@ -206,21 +214,21 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 		FederatedResponse response;
 		Data dataObject = _vars.get(varID);
 		switch (dataObject.getDataType()) {
-		case TENSOR:
-			response = new FederatedResponse(FederatedResponse.Type.SUCCESS,
-					((TensorObject) dataObject).acquireReadAndRelease());
-			break;
-		case MATRIX:
-			response = new FederatedResponse(FederatedResponse.Type.SUCCESS,
-					((MatrixObject) dataObject).acquireReadAndRelease());
-			break;
-		case LIST:
-			response = new FederatedResponse(FederatedResponse.Type.SUCCESS, ((ListObject) dataObject).getData());
-			break;
-		// TODO rest of the possible datatypes
-		default:
-			response = new FederatedResponse(FederatedResponse.Type.ERROR,
-					"FederatedWorkerHandler: Not possible to send datatype " + dataObject.getDataType().name());
+			case TENSOR:
+				response = new FederatedResponse(FederatedResponse.Type.SUCCESS,
+						((TensorObject) dataObject).acquireReadAndRelease());
+				break;
+			case MATRIX:
+				response = new FederatedResponse(FederatedResponse.Type.SUCCESS,
+						((MatrixObject) dataObject).acquireReadAndRelease());
+				break;
+			case LIST:
+				response = new FederatedResponse(FederatedResponse.Type.SUCCESS, ((ListObject) dataObject).getData());
+				break;
+			// TODO rest of the possible datatypes
+			default:
+				response = new FederatedResponse(FederatedResponse.Type.ERROR,
+						"FederatedWorkerHandler: Not possible to send datatype " + dataObject.getDataType().name());
 		}
 		return response;
 	}
@@ -259,7 +267,8 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 		MatrixBlock ret = new MatrixBlock(outNumRows, outNumCols, operator.aggOp.initialValue);
 		try {
 			LibMatrixAgg.aggregateUnaryMatrix(matrixBlock, ret, operator);
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			return new FederatedResponse(FederatedResponse.Type.ERROR, "FederatedWorkerHandler: " + e);
 		}
 		// result block without correction
