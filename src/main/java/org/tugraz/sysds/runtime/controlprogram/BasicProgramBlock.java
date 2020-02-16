@@ -126,6 +126,9 @@ public class BasicProgramBlock extends ProgramBlock
 	}
 	
 	private LineageItem[] LineageItemInputstoSB(ArrayList<String> inputs, ExecutionContext ec) {
+		if (ReuseCacheType.isNone())
+			return null;
+		
 		ArrayList<CPOperand> CPOpInputs = inputs.size() > 0 ? new ArrayList<>() : null;
 			for (int i=0; i<inputs.size(); i++) {
 				Data value = ec.getVariable(inputs.get(i));
