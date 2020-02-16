@@ -36,6 +36,7 @@ import org.tugraz.sysds.test.AutomatedTestBase;
 import org.tugraz.sysds.test.TestUtils;
 
 @RunWith(value = Parameterized.class)
+@net.jcip.annotations.NotThreadSafe
 public class L2SVMTest extends AutomatedTestBase 
 {
 	protected final static String TEST_DIR = "applications/l2svm/";
@@ -57,9 +58,17 @@ public class L2SVMTest extends AutomatedTestBase
 	public static Collection<Object[]> data() {
 		return Arrays.asList(new Object[][] {
 			//sparse tests (sparsity=0.01)
-			{100, 50, 0.01, false}, {1000, 500, 0.01, false}, {10000, 750, 0.01, false}, {10000, 750, 0.01, true}, {100000, 1000, 0.01, false},
+			{100, 50, 0.01, false}, 
+			// {1000, 500, 0.01, false}, 
+			// {10000, 750, 0.01, false}, 
+			{10000, 750, 0.01, true}, 
+			// {100000, 1000, 0.01, false},
 			//dense tests (sparsity=0.7)
-			{100, 50, 0.7, false}, {1000, 500, 0.7, false}, {1000, 500, 0.7, true}, {10000, 750, 0.7, false} });
+			{100, 50, 0.7, false}, 
+			// {1000, 500, 0.7, false}, 
+			{1000, 500, 0.7, true}, 
+			// {10000, 750, 0.7, false} 
+		});
 	}
 	
 	@Override
