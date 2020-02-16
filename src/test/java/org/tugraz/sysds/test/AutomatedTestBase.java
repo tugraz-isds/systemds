@@ -277,7 +277,7 @@ public abstract class AutomatedTestBase
 		expectedFiles = new ArrayList<>();
 		outputDirectories = new String[0];
 		setOutAndExpectedDeletionDisabled(false);
-		lTimeBeforeTest = System.currentTimeMillis();
+		// lTimeBeforeTest = System.currentTimeMillis();
 
 		TestUtils.clearAssertionInformation();
 	}
@@ -906,7 +906,7 @@ public abstract class AutomatedTestBase
 			
 			FileUtils.write(getCurConfigFile(), configContents, "UTF-8");
 
-			System.out.printf("This test case will use SystemDS config file %s\n", getCurConfigFile());
+			// System.out.printf("This test case will use SystemDS config file %s\n", getCurConfigFile());
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
@@ -1465,7 +1465,7 @@ public abstract class AutomatedTestBase
 
 	@After
 	public void tearDown() {
-		System.out.println("Duration: " + (System.currentTimeMillis() - lTimeBeforeTest) + "ms");
+		// System.out.println("Duration: " + (System.currentTimeMillis() - lTimeBeforeTest) + "ms");
 
 
 		assertTrue("expected String did not occur: " + expectedStdOut, iExpectedStdOutState == 0
