@@ -47,7 +47,7 @@ class Node:
         self.all_features = all_features
 
     def calc_c_upper(self, w):
-        upper_score = w * (self.e_upper / self.s_lower) / (float(self.error) / self.x_size) + (1 - w) * self.s_upper
+        upper_score = w * (self.e_upper / self.s_lower) / (float(self.error[0]) / self.x_size) + (1 - w) * self.s_upper
         return float(upper_score)
 
     def make_slice_mask(self):
@@ -168,7 +168,5 @@ class Node:
         print("size = " + str(self.size))
         print("score = " + str(self.score))
         print("current topk min score = " + str(topk.min_score))
-        print("-------------------------------------------------------------------------------------")
-core))
         print("-------------------------------------------------------------------------------------")
 

@@ -66,5 +66,15 @@ for pred in preds:
         mistakes = mistakes + 1
     counter = counter + 1
 lossF = mistakes / counter
-slicer.process(all_features, clf, complete_x, lossF, x_size, complete_y, predictions, debug=True, alpha=4, k=10, w=0.5,
-               loss_type=1)
+
+# enumerator <union>/<join> indicates an approach of next level slices combination process:
+# in case of <join> in order to create new node of current level slicer
+# combines only nodes of previous layer with each other
+# <union> case implementation is based on DPSize algorithm
+enumerator = "union"
+if enumerator == "join":
+    slicer.process(all_features, clf, complete_x, lossF, x_size, complete_y, predictions, debug=True, alpha=4, k=10,
+                   w=0.5, loss_type=1)
+elif enumerator == "union":
+    union_slicer.process(all_features, clf, complete_x, lossF, x_size, complete_y, predictions, debug=True, alpha=4,
+                         k=10, w=0.5, loss_type=1)

@@ -30,7 +30,7 @@ def opt_fun(fi, si, f, x_size, w):
 
 
 # slice_name_nonsense function defines if combination of nodes on current level is fine or impossible:
-# there is dependency between common nodes' common attributes number and current level is such that:
+# there is dependency between common nodes' attributes number and current level is such that:
 # commons == cur_lvl - 1
 # valid combination example: node ABC + node BCD (on 4th level) // three attributes nodes have two common attributes
 # invalid combination example: node ABC + CDE (on 4th level) // result node - ABCDE (absurd for 4th level)
