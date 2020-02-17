@@ -152,6 +152,7 @@ SYSTEMDS-190 New Builtin Functions III
  * 195 Builtin function mice for nominal features
  * 196 Builtin function intersect (set intersection)                  OK
  * 197 Builtin function for functional dependency discovery           OK
+ * 198 Extended slice finding (classification)                        OK
 
 SYSTEMDS-200 Various Fixes
  * 201 Fix spark append instruction zero columns                      OK
@@ -159,6 +160,7 @@ SYSTEMDS-200 Various Fixes
  * 203 Fix codegen outer compilation (MV operations)                  OK
  * 204 Fix rewrite simplify sequences of binary comparisons           OK
  * 205 Fix scoping of builtin dml-bodied functions (vs user-defined)
+ * 206 Fix codegen outer template compilation (tsmm)                  OK
 
 SYSTEMDS-210 Extended lists Operations
  * 211 Cbind and Rbind over lists of matrices                         OK
@@ -175,12 +177,15 @@ SYSTEMDS-220 Federated Tensors and Instructions
  * 224 Federated transform functionality
  * 225 Federated elementwise operations
  * 226 Federated rbind and cbind                                      OK
+ * 227 Federated worker setup and infrastructure                      OK
 
 SYSTEMDS-230 Lineage Integration
  * 231 Use lineage in buffer pool
  * 232 Lineage of code generated operators
  * 233 Lineage cache and reuse of function results                    OK
  * 234 Lineage tracing for spark instructions                         OK
+ * 235 Lineage tracing for remote-spark parfor                        OK
+ * 236 Extended multi-level lineage cache for statement blocks        OK
 
 SYSTEMDS-240 GPU Backend Improvements
  * 241 Dense GPU cumulative aggregates 
@@ -188,8 +193,9 @@ SYSTEMDS-240 GPU Backend Improvements
 SYSTEMDS-250 Large-Scale Slice Finding
  * 251 Initial data slicing implementation Python
 
-SYSTEMDS-260 Algorithms
+SYSTEMDS-260 Misc Tools
  * 261 Stable marriage algorithm                                      OK
+ * 262 Data augmentation tool for data cleaning                       OK
 
 Others:
  * Break append instruction to cbind and rbind 
