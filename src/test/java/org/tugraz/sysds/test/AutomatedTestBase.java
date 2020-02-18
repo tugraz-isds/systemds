@@ -1034,6 +1034,7 @@ public abstract class AutomatedTestBase
 	//		Thread.sleep(30000);
 
 			try {
+				System.out.println(child.exitValue());
 				if (child.exitValue() != 0) {
 					throw new Exception("ERROR: R has ended irregularly\n" + outputR + "\nscript file: "
 							+ executionFile);
