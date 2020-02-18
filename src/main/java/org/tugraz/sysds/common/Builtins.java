@@ -116,7 +116,6 @@ public enum Builtins {
 	MOMENT("moment", "centralMoment", false),
 	MSVM("msvm", true),
 	MULTILOGREG("multiLogReg", true),
-	MULTILOGREGPREDICT("multiLogRegPredict", true),
 	NCOL("ncol", false),
 	NORMALIZE("normalize", true),
 	NROW("nrow", false),
