@@ -21,9 +21,12 @@ import org.apache.commons.lang.NotImplementedException;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
+import org.tugraz.sysds.runtime.instructions.spark.RandSPInstruction;
 import org.tugraz.sysds.runtime.io.IOUtilFunctions;
+import org.tugraz.sysds.runtime.lineage.LineageCacheConfig.ReuseCacheType;
 import org.tugraz.sysds.runtime.lineage.LineageItem.LineageItemType;
 import org.tugraz.sysds.common.Types.DataType;
+import org.tugraz.sysds.common.Types.OpOpN;
 import org.tugraz.sysds.common.Types.ValueType;
 import org.tugraz.sysds.conf.ConfigurationManager;
 import org.tugraz.sysds.hops.DataGenOp;
@@ -32,7 +35,6 @@ import org.tugraz.sysds.hops.Hop;
 import org.tugraz.sysds.hops.LiteralOp;
 import org.tugraz.sysds.hops.Hop.DataGenMethod;
 import org.tugraz.sysds.hops.Hop.DataOpTypes;
-import org.tugraz.sysds.hops.Hop.OpOpN;
 import org.tugraz.sysds.hops.rewrite.HopRewriteUtils;
 import org.tugraz.sysds.lops.Lop;
 import org.tugraz.sysds.lops.compile.Dag;
@@ -49,9 +51,11 @@ import org.tugraz.sysds.runtime.instructions.InstructionUtils;
 import org.tugraz.sysds.runtime.instructions.cp.CPOperand;
 import org.tugraz.sysds.runtime.instructions.cp.Data;
 import org.tugraz.sysds.runtime.instructions.cp.DataGenCPInstruction;
+import org.tugraz.sysds.runtime.instructions.cp.ScalarObject;
 import org.tugraz.sysds.runtime.instructions.cp.ScalarObjectFactory;
 import org.tugraz.sysds.runtime.instructions.cp.VariableCPInstruction;
 import org.tugraz.sysds.runtime.instructions.spark.SPInstruction.SPType;
+import org.tugraz.sysds.runtime.instructions.cp.CPInstruction;
 import org.tugraz.sysds.runtime.instructions.cp.CPInstruction.CPType;
 import org.tugraz.sysds.runtime.util.HDFSTool;
 
@@ -206,6 +210,25 @@ public class LineageItemUtils {
 					DataOp pread = new DataOp(parts[1].substring(5), dt, vt, DataOpTypes.PERSISTENTREAD, params);
 					pread.setFileName(parts[2]);
 					operands.put(item.getId(), pread);
+				}
+				else if  (inst instanceof RandSPInstruction) {
+					RandSPInstruction rand = (RandSPInstruction) inst;
+					HashMap<String, Hop> params = new HashMap<>();
+					if (rand.output.getDataType() == DataType.TENSOR)
+						params.put(DataExpression.RAND_DIMS, new LiteralOp(rand.getDims()));
+					else {
+						params.put(DataExpression.RAND_ROWS, new LiteralOp(rand.getRows()));
+						params.put(DataExpression.RAND_COLS, new LiteralOp(rand.getCols()));
+					}
+					params.put(DataExpression.RAND_MIN, new LiteralOp(rand.getMinValue()));
+					params.put(DataExpression.RAND_MAX, new LiteralOp(rand.getMaxValue()));
+					params.put(DataExpression.RAND_PDF, new LiteralOp(rand.getPdf()));
+					params.put(DataExpression.RAND_LAMBDA, new LiteralOp(rand.getPdfParams()));
+					params.put(DataExpression.RAND_SPARSITY, new LiteralOp(rand.getSparsity()));
+					params.put(DataExpression.RAND_SEED, new LiteralOp(rand.getSeed()));
+					Hop datagen = new DataGenOp(DataGenMethod.RAND, new DataIdentifier("tmp"), params);
+					datagen.setBlocksize(rand.getBlocksize());
+					operands.put(item.getId(), datagen);
 				}
 				break;
 			}
@@ -405,7 +428,7 @@ public class LineageItemUtils {
 		//process children until old item found, then replace
 		for(int i=0; i<current.getInputs().length; i++) {
 			LineageItem tmp = current.getInputs()[i];
-			if( tmp == liOld )
+			if( tmp.equals(liOld) )
 				current.getInputs()[i] = liNew;
 			else
 				rReplace(tmp, liOld, liNew);
@@ -439,12 +462,19 @@ public class LineageItemUtils {
 			return false;
 
 		boolean isND = false;
-		DataGenCPInstruction ins = (DataGenCPInstruction)InstructionParser.parseSingleInstruction(li.getData());
+		CPInstruction CPins = (CPInstruction) InstructionParser.parseSingleInstruction(li.getData());
+		if (!(CPins instanceof DataGenCPInstruction))
+			return false;
+
+		DataGenCPInstruction ins = (DataGenCPInstruction)CPins;
 		switch(li.getOpcode().toUpperCase())
 		{
 			case "RAND":
 				if ((ins.getMinValue() != ins.getMaxValue()) || (ins.getSparsity() != 1))
 					isND = true;
+					//NOTE:It is hard to detect in runtime if rand was called with unspecified seed
+					//as -1 is already replaced by computed seed. Solution is to unmark for caching in 
+					//compile time. That way we can differentiate between given and unspecified seed.
 				break;
 			case "SAMPLE":
 				isND = true;
@@ -455,5 +485,21 @@ public class LineageItemUtils {
 		}
 		//TODO: add 'read' in this list
 		return isND;
+	}
+	
+	public static LineageItem[] getLineageItemInputstoSB(ArrayList<String> inputs, ExecutionContext ec) {
+		if (ReuseCacheType.isNone())
+			return null;
+		
+		ArrayList<CPOperand> CPOpInputs = inputs.size() > 0 ? new ArrayList<>() : null;
+		for (int i=0; i<inputs.size(); i++) {
+			Data value = ec.getVariable(inputs.get(i));
+			if (value != null) {
+				CPOpInputs.add(new CPOperand(value instanceof ScalarObject ? value.toString() : inputs.get(i),
+					value.getValueType(), value.getDataType()));
+			}
+		}
+		return(CPOpInputs != null ? LineageItemUtils.getLineage(ec, 
+			CPOpInputs.toArray(new CPOperand[CPOpInputs.size()])) : null);
 	}
 }

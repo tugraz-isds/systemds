@@ -20,10 +20,8 @@
 package org.tugraz.sysds.test.functions.unary.matrix;
 
 import java.util.HashMap;
-import java.util.Random;
 
 import org.junit.Test;
-import org.tugraz.sysds.api.DMLScript;
 import org.tugraz.sysds.common.Types.ExecMode;
 import org.tugraz.sysds.lops.LopProperties.ExecType;
 import org.tugraz.sysds.runtime.matrix.data.MatrixValue.CellIndex;
@@ -211,22 +209,12 @@ public class ReplaceTest extends AutomatedTestBase
 	
 	private void runTestReplace( String test, double pattern, boolean sparse, ExecType etype )
 	{
-		ExecMode platformOld = rtplatform;
-		boolean sparkConfigOld = DMLScript.USE_LOCAL_SPARK_CONFIG;
+		ExecMode platformOld = setExecMode(etype);
 		
 		try
 		{
-			if(etype == ExecType.SPARK) {
-		    	rtplatform = ExecMode.SPARK;
-		    }
-		    else {
-		    	rtplatform = ExecMode.HYBRID;
-		    }
-			if( rtplatform == ExecMode.SPARK )
-				DMLScript.USE_LOCAL_SPARK_CONFIG = true;
-			
 			double sparsity = (sparse)? sparsity2 : sparsity1;
-				
+			
 			//register test configuration
 			TestConfiguration config = getTestConfiguration(test);
 			config.addVariable("rows", rows);
@@ -243,8 +231,8 @@ public class ReplaceTest extends AutomatedTestBase
 				pattern + " " + expectedDir();
 			
 			double[][] A = getRandomMatrix(rows, cols, 0, 1, sparsity, 7);
-			replaceRandom(A, rows, cols, pattern, 10);	
-	        writeInputMatrix("A", A, true);
+			TestUtils.replaceRandom(A, rows, cols, pattern, 10);
+			writeInputMatrix("A", A, true);
 			writeExpectedMatrix("A", A);
 
 			runTest(true, false, null, -1);
@@ -254,19 +242,9 @@ public class ReplaceTest extends AutomatedTestBase
 			HashMap<CellIndex, Double> dmlfile = readDMLMatrixFromHDFS("C");
 			HashMap<CellIndex, Double> rfile  = readRMatrixFromFS("C");
 			TestUtils.compareMatrices(dmlfile, rfile, 1e-14, "Stat-DML", "Stat-R");
-			
 		}
-		finally
-		{
-			//reset platform for additional tests
-			rtplatform = platformOld;
-			DMLScript.USE_LOCAL_SPARK_CONFIG = sparkConfigOld;
+		finally {
+			resetExecMode(platformOld);
 		}
-	}
-	
-	private static void replaceRandom( double[][] A, int rows, int cols, double replacement, int len ) {
-		Random rand = new Random();
-		for( int i=0; i<len; i++ )
-			A[rand.nextInt(rows-1)][rand.nextInt(cols-1)] = replacement;
 	}
 }

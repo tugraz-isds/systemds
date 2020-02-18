@@ -17,8 +17,10 @@
 package org.tugraz.sysds.test.functions.lineage;
 
 import org.junit.Test;
+import org.tugraz.sysds.common.Types.ExecMode;
 import org.tugraz.sysds.hops.OptimizerUtils;
 import org.tugraz.sysds.hops.recompile.Recompiler;
+import org.tugraz.sysds.lops.LopProperties.ExecType;
 import org.tugraz.sysds.runtime.lineage.Lineage;
 import org.tugraz.sysds.runtime.lineage.LineageCacheConfig.ReuseCacheType;
 import org.tugraz.sysds.runtime.matrix.data.MatrixValue;
@@ -70,14 +72,15 @@ public class FunctionFullReuseTest extends AutomatedTestBase {
 		testLineageTrace(TEST_NAME4);
 	}
 
-	/*@Test
+	@Test
 	public void testStepLM() {
 		testLineageTrace(TEST_NAME5);
-	}*/
+	} 
 	
 	public void testLineageTrace(String testname) {
 		boolean old_simplification = OptimizerUtils.ALLOW_ALGEBRAIC_SIMPLIFICATION;
 		boolean old_sum_product = OptimizerUtils.ALLOW_SUM_PRODUCT_REWRITES;
+		ExecMode platformOld = setExecMode(ExecType.CP);
 		
 		try {
 			System.out.println("------------ BEGIN " + testname + "------------");
@@ -92,6 +95,7 @@ public class FunctionFullReuseTest extends AutomatedTestBase {
 			List<String> proArgs = new ArrayList<>();
 			proArgs.add("-stats");
 			proArgs.add("-lineage");
+			proArgs.add("-explain");
 			proArgs.add("-args");
 			proArgs.add(output("X"));
 			programArgs = proArgs.toArray(new String[proArgs.size()]);
@@ -104,7 +108,7 @@ public class FunctionFullReuseTest extends AutomatedTestBase {
 			proArgs.clear();
 			proArgs.add("-stats");
 			proArgs.add("-lineage");
-			proArgs.add(ReuseCacheType.REUSE_HYBRID.name().toLowerCase());
+			proArgs.add(ReuseCacheType.REUSE_FULL.name().toLowerCase());
 			proArgs.add("-args");
 			proArgs.add(output("X"));
 			programArgs = proArgs.toArray(new String[proArgs.size()]);
@@ -120,6 +124,7 @@ public class FunctionFullReuseTest extends AutomatedTestBase {
 		finally {
 			OptimizerUtils.ALLOW_ALGEBRAIC_SIMPLIFICATION = old_simplification;
 			OptimizerUtils.ALLOW_SUM_PRODUCT_REWRITES = old_sum_product;
+			rtplatform = platformOld;
 			Recompiler.reinitRecompiler();
 		}
 	}

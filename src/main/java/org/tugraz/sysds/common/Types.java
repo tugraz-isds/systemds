@@ -183,11 +183,76 @@ public class Types
 		}
 	}
 	
-
+	// Operations that require 3 operands
+	public enum OpOp3 {
+		QUANTILE, INTERQUANTILE, CTABLE, MOMENT, COV, PLUS_MULT, MINUS_MULT, IFELSE;
+		
+		@Override
+		public String toString() {
+			switch(this) {
+				case MOMENT:     return "cm";
+				case PLUS_MULT:  return "+*";
+				case MINUS_MULT: return "-*";
+				default:         return name().toLowerCase();
+			}
+		}
+		
+		public static OpOp3 valueOfCode(String code) {
+			switch(code) {
+				case "cm": return OpOp3.MOMENT;
+				case "+*": return OpOp3.PLUS_MULT;
+				case "-*": return OpOp3.MINUS_MULT;
+				default:   return OpOp3.valueOf(code);
+			}
+		}
+	}
+	
+	// Operations that require 4 operands
+	public enum OpOp4 {
+		WSLOSS, //weighted sloss mm
+		WSIGMOID, //weighted sigmoid mm
+		WDIVMM, //weighted divide mm
+		WCEMM, //weighted cross entropy mm
+		WUMM; //weighted unary mm
+		
+		@Override
+		public String toString() {
+			return name().toLowerCase();
+		}
+	}
+	
+	// Operations that require a variable number of operands
+	public enum OpOpN {
+		PRINTF, CBIND, RBIND, MIN, MAX, EVAL, LIST
+	}
+	
+	public enum ReOrgOp {
+		DIAG, //DIAG_V2M and DIAG_M2V could not be distinguished if sizes unknown
+		RESHAPE, REV, SORT, TRANS;
+		
+		@Override
+		public String toString() {
+			switch(this) {
+				case TRANS:   return "t";
+				case RESHAPE: return "rshape";
+				default:      return name().toLowerCase();
+			}
+		}
+	}
+	
 	public enum ParamBuiltinOp {
 		INVALID, CDF, INVCDF, GROUPEDAGG, RMEMPTY, REPLACE, REXPAND,
 		LOWER_TRI, UPPER_TRI,
 		TRANSFORMAPPLY, TRANSFORMDECODE, TRANSFORMCOLMAP, TRANSFORMMETA,
 		TOSTRING, LIST, PARAMSERV
+	}
+	
+	public enum OpOpDnn {
+		MAX_POOL, MAX_POOL_BACKWARD, AVG_POOL, AVG_POOL_BACKWARD,
+		CONV2D, CONV2D_BACKWARD_FILTER, CONV2D_BACKWARD_DATA,
+		BIASADD, BIASMULT, BATCH_NORM2D_TEST, CHANNEL_SUMS,
+		UPDATE_NESTEROV_X,
+		//fused operators
+		CONV2D_BIAS_ADD, RELU_MAX_POOL, RELU_MAX_POOL_BACKWARD, RELU_BACKWARD
 	}
 }

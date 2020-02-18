@@ -1,6 +1,6 @@
 #-------------------------------------------------------------
 #
-# Copyright 2019 Graz University of Technology
+# Copyright 2020 Graz University of Technology
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,15 +15,16 @@
 # limitations under the License.
 #
 #-------------------------------------------------------------
+# Increase k for better performance gains
 
-X = rand(rows=$3, cols=$4, seed=7);
+X = rand(rows=1024, cols=1024, seed=42);
+k = 10
 
-R = matrix(0, nrow(X), ncol(X));
-parfor(i in 1:ncol(X)) {
-  Xi = X[,i];
-	Xi = Xi + Xi - 2 * sqrt(Xi) + Xi * Xi;
-	R[,i] = rowSums(Xi)+colSums(Xi);
+for(i in 1:k) {
+  tmp = t(X) %*% X;
+  tmp = tmp + i;     # generate cache miss for statement block
+  tmp1 = X %*% tmp;
 }
 
-print(lineage(R));
-write(R, $2);
+write(tmp1, $1, format="text");
+
