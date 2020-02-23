@@ -127,7 +127,8 @@ def process(all_features, model, complete_x, loss, x_size, y_test, errors, debug
                             new_node.score = opt_fun(new_node.loss, new_node.size, loss, x_size, w)
                             # we decide to add node to current level nodes (in order to make new combinations
                             # on the next one or not basing on its score value
-                            if new_node.score >= top_k.min_score:
+                            if new_node.score >= top_k.min_score and new_node.size >= x_size / alpha \
+                                    and new_node.key not in top_k.keys:
                                 cur_lvl_nodes.append(new_node)
                                 top_k.add_new_top_slice(new_node)
                         if debug:

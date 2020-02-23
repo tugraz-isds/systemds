@@ -45,33 +45,34 @@ def process(all_features, model, complete_x, loss, x_size, y_test, errors, debug
             top_k.add_new_top_slice(new_node)
         counter = counter + 1
     # double appending of first level nodes in order to enumerating second level in the same way as others
-    levels.append(first_level)
-    levels.append(first_level)
+    levels.append((first_level, len(all_features)))
+    levels.append((first_level, len(all_features)))
 
     # cur_lvl - index of current level, correlates with number of slice forming features
     cur_lvl = 2  # level that is planned to be filled later
-
+    cur_lvl_nodes = first_level
     # currently for debug
     print("Level 1 had " + str(len(all_features)) + " candidates")
     print()
     print("Current topk are: ")
     top_k.print_topk()
     # DPSize algorithm approach of previous levels nodes combinations and updating bounds for those that already exist
-    while len(levels[cur_lvl - 1]) > 0:
+    while len(cur_lvl_nodes) > 0:
         cur_lvl_nodes = []
+        count = 0
         for left in range(int(cur_lvl / 2)):
             right = cur_lvl - 1 - left
-            for node_i in range(len(levels[left]) - 1):
-                for node_j in range(len(levels[right]) - 1):
-                    flag = check_attributes(levels[left][node_i], levels[right][node_j])
+            for node_i in range(len(levels[left][0])):
+                for node_j in range(len(levels[right][0])):
+                    flag = check_attributes(levels[left][0][node_i], levels[right][0][node_j])
                     if not flag:
                         new_node = Node(all_features, model, complete_x, loss, x_size, y_test, errors)
                         parents_set = set(new_node.parents)
-                        parents_set.add(levels[cur_lvl - 2][node_i])
-                        parents_set.add(levels[cur_lvl - 2][node_j])
+                        parents_set.add(levels[left][0][node_i])
+                        parents_set.add(levels[right][0][node_j])
                         new_node.parents = list(parents_set)
-                        parent1_attr = levels[cur_lvl - 2][node_i].attributes
-                        parent2_attr = levels[cur_lvl - 2][node_j].attributes
+                        parent1_attr = levels[left][0][node_i].attributes
+                        parent2_attr = levels[right][0][node_j].attributes
                         new_node_attr = union(parent1_attr, parent2_attr)
                         new_node.attributes = new_node_attr
                         new_node.name = new_node.make_name()
@@ -112,17 +113,20 @@ def process(all_features, model, complete_x, loss, x_size, y_test, errors, debug
                                 new_node.score = opt_fun(new_node.loss, new_node.size, loss, x_size, w)
                                 # we decide to add node to current level nodes (in order to make new combinations
                                 # on the next one or not basing on its score value
-                                if new_node.score >= top_k.min_score:
+                                if new_node.score >= top_k.min_score and new_node.size >= x_size / alpha \
+                                        and new_node.key not in top_k.keys:
                                     cur_lvl_nodes.append(new_node)
                                     top_k.add_new_top_slice(new_node)
                             if debug:
                                 new_node.print_debug(top_k, cur_lvl)
-        print("Level " + str(cur_lvl + 1) + " had " + str(len(levels[cur_lvl - 1]) * (len(levels[cur_lvl - 1]) - 1)) +
+            count = count + levels[left][1] * levels[right][1]
+        print("Level " + str(cur_lvl) + " had " + str(count) +
               " candidates but after pruning only " + str(len(cur_lvl_nodes)) + " go to the next level")
         cur_lvl = cur_lvl + 1
-        levels.append(cur_lvl_nodes)
+        levels.append((cur_lvl_nodes, count))
         top_k.print_topk()
     print("Program stopped at level " + str(cur_lvl))
     print()
     print("Selected slices are: ")
     top_k.print_topk()
+
