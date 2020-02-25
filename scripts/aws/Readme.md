@@ -38,8 +38,9 @@ Instructions:
     
 7. Terminate the EMR cluster: ./terminate_systemds_cluster.sh
     
-#Further work
-#Finetune the memory 
-    #https://aws.amazon.com/blogs/big-data/best-practices-for-successfully-managing-memory-for-apache-spark-applications-on-amazon-emr/
-    #https://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-spark-configure.html#spark-defaults
-#Test if Scale to 100 nodes
+####Further work
+#####Finetune the memory 
+    https://aws.amazon.com/blogs/big-data/best-practices-for-successfully-managing-memory-for-apache-spark-applications-on-amazon-emr/
+    https://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-spark-configure.html#spark-defaults
+#####Test if Scale to 100 nodes
+#####Make the cluster WebUIs (Ganglia, SparkUI,..) accessible from outside
