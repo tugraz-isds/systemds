@@ -236,7 +236,7 @@ public class CompressedMatrixTest extends CompressedTestBase {
 				return; // Input was not compressed then just pass test
 
 			MatrixBlock vector = DataConverter
-				.convertToMatrixBlock(TestUtils.generateTestMatrix(cols, 1, 1, 1, 1.0, 3));
+				.convertToMatrixBlock(TestUtils.generateTestMatrix(1, rows, 1, 1, 1.0, 3));
 
 			// matrix-vector uncompressed
 			AggregateOperator aop = new AggregateOperator(0, Plus.getPlusFnObject());
@@ -249,7 +249,7 @@ public class CompressedMatrixTest extends CompressedTestBase {
 			// compare result with input
 			double[][] d1 = DataConverter.convertToDoubleMatrix(ret1);
 			double[][] d2 = DataConverter.convertToDoubleMatrix(ret2);
-			TestUtils.compareMatricesBit(d1, d2, rows, 1, 10);
+			TestUtils.compareMatricesBit(d1, d2, 1, cols, 256);
 		}
 		catch(Exception e) {
 			throw new RuntimeException(this.toString() + "\n" + e.getMessage(), e);
