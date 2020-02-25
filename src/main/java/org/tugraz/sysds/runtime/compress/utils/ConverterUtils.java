@@ -21,7 +21,6 @@ import java.util.Arrays;
 import org.tugraz.sysds.runtime.compress.ColGroup;
 import org.tugraz.sysds.runtime.compress.ColGroupDDC1;
 import org.tugraz.sysds.runtime.compress.ColGroupOLE;
-import org.tugraz.sysds.runtime.compress.ColGroupOffset;
 import org.tugraz.sysds.runtime.compress.ColGroupRLE;
 import org.tugraz.sysds.runtime.compress.ColGroupUncompressed;
 import org.tugraz.sysds.runtime.matrix.data.MatrixBlock;
