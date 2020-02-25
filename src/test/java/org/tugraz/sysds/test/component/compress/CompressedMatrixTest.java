@@ -211,9 +211,11 @@ public class CompressedMatrixTest extends CompressedTestBase {
 			MatrixBlock vector = DataConverter
 				.convertToMatrixBlock(TestUtils.generateTestMatrix(cols, 1, 1, 1, 1.0, 3));
 
-			// matrix-vector uncompressed
+			// Make Operator
 			AggregateOperator aop = new AggregateOperator(0, Plus.getPlusFnObject());
 			AggregateBinaryOperator abop = new AggregateBinaryOperator(Multiply.getMultiplyFnObject(), aop);
+
+			// matrix-vector uncompressed
 			MatrixBlock ret1 = mb.aggregateBinaryOperations(mb, vector, new MatrixBlock(), abop);
 
 			// matrix-vector compressed
@@ -238,12 +240,14 @@ public class CompressedMatrixTest extends CompressedTestBase {
 			MatrixBlock vector = DataConverter
 				.convertToMatrixBlock(TestUtils.generateTestMatrix(1, rows, 1, 1, 1.0, 3));
 
-			// matrix-vector uncompressed
+			// Make Operator
 			AggregateOperator aop = new AggregateOperator(0, Plus.getPlusFnObject());
 			AggregateBinaryOperator abop = new AggregateBinaryOperator(Multiply.getMultiplyFnObject(), aop);
+
+			// vector-matrix uncompressed
 			MatrixBlock ret1 = mb.aggregateBinaryOperations(vector, mb, new MatrixBlock(), abop);
 
-			// matrix-vector compressed
+			// vector-matrix compressed
 			MatrixBlock ret2 = cmb.aggregateBinaryOperations(vector, cmb, new MatrixBlock(), abop);
 
 			// compare result with input
@@ -359,11 +363,11 @@ public class CompressedMatrixTest extends CompressedTestBase {
 				}
 				// matrix-vector uncompressed
 				MatrixBlock ret1 = (MatrixBlock) mb
-					.aggregateUnaryOperations(auop, new MatrixBlock(), Math.max(rows,cols), null, true);
+					.aggregateUnaryOperations(auop, new MatrixBlock(), Math.max(rows, cols), null, true);
 
 				// matrix-vector compressed
 				MatrixBlock ret2 = (MatrixBlock) cmb
-					.aggregateUnaryOperations(auop, new MatrixBlock(), Math.max(rows,cols), null, true);
+					.aggregateUnaryOperations(auop, new MatrixBlock(), Math.max(rows, cols), null, true);
 
 				// compare result with input
 				double[][] d1 = DataConverter.convertToDoubleMatrix(ret1);
@@ -387,21 +391,21 @@ public class CompressedMatrixTest extends CompressedTestBase {
 			if(!(cmbResult instanceof CompressedMatrixBlock))
 				return; // Input was not compressed then just pass test
 
-			//serialize compressed matrix block
+			// serialize compressed matrix block
 			ByteArrayOutputStream bos = new ByteArrayOutputStream();
 			DataOutputStream fos = new DataOutputStream(bos);
 			cmb.write(fos);
-			
-			//deserialize compressed matrix block
+
+			// deserialize compressed matrix block
 			ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
 			DataInputStream fis = new DataInputStream(bis);
 			CompressedMatrixBlock cmb2 = new CompressedMatrixBlock();
 			cmb2.readFields(fis);
-			
-			//decompress the compressed matrix block
+
+			// decompress the compressed matrix block
 			MatrixBlock tmp = cmb2.decompress();
-			
-			//compare result with input
+
+			// compare result with input
 			double[][] d1 = DataConverter.convertToDoubleMatrix(mb);
 			double[][] d2 = DataConverter.convertToDoubleMatrix(tmp);
 
@@ -412,5 +416,4 @@ public class CompressedMatrixTest extends CompressedTestBase {
 		}
 	}
 
-	
 }
