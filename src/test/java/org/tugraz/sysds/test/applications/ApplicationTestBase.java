@@ -21,7 +21,6 @@ import java.util.Collection;
 
 import org.junit.After;
 import org.junit.runners.Parameterized.Parameters;
-import org.tugraz.sysds.api.DMLOptions;
 import org.tugraz.sysds.api.DMLScript;
 import org.tugraz.sysds.common.Types.ExecMode;
 import org.tugraz.sysds.test.AutomatedTestBase;
