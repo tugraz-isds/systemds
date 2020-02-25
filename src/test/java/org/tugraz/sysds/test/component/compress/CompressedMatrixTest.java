@@ -224,7 +224,7 @@ public class CompressedMatrixTest extends CompressedTestBase {
 			// compare result with input
 			double[][] d1 = DataConverter.convertToDoubleMatrix(ret1);
 			double[][] d2 = DataConverter.convertToDoubleMatrix(ret2);
-			TestUtils.compareMatricesBit(d1, d2, rows, 1, 10);
+			TestUtils.compareMatricesBit(d1, d2, rows, 1, 256);
 		}
 		catch(Exception e) {
 			throw new RuntimeException(this.toString() + "\n" + e.getMessage(), e);
