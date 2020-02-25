@@ -131,6 +131,11 @@ def process(all_features, model, complete_x, loss, x_size, y_test, errors, debug
                                     and new_node.key not in top_k.keys:
                                 cur_lvl_nodes.append(new_node)
                                 top_k.add_new_top_slice(new_node)
+                            elif new_node.s_upper >= x_size / alpha and new_node.c_upper >= top_k.min_score:
+                                cur_lvl_nodes.append(new_node)
+                        else:
+                            if new_node.s_upper >= x_size / alpha and new_node.c_upper >= top_k.min_score:
+                                cur_lvl_nodes.append(new_node)
                         if debug:
                             new_node.print_debug(top_k, cur_lvl)
         print("Level " + str(cur_lvl + 1) + " had " + str(len(levels[cur_lvl - 1]) * (len(levels[cur_lvl - 1]) - 1)) +
@@ -142,4 +147,3 @@ def process(all_features, model, complete_x, loss, x_size, y_test, errors, debug
     print()
     print("Selected slices are: ")
     top_k.print_topk()
-

@@ -87,12 +87,17 @@ def process(all_features, model, complete_x, loss, x_size, y_test, errors, debug
                             e_upper = new_node.calc_e_upper()
                             e_max_upper = new_node.calc_e_max_upper(cur_lvl)
                             try:
-                                new_node.s_upper = min(s_upper, new_node.s_upper)
-                                new_node.s_lower = min(s_lower, new_node.s_lower)
-                                new_node.e_upper = min(e_upper, new_node.e_upper)
-                                new_node.e_max_upper = min(e_max_upper, new_node.e_max_upper)
+                                minimized = min(s_upper, new_node.s_upper)
+                                new_node.s_upper = minimized
+                                minimized = min(s_lower, new_node.s_lower)
+                                new_node.s_lower = minimized
+                                minimized = min(e_upper, new_node.e_upper)
+                                new_node.e_upper = minimized
+                                minimized= min(e_max_upper, new_node.e_max_upper)
+                                new_node.e_max_upper = minimized
                                 c_upper = new_node.calc_c_upper(w)
-                                new_node.c_upper = min(c_upper, new_node.c_upper)
+                                minimized= min(c_upper, new_node.c_upper)
+                                new_node.c_upper = minimized
                             except AttributeError:
                                 # initial bounds calculation
                                 new_node.s_upper = s_upper
@@ -101,7 +106,8 @@ def process(all_features, model, complete_x, loss, x_size, y_test, errors, debug
                                 new_node.e_max_upper = e_max_upper
                                 c_upper = new_node.calc_c_upper(w)
                                 new_node.c_upper = c_upper
-                            new_node.c_upper = min(c_upper, new_node.c_upper)
+                            minimized = min(c_upper, new_node.c_upper)
+                            new_node.c_upper = minimized
                         else:
                             new_node.calc_bounds(cur_lvl, w)
                             all_nodes[new_node.key[1]] = new_node
@@ -117,6 +123,9 @@ def process(all_features, model, complete_x, loss, x_size, y_test, errors, debug
                                         and new_node.key not in top_k.keys:
                                     cur_lvl_nodes.append(new_node)
                                     top_k.add_new_top_slice(new_node)
+                            else:
+                                if new_node.s_upper >= x_size / alpha and new_node.c_upper >= top_k.min_score:
+                                    cur_lvl_nodes.append(new_node)
                             if debug:
                                 new_node.print_debug(top_k, cur_lvl)
             count = count + levels[left][1] * levels[right][1]
@@ -129,4 +138,3 @@ def process(all_features, model, complete_x, loss, x_size, y_test, errors, debug
     print()
     print("Selected slices are: ")
     top_k.print_topk()
-
