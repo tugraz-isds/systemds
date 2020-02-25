@@ -1,6 +1,6 @@
 from slicing.node import Node
 from slicing.top_k import Topk
-from slicing.slicer import opt_fun, union, check_for_slicing
+from slicing.slicer import opt_fun, union
 
 
 def check_attributes(left_node, right_node):
@@ -113,7 +113,7 @@ def process(all_features, model, complete_x, loss, x_size, y_test, errors, debug
                             all_nodes[new_node.key[1]] = new_node
                             # check if concrete data should be extracted or not (only for those that have score upper
                             # big enough and if size of subset is big enough
-                            to_slice = check_for_slicing(new_node, top_k, x_size, alpha)
+                            to_slice = new_node.check_bounds(top_k, x_size, alpha)
                             if to_slice:
                                 new_node.process_slice(loss_type)
                                 new_node.score = opt_fun(new_node.loss, new_node.size, loss, x_size, w)

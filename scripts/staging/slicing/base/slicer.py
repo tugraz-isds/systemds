@@ -48,10 +48,6 @@ def union(lst1, lst2):
     return final_list
 
 
-def check_for_slicing(node, topk, x_size, alpha):
-    return node.s_upper >= x_size / alpha and node.c_upper >= topk.min_score
-
-
 # alpha is size significance coefficient (required for optimization function)
 # verbose option is for returning debug info while creating slices and printing it (in console)
 # k is number of top-slices we want to receive as a result (maximum output, if less all of subsets will be printed)
@@ -79,7 +75,7 @@ def process(all_features, model, complete_x, loss, x_size, y_test, errors, debug
         first_level.append(new_node)
         new_node.print_debug(top_k, 0)
         # constraints for 1st level nodes to be problematic candidates
-        if new_node.score > 1 and new_node.size >= x_size / alpha:
+        if new_node.check_constraint(top_k, x_size, alpha):
             # this method updates top k slices if needed
             top_k.add_new_top_slice(new_node)
         counter = counter + 1
@@ -121,20 +117,19 @@ def process(all_features, model, complete_x, loss, x_size, y_test, errors, debug
                         all_nodes[new_node.key[1]] = new_node
                         # check if concrete data should be extracted or not (only for those that have score upper
                         # big enough and if size of subset is big enough
-                        to_slice = check_for_slicing(new_node, top_k, x_size, alpha)
+                        to_slice = new_node.check_bounds(top_k, x_size, alpha)
                         if to_slice:
                             new_node.process_slice(loss_type)
                             new_node.score = opt_fun(new_node.loss, new_node.size, loss, x_size, w)
                             # we decide to add node to current level nodes (in order to make new combinations
                             # on the next one or not basing on its score value
-                            if new_node.score >= top_k.min_score and new_node.size >= x_size / alpha \
-                                    and new_node.key not in top_k.keys:
+                            if new_node.check_constraint(top_k, x_size, alpha) and new_node.key not in top_k.keys:
                                 cur_lvl_nodes.append(new_node)
                                 top_k.add_new_top_slice(new_node)
-                            elif new_node.s_upper >= x_size / alpha and new_node.c_upper >= top_k.min_score:
+                            elif new_node.check_bounds(top_k, x_size, alpha):
                                 cur_lvl_nodes.append(new_node)
                         else:
-                            if new_node.s_upper >= x_size / alpha and new_node.c_upper >= top_k.min_score:
+                            if new_node.check_bounds(top_k, x_size, alpha):
                                 cur_lvl_nodes.append(new_node)
                         if debug:
                             new_node.print_debug(top_k, cur_lvl)
