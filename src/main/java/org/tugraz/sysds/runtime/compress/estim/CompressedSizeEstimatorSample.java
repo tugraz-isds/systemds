@@ -48,17 +48,8 @@ public class CompressedSizeEstimatorSample extends CompressedSizeEstimator {
 
 	public CompressedSizeEstimatorSample(MatrixBlock data, int sampleSize) {
 		super(data);
-		if(sampleSize == 0){
-			throw new RuntimeException("Sample size is empty");
-		}
 		// get sample of rows, incl eager extraction
 		_sampleRows = getSortedUniformSample(_numRows, sampleSize);
-		if(_sampleRows == null){
-			throw new RuntimeException("Number of sample rows is null");
-		}
-		if (_sampleRows.length == 0){
-			throw new RuntimeException("Sample rows is empty");
-		}
 		if(CompressedSizeEstimatorFactory.EXTRACT_SAMPLE_ONCE) {
 			MatrixBlock select = new MatrixBlock(_numRows, 1, false);
 			for(int i = 0; i < sampleSize; i++)
