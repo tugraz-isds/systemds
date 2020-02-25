@@ -203,7 +203,7 @@ public class CompressedMatrixTest extends CompressedTestBase {
 	}
 
 	@Test
-	public void testVectorMult() {
+	public void testMatrixVectorMult() {
 		try {
 			if(!(cmbResult instanceof CompressedMatrixBlock))
 				return; // Input was not compressed then just pass test
@@ -218,6 +218,33 @@ public class CompressedMatrixTest extends CompressedTestBase {
 
 			// matrix-vector compressed
 			MatrixBlock ret2 = cmb.aggregateBinaryOperations(cmb, vector, new MatrixBlock(), abop);
+
+			// compare result with input
+			double[][] d1 = DataConverter.convertToDoubleMatrix(ret1);
+			double[][] d2 = DataConverter.convertToDoubleMatrix(ret2);
+			TestUtils.compareMatricesBit(d1, d2, rows, 1, 10);
+		}
+		catch(Exception e) {
+			throw new RuntimeException(this.toString() + "\n" + e.getMessage(), e);
+		}
+	}
+
+	@Test
+	public void testVectorMatrixMult() {
+		try {
+			if(!(cmbResult instanceof CompressedMatrixBlock))
+				return; // Input was not compressed then just pass test
+
+			MatrixBlock vector = DataConverter
+				.convertToMatrixBlock(TestUtils.generateTestMatrix(cols, 1, 1, 1, 1.0, 3));
+
+			// matrix-vector uncompressed
+			AggregateOperator aop = new AggregateOperator(0, Plus.getPlusFnObject());
+			AggregateBinaryOperator abop = new AggregateBinaryOperator(Multiply.getMultiplyFnObject(), aop);
+			MatrixBlock ret1 = mb.aggregateBinaryOperations(vector, mb, new MatrixBlock(), abop);
+
+			// matrix-vector compressed
+			MatrixBlock ret2 = cmb.aggregateBinaryOperations(vector, cmb, new MatrixBlock(), abop);
 
 			// compare result with input
 			double[][] d1 = DataConverter.convertToDoubleMatrix(ret1);
