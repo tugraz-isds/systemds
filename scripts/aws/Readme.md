@@ -43,4 +43,3 @@ Instructions:
     #https://aws.amazon.com/blogs/big-data/best-practices-for-successfully-managing-memory-for-apache-spark-applications-on-amazon-emr/
     #https://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-spark-configure.html#spark-defaults
 #Test if Scale to 100 nodes
-#scripts/aws/mystuff
