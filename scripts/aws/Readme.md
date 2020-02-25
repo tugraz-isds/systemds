@@ -25,6 +25,7 @@ Instructions:
 4. Configure your aws-cli (https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html#cli-quick-configuration)
 
 5. Spin up an EMR cluster with SystemDS
+    
     5.1. Put your SystemDS artifacts (dml-scripts, jars, config-file) in the directory systemds 
     
     5.2. Edit configuration in: systemds_cluster.config
