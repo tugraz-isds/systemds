@@ -22,7 +22,10 @@
 package org.tugraz.sysds.hops;
 
 import org.tugraz.sysds.api.DMLScript;
+import org.tugraz.sysds.common.Types.AggOp;
 import org.tugraz.sysds.common.Types.DataType;
+import org.tugraz.sysds.common.Types.Direction;
+import org.tugraz.sysds.common.Types.OpOpDnn;
 import org.tugraz.sysds.common.Types.ValueType;
 import org.tugraz.sysds.conf.ConfigurationManager;
 import org.tugraz.sysds.hops.rewrite.HopRewriteUtils;
@@ -171,6 +174,11 @@ public class BinaryOp extends MultiThreadedHop
 					return false;
 			}
 		}
+	}
+	
+	@Override
+	public boolean isMultiThreadedOpType() {
+		return !getDataType().isScalar();
 	}
 	
 	@Override
@@ -333,20 +341,22 @@ public class BinaryOp extends MultiThreadedHop
 		
 		//sanity check for input data types
 		if( !((dt1==DataType.MATRIX && dt2==DataType.MATRIX)
-			 ||(dt1==DataType.FRAME && dt2==DataType.FRAME) 	
+			 ||(dt1==DataType.FRAME && dt2==DataType.FRAME)
+			 ||(dt1==DataType.LIST)
 			 ||(dt1==DataType.SCALAR && dt2==DataType.SCALAR
 			   && vt1==ValueType.STRING && vt2==ValueType.STRING )) )
 		{
-			throw new HopsException("Append can only apply to two matrices, two frames, or two scalar strings!");
+			throw new HopsException("Append can only apply to two matrices, "
+				+ "two frames, two scalar strings, or anything to a list!");
 		}
-				
+		
 		Lop append = null;
 		if( dt1==DataType.MATRIX || dt1==DataType.FRAME )
 		{
 			long rlen = cbind ? getInput().get(0).getDim1() : (getInput().get(0).dimsKnown() && getInput().get(1).dimsKnown()) ?
 				getInput().get(0).getDim1()+getInput().get(1).getDim1() : -1;
 			long clen = cbind ? ((getInput().get(0).dimsKnown() && getInput().get(1).dimsKnown()) ?
-				getInput().get(0).getDim2()+getInput().get(1).getDim2() : -1) : getInput().get(0).getDim2();			
+				getInput().get(0).getDim2()+getInput().get(1).getDim2() : -1) : getInput().get(0).getDim2();
 		
 			if(et == ExecType.SPARK) 
 			{
@@ -359,6 +369,13 @@ public class BinaryOp extends MultiThreadedHop
 				append = new Append(getInput().get(0).constructLops(), getInput().get(1).constructLops(), offset, getDataType(), getValueType(), cbind, et);
 				append.getOutputParameters().setDimensions(rlen, clen, getBlocksize(), getNnz());
 			}
+		}
+		else if( dt1==DataType.LIST ) {
+			// list append is always in CP
+			long len = getInput().get(0).getLength()+1;
+			append = new Append(getInput().get(0).constructLops(), getInput().get(1).constructLops(),
+				new LiteralOp(-1).constructLops(), getDataType(), getValueType(), cbind, et);
+			append.getOutputParameters().setDimensions(1, len, getBlocksize(), len);
 		}
 		else //SCALAR-STRING and SCALAR-STRING (always CP)
 		{
@@ -440,7 +457,7 @@ public class BinaryOp extends MultiThreadedHop
 					!getInput().get(0).isVector() && !getInput().get(1).isVector()
 					&& getInput().get(0).dimsKnown() && getInput().get(1).dimsKnown()) {
 					binary = new DnnTransform(getInput().get(0).getInput().get(0).constructLops(), 
-						getInput().get(1).constructLops(), DnnTransform.OperationTypes.RELU_BACKWARD,
+						getInput().get(1).constructLops(), OpOpDnn.RELU_BACKWARD,
 						getDataType(), getValueType(), et, OptimizerUtils.getConstrainedNumThreads(_maxNumThreads));
 				}
 				else
@@ -463,19 +480,18 @@ public class BinaryOp extends MultiThreadedHop
 				if( mbin == MMBinaryMethod.MR_BINARY_UAGG_CHAIN ) {
 					AggUnaryOp uRight = (AggUnaryOp)right;
 					binary = new BinaryUAggChain(left.constructLops(), HopsOpOp2LopsB.get(op),
-							HopsAgg2Lops.get(uRight.getOp()), HopsDirection2Lops.get(uRight.getDirection()),
-							getDataType(), getValueType(), et);
+						uRight.getOp(), uRight.getDirection(), getDataType(), getValueType(), et);
 				}
 				else if (mbin == MMBinaryMethod.MR_BINARY_M) {
 					boolean isColVector = dt1 != DataType.TENSOR && dt2 != DataType.TENSOR &&
-							(right.getDim2() == 1 && left.getDim1() == right.getDim1());
+						(right.getDim2() == 1 && left.getDim1() == right.getDim1());
 
 					binary = new BinaryM(left.constructLops(), right.constructLops(),
-							HopsOpOp2LopsB.get(op), getDataType(), getValueType(), et, isColVector);
+						HopsOpOp2LopsB.get(op), getDataType(), getValueType(), et, isColVector);
 				}
 				else {
 					binary = new Binary(left.constructLops(), right.constructLops(), 
-							HopsOpOp2LopsB.get(op), getDataType(), getValueType(), et);
+						HopsOpOp2LopsB.get(op), getDataType(), getValueType(), et);
 				}
 				
 				setOutputDimensions(binary);
@@ -679,7 +695,7 @@ public class BinaryOp extends MultiThreadedHop
 		DataType dt1 = getInput().get(0).getDataType();
 		DataType dt2 = getInput().get(1).getDataType();
 		
-		if( _etypeForced != null ) {		
+		if( _etypeForced != null ) {
 			_etype = _etypeForced;
 		}
 		else 
@@ -734,14 +750,11 @@ public class BinaryOp extends MultiThreadedHop
 			&& !(getInput().get(dt1.isScalar()?1:0) instanceof DataOp)   //input is not checkpoint
 			&& getInput().get(dt1.isScalar()?1:0).getParent().size()==1  //unary scalar is only parent
 			&& !HopRewriteUtils.isSingleBlock(getInput().get(dt1.isScalar()?1:0)) //single block triggered exec
-			&& getInput().get(dt1.isScalar()?1:0).optFindExecType() == ExecType.SPARK )					
+			&& getInput().get(dt1.isScalar()?1:0).optFindExecType() == ExecType.SPARK )
 		{
 			//pull unary scalar operation into spark 
 			_etype = ExecType.SPARK;
 		}
-
-		//mark for recompile (forever)
-		setRequiresRecompileIfNecessary();
 		
 		//ensure cp exec type for single-node operations
 		if ( op == OpOp2.SOLVE ) {
@@ -750,6 +763,13 @@ public class BinaryOp extends MultiThreadedHop
 			else
 				_etype = ExecType.CP;
 		}
+		else if( (op == OpOp2.CBIND && getDataType().isList())
+				|| (op == OpOp2.RBIND && getDataType().isList())) {
+			_etype = ExecType.CP;
+		}
+		
+		//mark for recompile (forever)
+		setRequiresRecompileIfNecessary();
 		
 		return _etype;
 	}

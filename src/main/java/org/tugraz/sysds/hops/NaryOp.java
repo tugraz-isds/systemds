@@ -22,6 +22,7 @@
 package org.tugraz.sysds.hops;
 
 import org.tugraz.sysds.common.Types.DataType;
+import org.tugraz.sysds.common.Types.OpOpN;
 import org.tugraz.sysds.common.Types.ValueType;
 import org.tugraz.sysds.hops.rewrite.HopRewriteUtils;
 import org.tugraz.sysds.lops.Lop;
@@ -100,12 +101,8 @@ public class NaryOp extends Hop {
 			for (int i = 0; i < getInput().size(); i++)
 				inLops[i] = getInput().get(i).constructLops();
 			
-			Nary.OperationType opType = HopsOpOpNLops.get(_op);
-			if (opType == null)
-				throw new HopsException("Unknown Nary Lop type for '"+_op+"'");
-			
 			ExecType et = optFindExecType();
-			Nary multipleCPLop = new Nary(opType, getDataType(), getValueType(), inLops, et);
+			Nary multipleCPLop = new Nary(_op, getDataType(), getValueType(), inLops, et);
 			setOutputDimensions(multipleCPLop);
 			setLineNumbers(multipleCPLop);
 			setLops(multipleCPLop);
@@ -173,9 +170,12 @@ public class NaryOp extends Hop {
 		setRequiresRecompileIfNecessary();
 		
 		//ensure cp exec type for single-node operations
-		if ( _op == OpOpN.PRINTF  || _op == OpOpN.EVAL || _op == OpOpN.LIST)
+		if ( _op == OpOpN.PRINTF  || _op == OpOpN.EVAL || _op == OpOpN.LIST
+			//TODO: cbind/rbind of lists only support in CP right now
+			|| (_op == OpOpN.CBIND && getInput().get(0).getDataType().isList())
+			|| (_op == OpOpN.RBIND && getInput().get(0).getDataType().isList()))
 			_etype = ExecType.CP;
-		
+
 		return _etype;
 	}
 

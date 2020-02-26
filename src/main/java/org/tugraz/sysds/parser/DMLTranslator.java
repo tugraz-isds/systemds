@@ -42,17 +42,10 @@ import org.tugraz.sysds.hops.DnnOp;
 import org.tugraz.sysds.hops.FunctionOp;
 import org.tugraz.sysds.hops.FunctionOp.FunctionType;
 import org.tugraz.sysds.hops.Hop;
-import org.tugraz.sysds.hops.Hop.AggOp;
 import org.tugraz.sysds.hops.Hop.DataGenMethod;
 import org.tugraz.sysds.hops.Hop.DataOpTypes;
-import org.tugraz.sysds.hops.Hop.Direction;
 import org.tugraz.sysds.hops.Hop.OpOp1;
 import org.tugraz.sysds.hops.Hop.OpOp2;
-import org.tugraz.sysds.hops.Hop.OpOp3;
-import org.tugraz.sysds.hops.Hop.OpOpDnn;
-import org.tugraz.sysds.hops.Hop.OpOpN;
-import org.tugraz.sysds.hops.Hop.ParamBuiltinOp;
-import org.tugraz.sysds.hops.Hop.ReOrgOp;
 import org.tugraz.sysds.hops.HopsException;
 import org.tugraz.sysds.hops.IndexingOp;
 import org.tugraz.sysds.hops.LeftIndexingOp;
@@ -76,7 +69,14 @@ import org.tugraz.sysds.lops.LopsException;
 import org.tugraz.sysds.lops.compile.Dag;
 import org.tugraz.sysds.api.DMLScript;
 import org.tugraz.sysds.common.Builtins;
+import org.tugraz.sysds.common.Types.AggOp;
 import org.tugraz.sysds.common.Types.DataType;
+import org.tugraz.sysds.common.Types.Direction;
+import org.tugraz.sysds.common.Types.OpOp3;
+import org.tugraz.sysds.common.Types.OpOpDnn;
+import org.tugraz.sysds.common.Types.OpOpN;
+import org.tugraz.sysds.common.Types.ParamBuiltinOp;
+import org.tugraz.sysds.common.Types.ReOrgOp;
 import org.tugraz.sysds.common.Types.ValueType;
 import org.tugraz.sysds.parser.Expression.FormatType;
 import org.tugraz.sysds.parser.PrintStatement.PRINTTYPE;
@@ -1063,8 +1063,8 @@ public class DMLTranslator
 							inHops[j] = inHop;
 						}
 						target.setValueType(ValueType.STRING);
-						Hop printfHop = new NaryOp(target.getName(), target.getDataType(), target.getValueType(),
-								OpOpN.PRINTF, inHops);
+						Hop printfHop = new NaryOp(target.getName(), target.getDataType(),
+							target.getValueType(), OpOpN.PRINTF, inHops);
 						output.add(printfHop);
 					}
 
@@ -1487,7 +1487,8 @@ public class DMLTranslator
 				return processParameterizedBuiltinFunctionExpression((ParameterizedBuiltinFunctionExpression)source, target, hops);
 			else if( source instanceof DataExpression ) {
 				Hop ae = processDataExpression((DataExpression)source, target, hops);
-				if (ae instanceof DataOp && ((DataOp) ae).getDataOpType() != DataOpTypes.SQLREAD){
+				if (ae instanceof DataOp && ((DataOp) ae).getDataOpType() != DataOpTypes.SQLREAD &&
+						((DataOp) ae).getDataOpType() != DataOpTypes.FEDERATED) {
 					String formatName = ((DataExpression)source).getVarParam(DataExpression.FORMAT_TYPE).toString();
 					((DataOp)ae).setInputFormatType(Expression.convertFormatType(formatName));
 				}
@@ -1724,7 +1725,7 @@ public class DMLTranslator
 		} else if (source.getOpCode() == Expression.BinaryOp.INTDIV) {
 			currBop = new BinaryOp(target.getName(), target.getDataType(), target.getValueType(), OpOp2.INTDIV, left, right);
 		} else if (source.getOpCode() == Expression.BinaryOp.MATMULT) {
-			currBop = new AggBinaryOp(target.getName(), target.getDataType(), target.getValueType(), OpOp2.MULT, AggOp.SUM, left, right);
+			currBop = new AggBinaryOp(target.getName(), target.getDataType(), target.getValueType(), OpOp2.MULT, org.tugraz.sysds.common.Types.AggOp.SUM, left, right);
 		} else if (source.getOpCode() == Expression.BinaryOp.POW) {
 			currBop = new BinaryOp(target.getName(), target.getDataType(), target.getValueType(), OpOp2.POW, left, right);
 		}
@@ -2067,6 +2068,11 @@ public class DMLTranslator
 			currBuiltinOp = new DataOp(target.getName(), target.getDataType(),
 				target.getValueType(), DataOpTypes.SQLREAD, paramHops);
 			break;
+			
+		case FEDERATED:
+			currBuiltinOp = new DataOp(target.getName(), target.getDataType(),
+					target.getValueType(), DataOpTypes.FEDERATED, paramHops);
+			break;
 
 		default:
 			throw new ParseException(source.printErrorLocation() + 
@@ -2122,6 +2128,7 @@ public class DMLTranslator
 			case LSTM_BACKWARD:
 			case BATCH_NORM2D:
 			case BATCH_NORM2D_BACKWARD:
+			case REMOVE:
 			case SVD:
 				
 				// Number of outputs = size of targetList = #of identifiers in source.getOutputs
@@ -2283,18 +2290,18 @@ public class DMLTranslator
 				// example: x = mean(Y,W);
 				// stable weighted mean is implemented by using centralMoment with order = 0
 				Hop orderHop = new LiteralOp(0);
-				currBuiltinOp=new TernaryOp(target.getName(), DataType.SCALAR, target.getValueType(), 
-						Hop.OpOp3.MOMENT, expr, expr2, orderHop);
+				currBuiltinOp=new TernaryOp(target.getName(), DataType.SCALAR,
+					target.getValueType(), OpOp3.MOMENT, expr, expr2, orderHop);
 			}
 			break;
 
 		case SD:
 			// stdDev = sqrt(variance)
 			currBuiltinOp = new AggUnaryOp(target.getName(), DataType.SCALAR,
-					target.getValueType(), AggOp.VAR, Direction.RowCol, expr);
+				target.getValueType(), AggOp.VAR, Direction.RowCol, expr);
 			HopRewriteUtils.setOutputParametersForScalar(currBuiltinOp);
 			currBuiltinOp = new UnaryOp(target.getName(), DataType.SCALAR,
-					target.getValueType(), Hop.OpOp1.SQRT, currBuiltinOp);
+				target.getValueType(), Hop.OpOp1.SQRT, currBuiltinOp);
 			break;
 
 		case MIN:
@@ -2346,12 +2353,12 @@ public class DMLTranslator
 			
 		case CBIND:
 		case RBIND:
-			OpOp2 appendOp1 = (source.getOpCode()==Builtins.CBIND) ? OpOp2.CBIND : OpOp2.RBIND;
-			OpOpN appendOp2 = (source.getOpCode()==Builtins.CBIND) ? OpOpN.CBIND : OpOpN.RBIND;
+			OpOp2 appendOp2 = (source.getOpCode()==Builtins.CBIND) ? OpOp2.CBIND : OpOp2.RBIND;
+			OpOpN appendOpN = (source.getOpCode()==Builtins.CBIND) ? OpOpN.CBIND : OpOpN.RBIND;
 			currBuiltinOp = (source.getAllExpr().length == 2) ?
-					new BinaryOp(target.getName(), target.getDataType(), target.getValueType(), appendOp1, expr, expr2) :
-					new NaryOp(target.getName(), target.getDataType(), target.getValueType(), appendOp2,
-							processAllExpressions(source.getAllExpr(), hops));
+				new BinaryOp(target.getName(), target.getDataType(), target.getValueType(), appendOp2, expr, expr2) :
+				new NaryOp(target.getName(), target.getDataType(), target.getValueType(), appendOpN,
+					processAllExpressions(source.getAllExpr(), hops));
 			break;
 			
 		case TABLE:
@@ -2452,7 +2459,9 @@ public class DMLTranslator
 		case CUMSUMPROD:
 		case CUMMIN:
 		case CUMMAX:
-
+		case ISNA:
+		case ISNAN:
+		case ISINF:
 			currBuiltinOp = new UnaryOp(target.getName(), target.getDataType(), target.getValueType(),
 				OpOp1.valueOf(source.getOpCode().name()), expr);
 			break;
@@ -2504,10 +2513,10 @@ public class DMLTranslator
 			break;
 		
 		case IFELSE:
-			currBuiltinOp=new TernaryOp(target.getName(), target.getDataType(), target.getValueType(), 
-				Hop.OpOp3.IFELSE, expr, expr2, expr3);
+			currBuiltinOp=new TernaryOp(target.getName(), target.getDataType(),
+				target.getValueType(), OpOp3.IFELSE, expr, expr2, expr3);
 			break;
-			
+		
 		case SEQ:
 			HashMap<String,Hop> randParams = new HashMap<>();
 			randParams.put(Statement.SEQ_FROM, expr);
@@ -2627,9 +2636,9 @@ public class DMLTranslator
 		}
 		
 		boolean isConvolution = source.getOpCode() == Builtins.CONV2D || source.getOpCode() == Builtins.CONV2D_BACKWARD_DATA ||
-				source.getOpCode() == Builtins.CONV2D_BACKWARD_FILTER || 
-				source.getOpCode() == Builtins.MAX_POOL || source.getOpCode() == Builtins.MAX_POOL_BACKWARD || 
-				source.getOpCode() == Builtins.AVG_POOL || source.getOpCode() == Builtins.AVG_POOL_BACKWARD;
+			source.getOpCode() == Builtins.CONV2D_BACKWARD_FILTER || 
+			source.getOpCode() == Builtins.MAX_POOL || source.getOpCode() == Builtins.MAX_POOL_BACKWARD || 
+			source.getOpCode() == Builtins.AVG_POOL || source.getOpCode() == Builtins.AVG_POOL_BACKWARD;
 		if( !isConvolution) {
 			// Since the dimension of output doesnot match that of input variable for these operations
 			setIdentifierParams(currBuiltinOp, source.getOutput());

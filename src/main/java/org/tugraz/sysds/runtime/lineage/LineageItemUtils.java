@@ -21,9 +21,12 @@ import org.apache.commons.lang.NotImplementedException;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
+import org.tugraz.sysds.runtime.instructions.spark.RandSPInstruction;
 import org.tugraz.sysds.runtime.io.IOUtilFunctions;
+import org.tugraz.sysds.runtime.lineage.LineageCacheConfig.ReuseCacheType;
 import org.tugraz.sysds.runtime.lineage.LineageItem.LineageItemType;
 import org.tugraz.sysds.common.Types.DataType;
+import org.tugraz.sysds.common.Types.OpOpN;
 import org.tugraz.sysds.common.Types.ValueType;
 import org.tugraz.sysds.conf.ConfigurationManager;
 import org.tugraz.sysds.hops.DataGenOp;
@@ -32,7 +35,6 @@ import org.tugraz.sysds.hops.Hop;
 import org.tugraz.sysds.hops.LiteralOp;
 import org.tugraz.sysds.hops.Hop.DataGenMethod;
 import org.tugraz.sysds.hops.Hop.DataOpTypes;
-import org.tugraz.sysds.hops.Hop.OpOpN;
 import org.tugraz.sysds.hops.rewrite.HopRewriteUtils;
 import org.tugraz.sysds.lops.Lop;
 import org.tugraz.sysds.lops.compile.Dag;
@@ -49,9 +51,11 @@ import org.tugraz.sysds.runtime.instructions.InstructionUtils;
 import org.tugraz.sysds.runtime.instructions.cp.CPOperand;
 import org.tugraz.sysds.runtime.instructions.cp.Data;
 import org.tugraz.sysds.runtime.instructions.cp.DataGenCPInstruction;
+import org.tugraz.sysds.runtime.instructions.cp.ScalarObject;
 import org.tugraz.sysds.runtime.instructions.cp.ScalarObjectFactory;
 import org.tugraz.sysds.runtime.instructions.cp.VariableCPInstruction;
 import org.tugraz.sysds.runtime.instructions.spark.SPInstruction.SPType;
+import org.tugraz.sysds.runtime.instructions.cp.CPInstruction;
 import org.tugraz.sysds.runtime.instructions.cp.CPInstruction.CPType;
 import org.tugraz.sysds.runtime.util.HDFSTool;
 
@@ -59,6 +63,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -206,6 +211,25 @@ public class LineageItemUtils {
 					pread.setFileName(parts[2]);
 					operands.put(item.getId(), pread);
 				}
+				else if  (inst instanceof RandSPInstruction) {
+					RandSPInstruction rand = (RandSPInstruction) inst;
+					HashMap<String, Hop> params = new HashMap<>();
+					if (rand.output.getDataType() == DataType.TENSOR)
+						params.put(DataExpression.RAND_DIMS, new LiteralOp(rand.getDims()));
+					else {
+						params.put(DataExpression.RAND_ROWS, new LiteralOp(rand.getRows()));
+						params.put(DataExpression.RAND_COLS, new LiteralOp(rand.getCols()));
+					}
+					params.put(DataExpression.RAND_MIN, new LiteralOp(rand.getMinValue()));
+					params.put(DataExpression.RAND_MAX, new LiteralOp(rand.getMaxValue()));
+					params.put(DataExpression.RAND_PDF, new LiteralOp(rand.getPdf()));
+					params.put(DataExpression.RAND_LAMBDA, new LiteralOp(rand.getPdfParams()));
+					params.put(DataExpression.RAND_SPARSITY, new LiteralOp(rand.getSparsity()));
+					params.put(DataExpression.RAND_SEED, new LiteralOp(rand.getSeed()));
+					Hop datagen = new DataGenOp(DataGenMethod.RAND, new DataIdentifier("tmp"), params);
+					datagen.setBlocksize(rand.getBlocksize());
+					operands.put(item.getId(), datagen);
+				}
 				break;
 			}
 			case Instruction: {
@@ -251,21 +275,15 @@ public class LineageItemUtils {
 							break;
 						}
 						case MatrixIndexing: {
-							if( "rightIndex".equals(item.getOpcode()) )
-								operands.put(item.getId(), HopRewriteUtils.createIndexingOp(
-									operands.get(item.getInputs()[0].getId()), //input
-									operands.get(item.getInputs()[1].getId()), //rl
-									operands.get(item.getInputs()[2].getId()), //ru
-									operands.get(item.getInputs()[3].getId()), //cl
-									operands.get(item.getInputs()[4].getId()))); //cu
-							else if( "leftIndex".equals(item.getOpcode()) )
-								operands.put(item.getId(), HopRewriteUtils.createLeftIndexingOp(
-									operands.get(item.getInputs()[0].getId()), //input
-									operands.get(item.getInputs()[1].getId()), //rhs
-									operands.get(item.getInputs()[2].getId()), //rl
-									operands.get(item.getInputs()[3].getId()), //ru
-									operands.get(item.getInputs()[4].getId()), //cl
-									operands.get(item.getInputs()[5].getId()))); //cu
+							operands.put(item.getId(), constructIndexingOp(item, operands));
+							break;
+						}
+						case MMTSJ: {
+							//TODO handling of tsmm type left and right -> placement transpose
+							Hop input = operands.get(item.getInputs()[0].getId());
+							Hop aggunary = HopRewriteUtils.createMatrixMultiply(
+								HopRewriteUtils.createTranspose(input), input);
+							operands.put(item.getId(), aggunary);
 							break;
 						}
 						case Variable: { //cpvar, write
@@ -274,14 +292,33 @@ public class LineageItemUtils {
 						}
 						default:
 							throw new DMLRuntimeException("Unsupported instruction "
-									+ "type: " + ctype.name() + " (" + item.getOpcode() + ").");
+								+ "type: " + ctype.name() + " (" + item.getOpcode() + ").");
 					}
-				} else if (stype == SPType.Reblock) {
-					Hop input = operands.get(item.getInputs()[0].getId());
-					input.setBlocksize(ConfigurationManager.getBlocksize());
-					input.setRequiresReblock(true);
-					operands.put(item.getId(), input);
-				} else
+				}
+				else if( stype != null ) {
+					switch(stype) {
+						case Reblock: {
+							Hop input = operands.get(item.getInputs()[0].getId());
+							input.setBlocksize(ConfigurationManager.getBlocksize());
+							input.setRequiresReblock(true);
+							operands.put(item.getId(), input);
+							break;
+						}
+						case Checkpoint: {
+							Hop input = operands.get(item.getInputs()[0].getId());
+							operands.put(item.getId(), input);
+							break;
+						}
+						case MatrixIndexing: {
+							operands.put(item.getId(), constructIndexingOp(item, operands));
+							break;
+						}
+						default:
+							throw new DMLRuntimeException("Unsupported instruction "
+								+ "type: " + stype.name() + " (" + item.getOpcode() + ").");
+					}
+				}
+				else
 					throw new DMLRuntimeException("Unsupported instruction: " + item.getOpcode());
 				break;
 			}
@@ -297,6 +334,27 @@ public class LineageItemUtils {
 		}
 		
 		item.setVisited();
+	}
+	
+	private static Hop constructIndexingOp(LineageItem item, Map<Long, Hop> operands) {
+		//TODO fix 
+		if( "rightIndex".equals(item.getOpcode()) )
+			return HopRewriteUtils.createIndexingOp(
+				operands.get(item.getInputs()[0].getId()), //input
+				operands.get(item.getInputs()[1].getId()), //rl
+				operands.get(item.getInputs()[2].getId()), //ru
+				operands.get(item.getInputs()[3].getId()), //cl
+				operands.get(item.getInputs()[4].getId())); //cu
+		else if( "leftIndex".equals(item.getOpcode()) 
+				|| "mapLeftIndex".equals(item.getOpcode()) )
+			return HopRewriteUtils.createLeftIndexingOp(
+				operands.get(item.getInputs()[0].getId()), //input
+				operands.get(item.getInputs()[1].getId()), //rhs
+				operands.get(item.getInputs()[2].getId()), //rl
+				operands.get(item.getInputs()[3].getId()), //ru
+				operands.get(item.getInputs()[4].getId()), //cl
+				operands.get(item.getInputs()[5].getId())); //cu
+		throw new DMLRuntimeException("Unsupported opcode: "+item.getOpcode());
 	}
 	
 	public static LineageItem rDecompress(LineageItem item) {
@@ -370,7 +428,7 @@ public class LineageItemUtils {
 		//process children until old item found, then replace
 		for(int i=0; i<current.getInputs().length; i++) {
 			LineageItem tmp = current.getInputs()[i];
-			if( tmp == liOld )
+			if( tmp.equals(liOld) )
 				current.getInputs()[i] = liNew;
 			else
 				rReplace(tmp, liOld, liNew);
@@ -384,5 +442,64 @@ public class LineageItemUtils {
 		for( int i=0; i<len; i++ )
 			ret[i] = operands.get(item.getInputs()[i].getId());
 		return ret;
+	}
+	
+	public static boolean containsRandDataGen(HashSet<LineageItem> entries, LineageItem root) {
+		boolean isRand = false;
+		if (entries.contains(root))
+			return false;
+		if (isNonDeterministic(root))
+			isRand |= true;
+		if (!root.isLeaf()) 
+			for (LineageItem input : root.getInputs())
+				isRand = isRand ? true : containsRandDataGen(entries, input);
+		return isRand;
+		//TODO: unmark for caching in compile time
+	}
+	
+	private static boolean isNonDeterministic(LineageItem li) {
+		if (li.getType() != LineageItemType.Creation)
+			return false;
+
+		boolean isND = false;
+		CPInstruction CPins = (CPInstruction) InstructionParser.parseSingleInstruction(li.getData());
+		if (!(CPins instanceof DataGenCPInstruction))
+			return false;
+
+		DataGenCPInstruction ins = (DataGenCPInstruction)CPins;
+		switch(li.getOpcode().toUpperCase())
+		{
+			case "RAND":
+				if ((ins.getMinValue() != ins.getMaxValue()) || (ins.getSparsity() != 1))
+					isND = true;
+					//NOTE:It is hard to detect in runtime if rand was called with unspecified seed
+					//as -1 is already replaced by computed seed. Solution is to unmark for caching in 
+					//compile time. That way we can differentiate between given and unspecified seed.
+				break;
+			case "SAMPLE":
+				isND = true;
+				break;
+			default:
+				isND = false;
+				break;
+		}
+		//TODO: add 'read' in this list
+		return isND;
+	}
+	
+	public static LineageItem[] getLineageItemInputstoSB(ArrayList<String> inputs, ExecutionContext ec) {
+		if (ReuseCacheType.isNone())
+			return null;
+		
+		ArrayList<CPOperand> CPOpInputs = inputs.size() > 0 ? new ArrayList<>() : null;
+		for (int i=0; i<inputs.size(); i++) {
+			Data value = ec.getVariable(inputs.get(i));
+			if (value != null) {
+				CPOpInputs.add(new CPOperand(value instanceof ScalarObject ? value.toString() : inputs.get(i),
+					value.getValueType(), value.getDataType()));
+			}
+		}
+		return(CPOpInputs != null ? LineageItemUtils.getLineage(ec, 
+			CPOpInputs.toArray(new CPOperand[CPOpInputs.size()])) : null);
 	}
 }

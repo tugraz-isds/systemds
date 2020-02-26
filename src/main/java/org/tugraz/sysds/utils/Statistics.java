@@ -639,6 +639,12 @@ public class Statistics
 		tmp.time.add(timeNanos);
 		tmp.count.increment();
 	}
+	
+	public static void maintainCPFuncCallStats(String instName) {
+		InstStats tmp = _instStats.get(instName);
+		if (tmp != null)  //tmp should never be null
+			tmp.count.decrement();
+	}
 
 	public static Set<String> getCPHeavyHitterOpCodes() {
 		return _instStats.keySet();
@@ -940,12 +946,13 @@ public class Statistics
 				sb.append("Functions recompile time:\t" + String.format("%.3f", ((double)getFunRecompileTime())/1000000000) + " sec.\n");
 			}
 			if (DMLScript.LINEAGE && !ReuseCacheType.isNone()) {
-				sb.append("LineageCache hits (Mem/FS/Del): " + LineageCacheStatistics.displayHits() + ".\n");
-				sb.append("LineageCache writes (Mem/FS): \t" + LineageCacheStatistics.displayWtrites() + ".\n");
-				sb.append("LineageCache FStimes (Rd/Wr): \t" + LineageCacheStatistics.displayTime() + " sec.\n");
-				sb.append("LineageCache costing time: \t" + LineageCacheStatistics.displayCostingTime() + " sec.\n");
-				sb.append("LineageCache Rewrites:   \t" + LineageCacheStatistics.displayRewrites() + ".\n");
-				sb.append("LineageCache RWtime (Com/Ex): \t" + LineageCacheStatistics.displayRewriteTime() + " sec.\n");
+				sb.append("LinCache hits (Mem/FS/Del): \t" + LineageCacheStatistics.displayHits() + ".\n");
+				sb.append("LinCache MultiLevel (Ins/SB/Fn):" + LineageCacheStatistics.displayMultiLvlHits() + ".\n");
+				sb.append("LinCache writes (Mem/FS): \t" + LineageCacheStatistics.displayWtrites() + ".\n");
+				sb.append("LinCache FStimes (Rd/Wr): \t" + LineageCacheStatistics.displayTime() + " sec.\n");
+				sb.append("LinCache costing time:  \t" + LineageCacheStatistics.displayCostingTime() + " sec.\n");
+				sb.append("LinCache Rewrites:    \t\t" + LineageCacheStatistics.displayRewrites() + ".\n");
+				sb.append("LinCache RWtime (Com/Ex): \t" + LineageCacheStatistics.displayRewriteTime() + " sec.\n");
 			}
 			if( ConfigurationManager.isCodegenEnabled() ) {
 				sb.append("Codegen compile (DAG,CP,JC):\t" + getCodegenDAGCompile() + "/"

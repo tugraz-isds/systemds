@@ -1,4 +1,6 @@
 /*
+ * Modifications Copyright 2020 Graz University of Technology
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -6,9 +8,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -24,13 +26,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 
+import org.tugraz.sysds.common.Types.AggOp;
+import org.tugraz.sysds.common.Types.Direction;
 import org.tugraz.sysds.hops.AggBinaryOp;
 import org.tugraz.sysds.hops.AggUnaryOp;
 import org.tugraz.sysds.hops.BinaryOp;
 import org.tugraz.sysds.hops.Hop;
 import org.tugraz.sysds.hops.UnaryOp;
-import org.tugraz.sysds.hops.Hop.AggOp;
-import org.tugraz.sysds.hops.Hop.Direction;
 import org.tugraz.sysds.hops.Hop.OpOp2;
 import org.tugraz.sysds.hops.codegen.cplan.CNode;
 import org.tugraz.sysds.hops.codegen.cplan.CNodeBinary;
@@ -42,11 +44,14 @@ import org.tugraz.sysds.hops.codegen.cplan.CNodeBinary.BinType;
 import org.tugraz.sysds.hops.codegen.cplan.CNodeUnary.UnaryType;
 import org.tugraz.sysds.hops.codegen.template.CPlanMemoTable.MemoTableEntry;
 import org.tugraz.sysds.hops.rewrite.HopRewriteUtils;
+import org.tugraz.sysds.lops.MMTSJ;
 import org.tugraz.sysds.runtime.codegen.SpoofOuterProduct.OutProdType;
 import org.tugraz.sysds.runtime.matrix.data.Pair;
 
 public class TemplateOuterProduct extends TemplateBase {
-	
+
+	MMTSJ.MMTSJType mmtsj = MMTSJ.MMTSJType.NONE;
+
 	public TemplateOuterProduct() {
 		super(TemplateType.OUTER);
 	}
@@ -57,23 +62,27 @@ public class TemplateOuterProduct extends TemplateBase {
 
 	@Override
 	public boolean open(Hop hop) {
-		//open on outer product like matrix mult (output larger than common dim)
-		return HopRewriteUtils.isOuterProductLikeMM(hop)
-			&& hop.getDim1()>256 && hop.getDim2() > 256;
+		//open on (1) outer product like matrix mult (output larger than common dim)
+		//or (2) binary outer operation
+		return (HopRewriteUtils.isOuterProductLikeMM(hop)
+				|| HopRewriteUtils.isOuterBinary(hop))
+			&& hop.getDim1() > 256 && hop.getDim2() > 256;
 	}
 
 	@Override
 	public boolean fuse(Hop hop, Hop input) {
-		return !isClosed() 
-			&&((hop instanceof UnaryOp && TemplateUtils.isOperationSupported(hop))  
-			|| (hop instanceof BinaryOp && TemplateUtils.isOperationSupported(hop)
-				&& (TemplateUtils.isBinaryMatrixColVector(hop) || HopRewriteUtils.isBinaryMatrixScalarOperation(hop)
-				|| (HopRewriteUtils.isBinaryMatrixMatrixOperation(hop)) )) 
-			|| (HopRewriteUtils.isTransposeOperation(hop) && input instanceof AggBinaryOp
-				&& !HopRewriteUtils.isOuterProductLikeMM(input)) 
-			|| (hop instanceof AggBinaryOp && !HopRewriteUtils.isOuterProductLikeMM(hop)
-				&& TemplateUtils.containsOuterProduct(input, HopRewriteUtils.getOtherInput(hop, input)))
-			|| (hop instanceof AggUnaryOp && ((AggUnaryOp)hop).getDirection()==Direction.RowCol));
+		return !isClosed()
+			&& ((hop instanceof UnaryOp && TemplateUtils.isOperationSupported(hop))
+				|| (hop instanceof BinaryOp && TemplateUtils.isOperationSupported(hop)
+					&& (TemplateUtils.isBinaryMatrixColVector(hop)
+					|| HopRewriteUtils.isBinaryMatrixScalarOperation(hop)
+					|| HopRewriteUtils.isBinaryMatrixMatrixOperation(hop)
+					|| TemplateUtils.isBinaryMatrixRowVector(hop)))
+				|| (HopRewriteUtils.isTransposeOperation(hop) && input instanceof AggBinaryOp
+					 && !HopRewriteUtils.isOuterProductLikeMM(input))
+				|| (hop instanceof AggBinaryOp && !HopRewriteUtils.isOuterProductLikeMM(hop)
+					 && TemplateUtils.containsOuterProduct(input, HopRewriteUtils.getOtherInput(hop, input)))
+				|| (hop instanceof AggUnaryOp && ((AggUnaryOp)hop).getDirection()==Direction.RowCol));
 	}
 
 	@Override
@@ -136,7 +145,7 @@ public class TemplateOuterProduct extends TemplateBase {
 				inputs.add(tmp.get(in.getHopID()));
 
 		CNode output = tmp.get(hop.getHopID());
-		CNodeOuterProduct tpl = new CNodeOuterProduct(inputs, output);
+		CNodeOuterProduct tpl = new CNodeOuterProduct(inputs, output, mmtsj);
 		tpl.setOutProdType(TemplateUtils.getOuterProductType(X, U, V, hop));
 		tpl.setTransposeOutput(!HopRewriteUtils.isTransposeOperation(hop)
 			&& tpl.getOutProdType()==OutProdType.LEFT_OUTER_PRODUCT);
@@ -204,12 +213,21 @@ public class TemplateOuterProduct extends TemplateBase {
 			if( HopRewriteUtils.isOuterProductLikeMM(hop) )
 			{
 				//keep U and V for later reference
-				inHops2.put("_U", hop.getInput().get(0));
+				if( HopRewriteUtils.isTransposeOperation(hop.getInput().get(0)) )
+					inHops2.put("_U", hop.getInput().get(0).getInput().get(0));
+				else
+					inHops2.put("_U", hop.getInput().get(0));
+
 				if( HopRewriteUtils.isTransposeOperation(hop.getInput().get(1)) )
 					inHops2.put("_V", hop.getInput().get(1).getInput().get(0));
 				else
 					inHops2.put("_V", hop.getInput().get(1));
 				
+				//TODO find out why we need to propagate this at all 
+				//(maybe a more generic treatment will yield the same result?)
+				if(hop instanceof AggBinaryOp)
+					mmtsj = ((AggBinaryOp) hop).checkTransposeSelf(); //determine tsmm pattern
+
 				out = new CNodeBinary(cdata1, cdata2, BinType.DOT_PRODUCT);
 			}
 			//final left/right matrix mult, see close

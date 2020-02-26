@@ -22,8 +22,11 @@
 package org.tugraz.sysds.hops;
 
 import org.tugraz.sysds.api.DMLScript;
+import org.tugraz.sysds.common.Types.AggOp;
 import org.tugraz.sysds.common.Types.DataType;
+import org.tugraz.sysds.common.Types.Direction;
 import org.tugraz.sysds.common.Types.ExecMode;
+import org.tugraz.sysds.common.Types.ReOrgOp;
 import org.tugraz.sysds.common.Types.ValueType;
 import org.tugraz.sysds.hops.rewrite.HopRewriteUtils;
 import org.tugraz.sysds.lops.Binary;
@@ -40,7 +43,6 @@ import org.tugraz.sysds.lops.MapMultChain.ChainType;
 import org.tugraz.sysds.lops.PMMJ;
 import org.tugraz.sysds.lops.PMapMult;
 import org.tugraz.sysds.lops.Transform;
-import org.tugraz.sysds.lops.Transform.OperationTypes;
 import org.tugraz.sysds.runtime.controlprogram.context.SparkExecutionContext;
 import org.tugraz.sysds.runtime.matrix.data.MatrixBlock;
 import org.tugraz.sysds.runtime.meta.DataCharacteristics;
@@ -237,7 +239,7 @@ public class AggBinaryOp extends MultiThreadedHop
 						constructSparkLopsPMM(); 
 						break;
 					case ZIPMM:
-						constructSparkLopsZIPMM(); 
+						constructSparkLopsZIPMM();
 						break;
 						
 					default:
@@ -257,8 +259,7 @@ public class AggBinaryOp extends MultiThreadedHop
 	@Override
 	public String getOpString() {
 		//ba - binary aggregate, for consistency with runtime 
-		String s = "ba(" + 
-				HopsAgg2String.get(outerOp) + 
+		String s = "ba(" + outerOp.toString() + 
 				HopsOpOp2String.get(innerOp)+")";
 		return s;
 	}
@@ -368,6 +369,11 @@ public class AggBinaryOp extends MultiThreadedHop
 				return false;
 		}
 		return false;
+	}
+	
+	@Override
+	public boolean isMultiThreadedOpType() {
+		return isMatrixMultiply();
 	}
 	
 	@Override
@@ -638,9 +644,9 @@ public class AggBinaryOp extends MultiThreadedHop
 		
 		//right vector transpose
 		Lop lY = Y.constructLops();
-		Lop tY = (lY instanceof Transform && ((Transform)lY).getOperationType()==OperationTypes.Transpose ) ?
+		Lop tY = (lY instanceof Transform && ((Transform)lY).getOp()==ReOrgOp.TRANS ) ?
 				lY.getInputs().get(0) : //if input is already a transpose, avoid redundant transpose ops
-				new Transform(lY, OperationTypes.Transpose, getDataType(), getValueType(), ExecType.CP, k);
+				new Transform(lY, ReOrgOp.TRANS, getDataType(), getValueType(), ExecType.CP, k);
 		tY.getOutputParameters().setDimensions(Y.getDim2(), Y.getDim1(), getBlocksize(), Y.getNnz());
 		setLineNumbers(tY);
 		
@@ -650,7 +656,7 @@ public class AggBinaryOp extends MultiThreadedHop
 		setLineNumbers(mult);
 		
 		//result transpose (dimensions set outside)
-		Lop out = new Transform(mult, OperationTypes.Transpose, getDataType(), getValueType(), ExecType.CP, k);
+		Lop out = new Transform(mult, ReOrgOp.TRANS, getDataType(), getValueType(), ExecType.CP, k);
 		
 		return out;
 	}
@@ -699,7 +705,7 @@ public class AggBinaryOp extends MultiThreadedHop
 		Hop Y = getInput().get(1);
 		
 		//right vector transpose
-		Lop tY = new Transform(Y.constructLops(), OperationTypes.Transpose, getDataType(), getValueType(), ExecType.CP);
+		Lop tY = new Transform(Y.constructLops(), ReOrgOp.TRANS, getDataType(), getValueType(), ExecType.CP);
 		tY.getOutputParameters().setDimensions(Y.getDim2(), Y.getDim1(), getBlocksize(), Y.getNnz());
 		setLineNumbers(tY);
 		
@@ -714,7 +720,7 @@ public class AggBinaryOp extends MultiThreadedHop
 		setLineNumbers(mult);
 		
 		//result transpose (dimensions set outside)
-		Lop out = new Transform(mult, OperationTypes.Transpose, getDataType(), getValueType(), ExecType.CP);
+		Lop out = new Transform(mult, ReOrgOp.TRANS, getDataType(), getValueType(), ExecType.CP);
 		
 		return out;
 	}
@@ -771,7 +777,7 @@ public class AggBinaryOp extends MultiThreadedHop
 		Hop Y = getInput().get(1);
 		
 		//right vector transpose CP
-		Lop tY = new Transform(Y.constructLops(), OperationTypes.Transpose, getDataType(), getValueType(), ExecType.CP);
+		Lop tY = new Transform(Y.constructLops(), ReOrgOp.TRANS, getDataType(), getValueType(), ExecType.CP);
 		tY.getOutputParameters().setDimensions(Y.getDim2(), Y.getDim1(), Y.getBlocksize(), Y.getNnz());
 		setLineNumbers(tY);
 		
@@ -782,7 +788,7 @@ public class AggBinaryOp extends MultiThreadedHop
 		setLineNumbers(mmcj);
 
 		//result transpose CP 
-		Lop out = new Transform(mmcj, OperationTypes.Transpose, getDataType(), getValueType(), ExecType.CP);
+		Lop out = new Transform(mmcj, ReOrgOp.TRANS, getDataType(), getValueType(), ExecType.CP);
 		out.getOutputParameters().setDimensions(X.getDim2(), Y.getDim2(), getBlocksize(), getNnz());
 		
 		return out;

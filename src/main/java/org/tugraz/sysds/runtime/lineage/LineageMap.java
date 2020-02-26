@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Graz University of Technology
+ * Copyright 2020 Graz University of Technology
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import org.tugraz.sysds.runtime.instructions.Instruction;
 import org.tugraz.sysds.runtime.instructions.cp.CPOperand;
 import org.tugraz.sysds.runtime.instructions.cp.FunctionCallCPInstruction;
 import org.tugraz.sysds.runtime.instructions.cp.VariableCPInstruction;
+import org.tugraz.sysds.runtime.instructions.spark.WriteSPInstruction;
 import org.tugraz.sysds.runtime.lineage.LineageItem.LineageItemType;
 import org.tugraz.sysds.utils.Explain;
 
@@ -95,6 +96,10 @@ public class LineageMap {
 		return _traces.put(varName, li);
 	}
 	
+	public LineageItem setLiteral(String varName, LineageItem li) {
+		return _literals.put(varName, li);
+	}
+	
 	public LineageItem get(CPOperand variable) {
 		if (variable == null)
 			return null;
@@ -112,6 +117,14 @@ public class LineageMap {
 	public void resetLineageMaps() {
 		_traces.clear();
 		_literals.clear();
+	}
+	
+	public Map<String, LineageItem> getTraces() {
+		return _traces;
+	}
+	
+	public Map<String, LineageItem> getLiterals() {
+		return _literals;
 	}
 	
 	private void trace(Instruction inst, ExecutionContext ec, LineageItem li) {
@@ -136,7 +149,7 @@ public class LineageMap {
 					break;
 				}
 				case Write: {
-					processWriteLI(vcp_inst, ec);
+					processWriteLI(vcp_inst.getInput1(), vcp_inst.getInput2(), ec);
 					break;
 				}
 				case MoveVariable: {
@@ -155,7 +168,11 @@ public class LineageMap {
 				default:
 					throw new DMLRuntimeException("Unknown VariableCPInstruction (" + inst.getOpcode() + ") traced.");
 			}
-		} else
+		}
+		else if (inst instanceof WriteSPInstruction){
+			processWriteLI(((WriteSPInstruction) inst).getInput1(), ((WriteSPInstruction) inst).getInput2(), ec);
+		}
+		else
 			addLineageItem(li);
 		
 	}
@@ -166,7 +183,7 @@ public class LineageMap {
 		// fix literals referring to variables (e.g., for/parfor loop variable)
 		for(int i=0; i<li.getInputs().length; i++) {
 			LineageItem tmp = li.getInputs()[i];
-			if( tmp.getType() != LineageItemType.Literal) 
+			if( tmp.getType() != LineageItemType.Literal)
 				continue;
 			//check if CPOperand is not a literal, w/o parsing
 			if( tmp.getData().endsWith("false") ) {
@@ -197,9 +214,9 @@ public class LineageMap {
 		_traces.put(li.getName(), li);
 	}
 	
-	private void processWriteLI(VariableCPInstruction inst, ExecutionContext ec) {
-		LineageItem li = get(inst.getInput1());
-		String fName = ec.getScalarInput(inst.getInput2().getName(), Types.ValueType.STRING, inst.getInput2().isLiteral()).getStringValue();
+	private void processWriteLI(CPOperand input1, CPOperand input2, ExecutionContext ec) {
+		LineageItem li = get(input1);
+		String fName = ec.getScalarInput(input2.getName(), Types.ValueType.STRING, input2.isLiteral()).getStringValue();
 		
 		if (DMLScript.LINEAGE_DEDUP) {
 			LineageItemUtils.writeTraceToHDFS(Explain.explain(li), fName + ".lineage.dedup");
@@ -213,8 +230,7 @@ public class LineageMap {
 			removeLineageItem(li.getInputs()[0].getName());
 		else {
 			//remove from old and move to new key
-			_traces.put(li.getName(),
-				_traces.remove(li.getInputs()[0].getName()));
+			_traces.put(li.getName(), li.getInputs()[0]);
 		}
 	}
 }

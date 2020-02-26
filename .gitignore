@@ -10,12 +10,16 @@
 .settings/
 .externalToolBuilders/
 maven-eclipse.xml
+/src/main/cpp/kernels/.cproject
 
 # Intellij
 .idea/
 .idea_modules/
 *.iml
 *.iws
+
+# vscode
+.vscode
 
 # checksum files
 *.crc

@@ -21,7 +21,11 @@
 
 package org.tugraz.sysds.hops;
 
+import org.tugraz.sysds.common.Types.AggOp;
 import org.tugraz.sysds.common.Types.DataType;
+import org.tugraz.sysds.common.Types.Direction;
+import org.tugraz.sysds.common.Types.ParamBuiltinOp;
+import org.tugraz.sysds.common.Types.ReOrgOp;
 import org.tugraz.sysds.common.Types.ValueType;
 import org.tugraz.sysds.hops.rewrite.HopRewriteUtils;
 import org.tugraz.sysds.lops.Data;
@@ -137,6 +141,12 @@ public class ParameterizedBuiltinOp extends MultiThreadedHop
 	}
 	
 	@Override
+	public boolean isMultiThreadedOpType() {
+		return HopRewriteUtils.isValidOp(_op, 
+			ParamBuiltinOp.GROUPEDAGG, ParamBuiltinOp.REXPAND, ParamBuiltinOp.PARAMSERV);
+	}
+	
+	@Override
 	public Lop constructLops() 
 	{
 		//return already created lops
@@ -177,8 +187,8 @@ public class ParameterizedBuiltinOp extends MultiThreadedHop
 			case PARAMSERV:
 			case LIST: {
 				ExecType et = optFindExecType();
-				ParameterizedBuiltin pbilop = new ParameterizedBuiltin(inputlops,
-					HopsParameterizedBuiltinLops.get(_op), getDataType(), getValueType(), et);
+				ParameterizedBuiltin pbilop = new ParameterizedBuiltin(
+					inputlops, _op, getDataType(), getValueType(), et);
 				setOutputDimensions(pbilop);
 				setLineNumbers(pbilop);
 				setLops(pbilop);
@@ -270,7 +280,7 @@ public class ParameterizedBuiltinOp extends MultiThreadedHop
 		
 		if( et == ExecType.CP )
 		{
-			ParameterizedBuiltin pbilop = new ParameterizedBuiltin(inputlops,HopsParameterizedBuiltinLops.get(_op), getDataType(), getValueType(), et);
+			ParameterizedBuiltin pbilop = new ParameterizedBuiltin(inputlops, _op, getDataType(), getValueType(), et);
 			setOutputDimensions(pbilop);
 			setLineNumbers(pbilop);
 			setLops(pbilop);
@@ -398,7 +408,7 @@ public class ParameterizedBuiltinOp extends MultiThreadedHop
 			if ( !FORCE_DIST_RM_EMPTY && isRemoveEmptyBcSP())
 				_bRmEmptyBC = true;
 			
-			ParameterizedBuiltin pbilop = new ParameterizedBuiltin( inMap, HopsParameterizedBuiltinLops.get(_op), getDataType(), getValueType(), et, _bRmEmptyBC);			
+			ParameterizedBuiltin pbilop = new ParameterizedBuiltin( inMap, _op, getDataType(), getValueType(), et, _bRmEmptyBC);			
 			setOutputDimensions(pbilop);
 			setLineNumbers(pbilop);
 			
@@ -415,8 +425,8 @@ public class ParameterizedBuiltinOp extends MultiThreadedHop
 	private void constructLopsRExpand(HashMap<String, Lop> inputlops, ExecType et) 
 	{
 		int k = OptimizerUtils.getConstrainedNumThreads( _maxNumThreads );
-		ParameterizedBuiltin pbilop = new ParameterizedBuiltin(inputlops, 
-				HopsParameterizedBuiltinLops.get(_op), getDataType(), getValueType(), et, k);
+		ParameterizedBuiltin pbilop = new ParameterizedBuiltin(
+			inputlops, _op, getDataType(), getValueType(), et, k);
 		setOutputDimensions(pbilop);
 		setLineNumbers(pbilop);
 		setLops(pbilop);
@@ -674,8 +684,7 @@ public class ParameterizedBuiltinOp extends MultiThreadedHop
 	}
 	
 	@Override 
-	public boolean allowsAllExecTypes()
-	{
+	public boolean allowsAllExecTypes() {
 		return false;
 	}
 	
@@ -728,7 +737,7 @@ public class ParameterizedBuiltinOp extends MultiThreadedHop
 		switch( _op )
 		{
 			case CDF:
-			case INVCDF:	
+			case INVCDF:
 				//do nothing; CDF is a scalar
 				break;
 			
@@ -753,12 +762,19 @@ public class ParameterizedBuiltinOp extends MultiThreadedHop
 				//one output dimension dim1 or dim2 is completely data dependent 
 				Hop target = getTargetHop();
 				Hop margin = getParameterHop("margin");
+				Hop select = getParameterHop("select");
 				if( margin instanceof LiteralOp ) {
 					LiteralOp lmargin = (LiteralOp)margin;
-					if( "rows".equals(lmargin.getStringValue()) )
+					if( "rows".equals(lmargin.getStringValue()) ) {
 						setDim2( target.getDim2() );
-					else if( "cols".equals(lmargin.getStringValue()) )
+						if( select != null )
+							setDim1(select.getNnz());
+					}
+					else if( "cols".equals(lmargin.getStringValue()) ) {
 						setDim1( target.getDim1() );
+						if( select != null )
+							setDim2(select.getNnz());
+					}
 				}
 				setNnz( target.getNnz() );
 				break;
@@ -928,7 +944,7 @@ public class ParameterizedBuiltinOp extends MultiThreadedHop
 			Hop pattern = getParameterHop("pattern");
 			Hop replace = getParameterHop("replacement");
 			if( pattern instanceof LiteralOp && ((LiteralOp)pattern).getDoubleValue()!=0d &&
-			    replace instanceof LiteralOp && ((LiteralOp)replace).getDoubleValue()!=0d )
+				replace instanceof LiteralOp && ((LiteralOp)replace).getDoubleValue()!=0d )
 			{
 				ret = true;
 			}
@@ -940,23 +956,20 @@ public class ParameterizedBuiltinOp extends MultiThreadedHop
 		return ret;
 	}
 
-	public boolean isTargetDiagInput()
-	{
+	public boolean isTargetDiagInput() {
 		Hop targetHop = getTargetHop();
-		
 		//input vector (guarantees diagV2M), implies remove rows
 		return (   targetHop instanceof ReorgOp 
-				&& ((ReorgOp)targetHop).getOp()==ReOrgOp.DIAG 
-				&& targetHop.getInput().get(0).getDim2() == 1 ); 
+			&& ((ReorgOp)targetHop).getOp()==ReOrgOp.DIAG 
+			&& targetHop.getInput().get(0).getDim2() == 1 ); 
 	}
 
 	/**
 	 * This will check if there is sufficient memory locally (twice the size of second matrix, for original and sort data), and remotely (size of second matrix (sorted data)).  
 	 * @return true if sufficient memory locally
 	 */
-	private boolean isRemoveEmptyBcSP()	// TODO find if 2 x size needed. 
+	private boolean isRemoveEmptyBcSP() // TODO find if 2 x size needed. 
 	{
-		boolean ret = false;
 		Hop input = getInput().get(0);
 		
 		//note: both cases (partitioned matrix, and sorted double array), require to
@@ -965,14 +978,9 @@ public class ParameterizedBuiltinOp extends MultiThreadedHop
 		//guaranteed to be an aggregate of <=16KB
 		
 		double size = input.dimsKnown() ? 
-				OptimizerUtils.estimateSize(input.getDim1(), 1) : //dims known and estimate fits
-					input.getOutputMemEstimate();                 //dims unknown but worst-case estimate fits
+			OptimizerUtils.estimateSize(input.getDim1(), 1) : //dims known and estimate fits
+			input.getOutputMemEstimate();                     //dims unknown but worst-case estimate fits
 		
-		if( OptimizerUtils.checkSparkBroadcastMemoryBudget(size) ) {
-			ret = true;
-		}
-		
-		return ret;
+		return OptimizerUtils.checkSparkBroadcastMemoryBudget(size);
 	}
-	
 }

@@ -8,9 +8,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -91,6 +91,12 @@ public class ExecutionContext {
 		_variables = allocateVariableMap ? new LocalVariableMap() : null;
 		_lineage = allocateLineage ? new Lineage() : null;
 		_prog = prog;
+	}
+
+	public ExecutionContext(LocalVariableMap vars) {
+		_variables = vars;
+		_lineage = null;
+		_prog = null;
 	}
 
 	public Program getProgram(){
@@ -180,6 +186,10 @@ public class ExecutionContext {
 		_variables.put(name, val);
 	}
 	
+	public boolean containsVariable(CPOperand operand) {
+		return containsVariable(operand.getName());
+	}
+	
 	public boolean containsVariable(String name) {
 		return _variables.keySet().contains(name);
 	}
@@ -193,7 +203,10 @@ public class ExecutionContext {
 	}
 	
 	public MetaData getMetaData(String varname) {
-		return _variables.get(varname).getMetaData();
+		Data tmp = _variables.get(varname);
+		if( tmp == null )
+			throw new DMLRuntimeException(getNonExistingVarError(varname));
+		return tmp.getMetaData();
 	}
 	
 	public boolean isMatrixObject(String varname) {
@@ -210,7 +223,7 @@ public class ExecutionContext {
 		
 		//error handling if non existing or no matrix
 		if( dat == null )
-			throw new DMLRuntimeException("Variable '"+varname+"' does not exist in the symbol table.");
+			throw new DMLRuntimeException(getNonExistingVarError(varname));
 		if( !(dat instanceof MatrixObject) )
 			throw new DMLRuntimeException("Variable '"+varname+"' is not a matrix.");
 		
@@ -222,13 +235,13 @@ public class ExecutionContext {
 
 		//error handling if non existing or no matrix
 		if( dat == null )
-			throw new DMLRuntimeException("Variable '"+varname+"' does not exist in the symbol table.");
+			throw new DMLRuntimeException(getNonExistingVarError(varname));
 		if( !(dat instanceof TensorObject) )
 			throw new DMLRuntimeException("Variable '"+varname+"' is not a tensor.");
 
 		return (TensorObject) dat;
 	}
-
+	
 	public boolean isFrameObject(String varname) {
 		Data dat = getVariable(varname);
 		return (dat!= null && dat instanceof FrameObject);
@@ -242,7 +255,7 @@ public class ExecutionContext {
 		Data dat = getVariable(varname);
 		//error handling if non existing or no matrix
 		if( dat == null )
-			throw new DMLRuntimeException("Variable '"+varname+"' does not exist in the symbol table.");
+			throw new DMLRuntimeException(getNonExistingVarError(varname));
 		if( !(dat instanceof FrameObject) )
 			throw new DMLRuntimeException("Variable '"+varname+"' is not a frame.");
 		return (FrameObject) dat;
@@ -256,9 +269,9 @@ public class ExecutionContext {
 		Data dat = getVariable(varname);
 		//error handling if non existing or no matrix
 		if( dat == null )
-			throw new DMLRuntimeException("Variable '"+varname+"' does not exist in the symbol table.");
+			throw new DMLRuntimeException(getNonExistingVarError(varname));
 		if( !(dat instanceof CacheableData<?>) )
-			throw new DMLRuntimeException("Variable '"+varname+"' is not a matrix or frame.");
+			throw new DMLRuntimeException("Variable '"+varname+"' is not a matrix, tensor or frame.");
 		return (CacheableData<?>) dat;
 	}
 
@@ -272,7 +285,7 @@ public class ExecutionContext {
 	
 	/**
 	 * Pins a matrix variable into memory and returns the internal matrix block.
-	 * 
+	 *
 	 * @param varName variable name
 	 * @return matrix block
 	 */
@@ -292,14 +305,14 @@ public class ExecutionContext {
 
 	public void setMetaData(String varName, long nrows, long ncols) {
 		MatrixObject mo = getMatrixObject(varName);
-		if(mo.getNumRows() == nrows && mo.getNumColumns() == ncols) 
+		if(mo.getNumRows() == nrows && mo.getNumColumns() == ncols)
 			return;
 		MetaData oldMetaData = mo.getMetaData();
 		if( oldMetaData == null || !(oldMetaData instanceof MetaDataFormat) )
 			throw new DMLRuntimeException("Metadata not available");
 		MatrixCharacteristics mc = new MatrixCharacteristics(nrows, ncols,
 			(int) mo.getBlocksize());
-		mo.setMetaData(new MetaDataFormat(mc, 
+		mo.setMetaData(new MetaDataFormat(mc,
 			((MetaDataFormat)oldMetaData).getOutputInfo(),
 			((MetaDataFormat)oldMetaData).getInputInfo()));
 	}
@@ -307,7 +320,7 @@ public class ExecutionContext {
 	/**
 	 * Compares two potential dimensions d1 and d2 and return the one which is not -1.
 	 * This method is useful when the dimensions are not known at compile time, but are known at runtime.
-	 *  
+	 *
 	 * @param d1 dimension1
 	 * @param d2 dimension1
 	 * @return valid d1 or d2
@@ -336,7 +349,7 @@ public class ExecutionContext {
 	/**
 	 * Allocates a sparse matrix in CSR format on the GPU.
 	 * Assumes that mat.getNumRows() returns a valid number
-	 * 
+	 *
 	 * @param varName variable name
 	 * @param numRows number of rows of matrix object
 	 * @param numCols number of columns of matrix object
@@ -360,29 +373,26 @@ public class ExecutionContext {
 	public MatrixObject allocateGPUMatrixObject(String varName, long numRows, long numCols) {
 		MatrixObject mo = getMatrixObject(varName);
 		long dim1 = -1; long dim2 = -1;
-		DMLRuntimeException e = null;
+
 		try {
 			dim1 = validateDimensions(mo.getNumRows(), numRows);
-		} catch(DMLRuntimeException e1) {
-			e = e1;
-		}
-		try {
 			dim2 = validateDimensions(mo.getNumColumns(), numCols);
-		} catch(DMLRuntimeException e1) {
-			e = e1;
 		}
-		if(e != null) {
-			throw new DMLRuntimeException("Incorrect dimensions given to allocateGPUMatrixObject: [" + numRows + "," + numCols + "], "
-					+ "[" + mo.getNumRows() + "," + mo.getNumColumns() + "]", e);
+		catch(DMLRuntimeException e) {
+			throw new DMLRuntimeException("Incorrect dimensions given to allocateGPUMatrixObject: [" + numRows + "," +
+					numCols + "], " + "[" + mo.getNumRows() + "," + mo.getNumColumns() + "]", e);
 		}
+
 		if(dim1 != mo.getNumRows() || dim2 != mo.getNumColumns()) {
 			// Set unknown dimensions
 			mo.getDataCharacteristics().setDimension(dim1, dim2);
 		}
+
 		if( mo.getGPUObject(getGPUContext(0)) == null ) {
 			GPUObject newGObj = getGPUContext(0).createGPUObject(mo);
 			mo.setGPUObject(getGPUContext(0), newGObj);
 		}
+
 		// The lock is added here for an output block
 		// so that any block currently in use is not deallocated by eviction on the GPU
 		mo.getGPUObject(getGPUContext(0)).addWriteLock();
@@ -406,8 +416,8 @@ public class ExecutionContext {
 	}
 	
 	/**
-	 * Unpins a currently pinned matrix variable and update fine-grained statistics. 
-	 * 
+	 * Unpins a currently pinned matrix variable and update fine-grained statistics.
+	 *
 	 * @param varName variable name
 	 */
 	public void releaseMatrixInput(String varName) {
@@ -425,7 +435,7 @@ public class ExecutionContext {
 	
 	/**
 	 * Pins a frame variable into memory and returns the internal frame block.
-	 * 
+	 *
 	 * @param varName variable name
 	 * @return frame block
 	 */
@@ -434,8 +444,8 @@ public class ExecutionContext {
 	}
 	
 	/**
-	 * Unpins a currently pinned frame variable. 
-	 * 
+	 * Unpins a currently pinned frame variable.
+	 *
 	 * @param varName variable name
 	 */
 	public void releaseFrameInput(String varName) {
@@ -452,7 +462,7 @@ public class ExecutionContext {
 	}
 
 	public ScalarObject getScalarInput(CPOperand input) {
-		return input.isLiteral() ? input.getLiteral() : 
+		return input.isLiteral() ? input.getLiteral() :
 			getScalarInput(input.getName(), input.getValueType(), false);
 	}
 	
@@ -472,14 +482,31 @@ public class ExecutionContext {
 		setVariable(varName, so);
 	}
 
+	public ListObject getListObject(CPOperand input) {
+		return getListObject(input.getName());
+	}
+	
 	public ListObject getListObject(String name) {
 		Data dat = getVariable(name);
 		//error handling if non existing or no list
 		if (dat == null)
-			throw new DMLRuntimeException("Variable '" + name + "' does not exist in the symbol table.");
+			throw new DMLRuntimeException(getNonExistingVarError(name));
 		if (!(dat instanceof ListObject))
 			throw new DMLRuntimeException("Variable '" + name + "' is not a list.");
 		return (ListObject) dat;
+	}
+	
+	private List<MatrixObject> getMatricesFromList(ListObject lo) {
+		List<MatrixObject> ret = new ArrayList<>();
+		for (Data e : lo.getData()) {
+			if (e instanceof MatrixObject)
+				ret.add((MatrixObject)e);
+			else if (e instanceof ListObject)
+				ret.addAll(getMatricesFromList((ListObject)e));
+			else
+				throw new DMLRuntimeException("List must contain only matrices or lists for rbind/cbind.");
+		}
+		return ret;
 	}
 
 	public void releaseMatrixOutputForGPUInstruction(String varName) {
@@ -517,7 +544,7 @@ public class ExecutionContext {
 		to.release();
 		setVariable(varName, to);
 	}
-
+	
 	public void setFrameOutput(String varName, FrameBlock outputData) {
 		FrameObject fo = getFrameObject(varName);
 		fo.acquireModify(outputData);
@@ -526,8 +553,22 @@ public class ExecutionContext {
 	}
 	
 	public List<MatrixBlock> getMatrixInputs(CPOperand[] inputs) {
-		return Arrays.stream(inputs).filter(in -> in.isMatrix())
+		return getMatrixInputs(inputs, false);
+	}
+	
+	public List<MatrixBlock> getMatrixInputs(CPOperand[] inputs, boolean includeList) {
+		List<MatrixBlock> ret = Arrays.stream(inputs).filter(in -> in.isMatrix())
 			.map(in -> getMatrixInput(in.getName())).collect(Collectors.toList());
+		
+		if (includeList) {
+			List<ListObject> lolist = Arrays.stream(inputs).filter(in -> in.isList())
+				.map(in -> getListObject(in.getName())).collect(Collectors.toList());
+			for (ListObject lo : lolist)
+				ret.addAll( getMatricesFromList(lo).stream()
+					.map(mo -> mo.acquireRead()).collect(Collectors.toList()));
+		}
+		
+		return ret;
 	}
 	
 	public List<ScalarObject> getScalarInputs(CPOperand[] inputs) {
@@ -536,25 +577,36 @@ public class ExecutionContext {
 	}
 	
 	public void releaseMatrixInputs(CPOperand[] inputs) {
+		releaseMatrixInputs(inputs, false);
+	}
+
+	public void releaseMatrixInputs(CPOperand[] inputs, boolean includeList) {
 		Arrays.stream(inputs).filter(in -> in.isMatrix())
 			.forEach(in -> releaseMatrixInput(in.getName()));
+
+		if (includeList) {
+			List<ListObject> lolist = Arrays.stream(inputs).filter(in -> in.isList())
+				.map(in -> getListObject(in.getName())).collect(Collectors.toList());
+			for (ListObject lo : lolist)
+				getMatricesFromList(lo).stream().forEach(mo -> mo.release());
+		}
 	}
 	
 	/**
-	 * Pin a given list of variables i.e., set the "clean up" state in 
+	 * Pin a given list of variables i.e., set the "clean up" state in
 	 * corresponding matrix objects, so that the cached data inside these
-	 * objects is not cleared and the corresponding HDFS files are not 
-	 * deleted (through rmvar instructions). 
-	 * 
-	 * This is necessary for: function input variables, parfor result variables, 
+	 * objects is not cleared and the corresponding HDFS files are not
+	 * deleted (through rmvar instructions).
+	 *
+	 * This is necessary for: function input variables, parfor result variables,
 	 * parfor shared inputs that are passed to functions.
-	 * 
+	 *
 	 * The function returns the OLD "clean up" state of matrix objects.
-	 * 
+	 *
 	 * @param varList variable list
 	 * @return indicator vector of old cleanup state of matrix objects
 	 */
-	public boolean[] pinVariables(List<String> varList) 
+	public boolean[] pinVariables(List<String> varList)
 	{
 		//analyze list variables
 		int nlist = 0;
@@ -598,16 +650,16 @@ public class ExecutionContext {
 	/**
 	 * Unpin the a given list of variables by setting their "cleanup" status
 	 * to the values specified by <code>varsStats</code>.
-	 * 
+	 *
 	 * Typical usage:
-	 *    <code> 
+	 *    <code>
 	 *    oldStatus = pinVariables(varList);
 	 *    ...
 	 *    unpinVariables(varList, oldStatus);
 	 *    </code>
-	 * 
+	 *
 	 * i.e., a call to unpinVariables() is preceded by pinVariables().
-	 * 
+	 *
 	 * @param varList variable list
 	 * @param varsState variable state
 	 */
@@ -624,8 +676,8 @@ public class ExecutionContext {
 	}
 	
 	/**
-	 * NOTE: No order guaranteed, so keep same list for pin and unpin. 
-	 * 
+	 * NOTE: No order guaranteed, so keep same list for pin and unpin.
+	 *
 	 * @return list of all variable names.
 	 */
 	public ArrayList<String> getVarList() {
@@ -633,15 +685,15 @@ public class ExecutionContext {
 	}
 	
 	/**
-	 * NOTE: No order guaranteed, so keep same list for pin and unpin. 
-	 * 
+	 * NOTE: No order guaranteed, so keep same list for pin and unpin.
+	 *
 	 * @return list of all variable names of partitioned matrices.
 	 */
 	public ArrayList<String> getVarListPartitioned() {
 		ArrayList<String> ret = new ArrayList<>();
 		for( String var : _variables.keySet() ) {
 			Data dat = _variables.get(var);
-			if( dat instanceof MatrixObject 
+			if( dat instanceof MatrixObject
 				&& ((MatrixObject)dat).isPartitioned() )
 				ret.add(var);
 		}
@@ -697,5 +749,9 @@ public class ExecutionContext {
 		if( _lineage == null )
 			throw new DMLRuntimeException("Lineage Trace unavailable.");
 		return _lineage.getOrCreate(input);
+	}
+	
+	private static String getNonExistingVarError(String varname) {
+		return "Variable '" + varname + "' does not exist in the symbol table.";
 	}
 }

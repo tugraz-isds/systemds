@@ -328,7 +328,7 @@ public class BuiltinFunctionExpression extends DataIdentifier
 			setDimensions(dBias, getThirdExpr());
 			break;
 		}
-		case EIGEN:
+		case EIGEN: {
 			checkNumParameters(1);
 			checkMatrixParam(getFirstExpr());
 			
@@ -353,7 +353,29 @@ public class BuiltinFunctionExpression extends DataIdentifier
 			eigenOut2.setBlocksize(getFirstExpr().getOutput().getBlocksize());
 			
 			break;
-
+		}
+		case REMOVE: {
+			checkNumParameters(2);
+			checkListParam(getFirstExpr());
+			
+			// setup output properties
+			DataIdentifier out1 = (DataIdentifier) getOutputs()[0];
+			DataIdentifier out2 = (DataIdentifier) getOutputs()[1];
+			
+			// Output1 - Eigen Values
+			out1.setDataType(DataType.LIST);
+			out1.setValueType(getFirstExpr().getOutput().getValueType());
+			out1.setDimensions(getFirstExpr().getOutput().getDim1()-1, 1);
+			out1.setBlocksize(getFirstExpr().getOutput().getBlocksize());
+			
+			// Output2 - Eigen Vectors
+			out2.setDataType(DataType.LIST);
+			out2.setValueType(getFirstExpr().getOutput().getValueType());
+			out2.setDimensions(1, 1);
+			out2.setBlocksize(getFirstExpr().getOutput().getBlocksize());
+			
+			break;
+		}
 		case SVD:
 			checkNumParameters(1);
 			checkMatrixParam(getFirstExpr());
@@ -492,6 +514,11 @@ public class BuiltinFunctionExpression extends DataIdentifier
 		}
 		return paramExpression;
 	}
+	
+	private boolean isValidNoArgumentFunction() {
+		return getOpCode() == Builtins.TIME
+			|| getOpCode() == Builtins.LIST;
+	}
 
 	/**
 	 * Validate parse tree : Process BuiltinFunction Expression in an assignment
@@ -512,7 +539,7 @@ public class BuiltinFunctionExpression extends DataIdentifier
 		DataIdentifier output = new DataIdentifier(outputName);
 		output.setParseInfo(this);
 		
-		if (getFirstExpr() == null && getOpCode() != Builtins.TIME) { // time has no arguments 
+		if (getFirstExpr() == null && !isValidNoArgumentFunction()) { // time has no arguments 
 			raiseValidateError("Function " + this + " has no arguments.", false);
 		}
 		Identifier id = (_args.length != 0) ?
@@ -750,16 +777,29 @@ public class BuiltinFunctionExpression extends DataIdentifier
 				checkValueTypeParam(getFirstExpr(), ValueType.STRING);
 				checkValueTypeParam(getSecondExpr(), ValueType.STRING);
 			}
-			//matrix append (rbind/cbind)
+			// append (rbind/cbind) all the elements of a list
+			else if( getAllExpr().length == 1 ) {
+				checkDataTypeParam(getFirstExpr(), DataType.LIST);
+			}
 			else {
 				if( getAllExpr().length < 2 )
 					raiseValidateError("Invalid number of arguments for "+getOpCode(), conditional);
-				for(int i=0; i<getAllExpr().length; i++)
-					checkMatrixFrameParam(getExpr(i));
+				//list append
+				if(getFirstExpr().getOutput().getDataType().isList() )
+					for(int i=1; i<getAllExpr().length; i++)
+						checkDataTypeParam(getExpr(i), DataType.SCALAR, DataType.MATRIX, DataType.FRAME);
+				//matrix append (rbind/cbind)
+				else
+					for(int i=0; i<getAllExpr().length; i++)
+						checkMatrixFrameParam(getExpr(i));
 			}
 			
 			output.setDataType(id.getDataType());
 			output.setValueType(id.getValueType());
+			if( id.getDataType() == DataType.LIST && getAllExpr().length == 1) {
+				output.setDataType(DataType.MATRIX);
+				output.setValueType(ValueType.FP64);
+			}
 			
 			// set output dimensions and validate consistency
 			long m1rlen = getFirstExpr().getOutput().getDim1();
@@ -787,6 +827,12 @@ public class BuiltinFunctionExpression extends DataIdentifier
 					appendDim2 = (m2clen>=0) ? m2clen : appendDim2;
 				}
 			}
+			//TODO: calculate output dimensions of List 
+			if( output.getDataType() == DataType.LIST ) {
+				appendDim1 = -1;
+				appendDim2 = -1;
+			}
+
 			output.setDimensions(appendDim1, appendDim2);
 			output.setBlocksize (id.getBlocksize());
 			
@@ -1142,13 +1188,20 @@ public class BuiltinFunctionExpression extends DataIdentifier
 
 			break;
 		
+		case ISNA:
+		case ISNAN:
+		case ISINF:
+			checkNumParameters(1);
+			checkMatrixScalarParam(getFirstExpr());
+			output.setDataType(id.getDataType());
+			output.setDimensions(id.getDim1(), id.getDim2());
+			output.setBlocksize (id.getBlocksize());
+			//TODO set output type to boolean when supported
+			output.setValueType(id.getValueType());
+			break;
+			
 		case MEDIAN:
-			if (getSecondExpr() != null){
-			    checkNumParameters(2);
-		    }
-			else {
-				checkNumParameters(1);
-			}
+			checkNumParameters((getSecondExpr()!=null) ? 2 : 1);
 			checkMatrixParam(getFirstExpr());
 
 			if (getSecondExpr() != null) {
@@ -1714,7 +1767,7 @@ public class BuiltinFunctionExpression extends DataIdentifier
 					this.getOpCode().toString().toLowerCase() + "().", false);
 		}
 	}
-
+	
 	protected void checkMatrixTensorParam(Expression e) {
 		if (e.getOutput().getDataType() != DataType.MATRIX) {
 			// Param is not a matrix
@@ -1746,14 +1799,20 @@ public class BuiltinFunctionExpression extends DataIdentifier
 	
 	private void checkScalarParam(Expression e) { //always unconditional
 		if (e.getOutput().getDataType() != DataType.SCALAR) {
-			raiseValidateError("Expecting scalar parameter for function " + this.getOpCode(), false, LanguageErrorCodes.UNSUPPORTED_PARAMETERS);
+			raiseValidateError("Expecting scalar parameter for function " + getOpCode(), false, LanguageErrorCodes.UNSUPPORTED_PARAMETERS);
+		}
+	}
+	
+	private void checkListParam(Expression e) { //always unconditional
+		if (e.getOutput().getDataType() != DataType.LIST) {
+			raiseValidateError("Expecting scalar parameter for function " + getOpCode(), false, LanguageErrorCodes.UNSUPPORTED_PARAMETERS);
 		}
 	}
 	
 	@SuppressWarnings("unused")
 	private void checkScalarFrameParam(Expression e) { //always unconditional
 		if (e.getOutput().getDataType() != DataType.SCALAR && e.getOutput().getDataType() != DataType.FRAME) {
-			raiseValidateError("Expecting scalar parameter for function " + this.getOpCode(), false, LanguageErrorCodes.UNSUPPORTED_PARAMETERS);
+			raiseValidateError("Expecting scalar parameter for function " + getOpCode(), false, LanguageErrorCodes.UNSUPPORTED_PARAMETERS);
 		}
 	}
 

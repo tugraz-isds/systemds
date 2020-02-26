@@ -116,7 +116,7 @@ public class CumulativeAggregateSPInstruction extends AggregateUnarySPInstructio
 				aop.indexFn.execute(ixIn, ixOut);
 				if( _uop == null )
 					_uop = new UnaryOperator(Builtin.getBuiltinFnObject("ucumk+*"));
-				MatrixBlock t1 = (MatrixBlock) blkIn.unaryOperations(_uop, new MatrixBlock());
+				MatrixBlock t1 = blkIn.unaryOperations(_uop, new MatrixBlock());
 				MatrixBlock t2 = blkIn.slice(0, blkIn.getNumRows()-1, 1, 1, new MatrixBlock());
 				blkOut.reset(1, 2);
 				blkOut.quickSetValue(0, 0, t1.quickGetValue(t1.getNumRows()-1, 0));
@@ -124,8 +124,8 @@ public class CumulativeAggregateSPInstruction extends AggregateUnarySPInstructio
 			}
 			else { //general case
 				OperationsOnMatrixValues.performAggregateUnary( ixIn, blkIn, ixOut, blkOut, aop, _blen);
-				if( aop.aggOp.correctionExists )
-					blkOut.dropLastRowsOrColumns(aop.aggOp.correctionLocation);
+				if( aop.aggOp.existsCorrection() )
+					blkOut.dropLastRowsOrColumns(aop.aggOp.correction);
 			}
 			
 			//cumsum expand partial aggregates

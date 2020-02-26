@@ -60,6 +60,7 @@ import org.tugraz.sysds.runtime.controlprogram.caching.CacheableData;
 import org.tugraz.sysds.runtime.controlprogram.context.ExecutionContext;
 import org.tugraz.sysds.runtime.controlprogram.context.ExecutionContextFactory;
 import org.tugraz.sysds.runtime.controlprogram.context.SparkExecutionContext;
+import org.tugraz.sysds.runtime.controlprogram.federated.FederatedWorker;
 import org.tugraz.sysds.runtime.controlprogram.parfor.stat.InfrastructureAnalyzer;
 import org.tugraz.sysds.runtime.controlprogram.parfor.util.IDHandler;
 import org.tugraz.sysds.runtime.instructions.gpu.context.GPUContextPool;
@@ -112,7 +113,9 @@ public class DMLScript
 
 	public static String _uuid = IDHandler.createDistributedUniqueID();
 	private static final Log LOG = LogFactory.getLog(DMLScript.class.getName());
-	
+
+	private static FileSystem fs = null;
+
 	///////////////////////////////
 	// public external interface
 	////////
@@ -147,19 +150,17 @@ public class DMLScript
 	/**
 	 *
 	 * @param args command-line arguments
-	 * @throws IOException if an IOException occurs
+	 * @throws IOException if an IOException occurs in the hadoop GenericOptionsParser
 	 */
 	public static void main(String[] args)
 		throws IOException
 	{
 		Configuration conf = new Configuration(ConfigurationManager.getCachedJobConf());
 		String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
-
 		try {
 			DMLScript.executeScript(conf, otherArgs);
-		} catch (ParseException pe) {
-			System.err.println(pe.getMessage());
-		} catch (DMLScriptException e){
+		}
+		catch (ParseException | DMLScriptException e) {
 			// In case of DMLScriptException, simply print the error message.
 			System.err.println(e.getMessage());
 		}
@@ -210,6 +211,11 @@ public class DMLScript
 
 			if (dmlOptions.clean) {
 				cleanSystemDSWorkspace();
+				return true;
+			}
+			
+			if (dmlOptions.fedWorker) {
+				new FederatedWorker(dmlOptions.fedWorkerPort).run();
 				return true;
 			}
 			
@@ -279,9 +285,8 @@ public class DMLScript
 					|| IOUtilFunctions.isObjectStoreFileScheme(new Path(fileName)) )
 				{ 
 					Path scriptPath = new Path(fileName);
-					try(FileSystem fs = IOUtilFunctions.getFileSystem(scriptPath) ) {
-						in = new BufferedReader(new InputStreamReader(fs.open(scriptPath)));
-					}
+					fs = IOUtilFunctions.getFileSystem(scriptPath);
+					in = new BufferedReader(new InputStreamReader(fs.open(scriptPath)));
 				}
 				// from local file system
 				else { 
@@ -300,6 +305,8 @@ public class DMLScript
 				throw ex;
 			}
 			finally {
+				if(fs != null)
+					fs.close();
 				IOUtilFunctions.closeSilently(in);
 			}
 			
@@ -530,7 +537,7 @@ public class DMLScript
 			throw new DMLException("Failed to run SystemDS workspace cleanup.", ex);
 		}
 	}
-	
+
 	public static ExecMode getGlobalExecMode() {
 		return EXEC_MODE;
 	}

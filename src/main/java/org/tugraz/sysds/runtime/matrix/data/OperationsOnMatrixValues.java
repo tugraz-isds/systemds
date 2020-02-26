@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.tugraz.sysds.lops.PartialAggregate.CorrectionLocationType;
+import org.tugraz.sysds.common.Types.CorrectionLocationType;
 import org.tugraz.sysds.common.Types.ValueType;
 import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.controlprogram.caching.CacheBlock;
@@ -103,13 +103,12 @@ public class OperationsOnMatrixValues
 	}
 
 	public static void startAggregation(MatrixValue valueOut, MatrixValue correction, AggregateOperator op, 
-			int rlen, int clen, boolean sparseHint, boolean imbededCorrection) {
+			int rlen, int clen, boolean sparseHint, boolean embeddedCorrection) {
 		int outRow=0, outCol=0, corRow=0, corCol=0;
-		if(op.correctionExists)
+		if(!embeddedCorrection || op.existsCorrection())
 		{
-			if(!imbededCorrection)
-			{
-				switch(op.correctionLocation)
+			if( !embeddedCorrection ) {
+				switch(op.correction)
 				{
 				case NONE:
 					outRow=rlen;
@@ -165,7 +164,7 @@ public class OperationsOnMatrixValues
 					corCol=4;
 					break;
 				default:
-						throw new DMLRuntimeException("unrecognized correctionLocation: "+op.correctionLocation);
+						throw new DMLRuntimeException("unrecognized correctionLocation: "+op.correction);
 				}
 			}else
 			{
@@ -185,8 +184,7 @@ public class OperationsOnMatrixValues
 				correction.reset(Math.max(corRow,0), Math.max(corCol,0), op.initialValue);
 			}
 		}
-		else
-		{
+		else {
 			if(op.initialValue==0)
 				valueOut.reset(rlen, clen, sparseHint);
 			else
@@ -195,17 +193,16 @@ public class OperationsOnMatrixValues
 	}
 	
 	public static void incrementalAggregation(MatrixValue valueAgg, MatrixValue correction, MatrixValue valueAdd, 
-			AggregateOperator op, boolean imbededCorrection) {
-		incrementalAggregation(valueAgg, correction, valueAdd, op, imbededCorrection, true);
+			AggregateOperator op, boolean embeddedCorrection) {
+		incrementalAggregation(valueAgg, correction, valueAdd, op, embeddedCorrection, true);
 	}
 	
 	
 	public static void incrementalAggregation(MatrixValue valueAgg, MatrixValue correction, MatrixValue valueAdd, 
-			AggregateOperator op, boolean imbededCorrection, boolean deep)
+			AggregateOperator op, boolean embeddedCorrection, boolean deep)
 	{
-		if(op.correctionExists)
-		{
-			if(!imbededCorrection || op.correctionLocation==CorrectionLocationType.NONE)
+		if(!embeddedCorrection || op.existsCorrection()) {
+			if( op.correction==CorrectionLocationType.NONE )
 				valueAgg.incrementalAggregate(op, correction, valueAdd, deep);
 			else
 				valueAgg.incrementalAggregate(op, valueAdd);

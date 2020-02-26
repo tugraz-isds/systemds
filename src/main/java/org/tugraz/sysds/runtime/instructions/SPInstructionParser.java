@@ -246,7 +246,10 @@ public class SPInstructionParser extends InstructionParser
 		String2SPInstructionType.put( "sprop", SPType.Unary);
 		String2SPInstructionType.put( "sigmoid", SPType.Unary);
 		String2SPInstructionType.put( "detectSchema", SPType.Unary);
-
+		String2SPInstructionType.put( "isna", SPType.Unary);
+		String2SPInstructionType.put( "isnan", SPType.Unary);
+		String2SPInstructionType.put( "isinf", SPType.Unary);
+		
 		// Parameterized Builtin Functions
 		String2SPInstructionType.put( "groupedagg",     SPType.ParameterizedBuiltin);
 		String2SPInstructionType.put( "mapgroupedagg",  SPType.ParameterizedBuiltin);
@@ -420,7 +423,7 @@ public class SPInstructionParser extends InstructionParser
 				
 			case Unary:
 				parts = InstructionUtils.getInstructionPartsWithValueType(str);
-				CPOperand in = new CPOperand("", Types.ValueType.UNKNOWN, Types.DataType.UNKNOWN);
+				CPOperand in = new CPOperand(parts[1]);
 				if(in.getDataType() == Types.DataType.MATRIX)
 					return UnaryMatrixSPInstruction.parseInstruction(str);
 				else

@@ -27,6 +27,10 @@ import java.util.List;
 
 import org.tugraz.sysds.api.DMLScript;
 import org.tugraz.sysds.common.Types.ExecMode;
+import org.tugraz.sysds.common.Types.OpOp3;
+import org.tugraz.sysds.common.Types.OpOpN;
+import org.tugraz.sysds.common.Types.ParamBuiltinOp;
+import org.tugraz.sysds.common.Types.ReOrgOp;
 import org.tugraz.sysds.conf.ConfigurationManager;
 import org.tugraz.sysds.hops.AggBinaryOp;
 import org.tugraz.sysds.hops.DataOp;
@@ -37,10 +41,6 @@ import org.tugraz.sysds.hops.ParameterizedBuiltinOp;
 import org.tugraz.sysds.hops.TernaryOp;
 import org.tugraz.sysds.hops.Hop.DataOpTypes;
 import org.tugraz.sysds.hops.Hop.OpOp1;
-import org.tugraz.sysds.hops.Hop.OpOp3;
-import org.tugraz.sysds.hops.Hop.OpOpN;
-import org.tugraz.sysds.hops.Hop.ParamBuiltinOp;
-import org.tugraz.sysds.hops.Hop.ReOrgOp;
 import org.tugraz.sysds.hops.recompile.Recompiler;
 import org.tugraz.sysds.parser.DataIdentifier;
 import org.tugraz.sysds.parser.StatementBlock;
@@ -81,7 +81,7 @@ public class RewriteSplitDagDataDependentOperators extends StatementBlockRewrite
 		
 		ArrayList<StatementBlock> ret = new ArrayList<>();
 	
-		//collect all unknown csv reads hops
+		//collect all unknown data dependent ops
 		ArrayList<Hop> cand = new ArrayList<>();
 		collectDataDependentOperators( sb.getHops(), cand );
 		Hop.resetVisitStatus(sb.getHops());
@@ -90,8 +90,12 @@ public class RewriteSplitDagDataDependentOperators extends StatementBlockRewrite
 		if( !cand.isEmpty() )
 		{
 			//collect child operators of candidates (to prevent rewrite anomalies)
+			//For example, B = rmEmpty(A), C = rmEmpty(B), op(C, nrow(B)) needs to 
+			//preserve the link rmEmpty(B) in the split-off DAG. Therefore, the
+			//candidates themselves need to be part of this anomaly filter as well.
 			HashSet<Hop> candChilds = new HashSet<>();
 			collectCandidateChildOperators( cand, candChilds );
+			candChilds.addAll(cand);
 			
 			try
 			{
@@ -103,7 +107,7 @@ public class RewriteSplitDagDataDependentOperators extends StatementBlockRewrite
 				sb1.setLiveOut(new VariableSet());
 				
 				//move data-dependent ops incl transient writes to new statement block
-				//(and replace original persistent read with transient read)
+				//(and replace original hop with transient read)
 				ArrayList<Hop> sb1hops = new ArrayList<>();
 				for( Hop c : cand )
 				{
@@ -155,8 +159,9 @@ public class RewriteSplitDagDataDependentOperators extends StatementBlockRewrite
 						for( int i=0; i<parents.size(); i++ ) {
 							//prevent concurrent modification by index access
 							Hop parent = parents.get(i);
-							if( !candChilds.contains(parent) ) //anomaly filter
+							if( !candChilds.contains(parent) ) { //anomaly filter
 								HopRewriteUtils.replaceChildReference(parent, c, tread);
+							}
 						}
 						
 						//add data-dependent operator sub dag to first statement block

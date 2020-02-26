@@ -28,6 +28,8 @@ import org.tugraz.sysds.api.DMLScript;
 import org.tugraz.sysds.common.Types.ValueType;
 import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.controlprogram.context.ExecutionContext;
+import org.tugraz.sysds.runtime.lineage.LineageItem;
+import org.tugraz.sysds.runtime.lineage.LineageTraceable;
 import org.tugraz.sysds.runtime.matrix.operators.Operator;
 
 /**
@@ -37,7 +39,7 @@ import org.tugraz.sysds.runtime.matrix.operators.Operator;
  * string.
  *
  */
-public class ScalarBuiltinNaryCPInstruction extends BuiltinNaryCPInstruction {
+public class ScalarBuiltinNaryCPInstruction extends BuiltinNaryCPInstruction implements LineageTraceable {
 
 	protected ScalarBuiltinNaryCPInstruction(Operator op, String opcode, String istr, CPOperand output, CPOperand[] inputs) {
 		super(op, opcode, istr, output, inputs);
@@ -92,8 +94,8 @@ public class ScalarBuiltinNaryCPInstruction extends BuiltinNaryCPInstruction {
 		}
 		else if( "list".equals(getOpcode()) ) {
 			//obtain all input data objects, incl handling of literals
-			List<Data> data = Arrays.stream(inputs)
-				.map(in -> ec.getVariable(in)).collect(Collectors.toList());
+			List<Data> data = (inputs== null) ? new ArrayList<>() :
+				Arrays.stream(inputs).map(in -> ec.getVariable(in)).collect(Collectors.toList());
 			
 			//create list object over all inputs
 			ListObject list = new ListObject(data);
@@ -106,6 +108,12 @@ public class ScalarBuiltinNaryCPInstruction extends BuiltinNaryCPInstruction {
 				+ ") not recognized in ScalarBuiltinMultipleCPInstruction");
 		}
 
+	}
+	
+	@Override
+	public LineageItem[] getLineageItems(ExecutionContext ec) {
+		return new LineageItem[]{new LineageItem(output.getName(),
+			instString, getOpcode())};
 	}
 
 }

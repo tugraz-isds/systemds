@@ -27,9 +27,9 @@ import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.broadcast.Broadcast;
+import org.tugraz.sysds.common.Types.CorrectionLocationType;
 import org.tugraz.sysds.common.Types.ValueType;
 import org.tugraz.sysds.lops.Lop;
-import org.tugraz.sysds.lops.PartialAggregate.CorrectionLocationType;
 import org.tugraz.sysds.parser.Statement;
 import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.controlprogram.caching.FrameObject;
@@ -68,7 +68,7 @@ import org.tugraz.sysds.runtime.matrix.operators.Operator;
 import org.tugraz.sysds.runtime.matrix.operators.SimpleOperator;
 import org.tugraz.sysds.runtime.meta.DataCharacteristics;
 import org.tugraz.sysds.runtime.meta.MatrixCharacteristics;
-import org.tugraz.sysds.runtime.transform.TfUtils;
+import org.tugraz.sysds.runtime.transform.TfUtils.TfMethod;
 import org.tugraz.sysds.runtime.transform.decode.Decoder;
 import org.tugraz.sysds.runtime.transform.decode.DecoderFactory;
 import org.tugraz.sysds.runtime.transform.encode.Encoder;
@@ -128,7 +128,7 @@ public class ParameterizedBuiltinSPInstruction extends ComputationSPInstruction 
 			paramsMap.put(Statement.GAGG_GROUPS, groups.getName());
 			paramsMap.put(Statement.GAGG_NUM_GROUPS, parts[4]);
 			
-			Operator op = new AggregateOperator(0, KahanPlus.getKahanPlusFnObject(), true, CorrectionLocationType.LASTCOLUMN);
+			Operator op = new AggregateOperator(0, KahanPlus.getKahanPlusFnObject(), CorrectionLocationType.LASTCOLUMN);
 			
 			return new ParameterizedBuiltinSPInstruction(op, paramsMap, out, opcode, str, false);
 		}
@@ -516,7 +516,7 @@ public class ParameterizedBuiltinSPInstruction extends ComputationSPInstruction 
 		
 		@Override
 		public MatrixBlock call(MatrixBlock arg0) {
-			return (MatrixBlock) arg0.replaceOperations(new MatrixBlock(), _pattern, _replacement);
+			return arg0.replaceOperations(new MatrixBlock(), _pattern, _replacement);
 		}
 	}
 	
@@ -831,7 +831,8 @@ public class ParameterizedBuiltinSPInstruction extends ComputationSPInstruction 
 		
 		public RDDTransformApplyOffsetFunction(String spec, String[] colnames) {
 			try {
-				_omitColList = TfMetaUtils.parseJsonIDList(spec, colnames, TfUtils.TXMETHOD_OMIT);
+				_omitColList = TfMetaUtils.parseJsonIDList(
+					spec, colnames, TfMethod.OMIT.toString());
 			} 
 			catch (DMLRuntimeException e) {
 				throw new RuntimeException(e);
