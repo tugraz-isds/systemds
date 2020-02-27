@@ -21,6 +21,7 @@ import java.util.Map;
 
 public class LineageCodegenItem {
 	private static Map<String, LineageItem> _codegentraces = new HashMap<>();
+	private static Map<Long, LineageItem> _hoplincache = new HashMap<>();
 
 	public static LineageItem setCodegenLTrace(String classname, LineageItem li) {
 		return _codegentraces.put(classname, li);
@@ -29,6 +30,18 @@ public class LineageCodegenItem {
 	public static LineageItem getCodegenLTrace(String classname) {
 		return _codegentraces.get(classname);
 		//TODO: test with parfor
+	}
+	
+	public static boolean probeLineageItem(Long HopID) {
+		return _hoplincache.containsKey(HopID);
+	}
+	
+	public static void putLineageItem(Long HopID, LineageItem li) {
+		_hoplincache.put(HopID, li);
+	}
+	
+	public static LineageItem getLineageItem(Long HopID) {
+		return _hoplincache.get(HopID);
 	}
 
 }

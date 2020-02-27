@@ -609,7 +609,7 @@ public class SpoofCompiler
 
 			if (DMLScript.LINEAGE) {
 				//construct and save lineage DAG from pre-modification HOP DAG
-				LineageItem LIroot = LineageItemUtils.ConstructLineageFromHops(hop);
+				LineageItem LIroot = LineageItemUtils.constructLineageFromHops(hop);
 				LineageCodegenItem.setCodegenLTrace(tmpCla.getValue().getName(), LIroot);
 			}
 

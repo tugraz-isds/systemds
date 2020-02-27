@@ -180,18 +180,18 @@ public class LineageItem {
 		return _hash;
 	}
 
-	public LineageItem DeepCopy() { //bottom-up
+	public LineageItem deepCopy() { //bottom-up
 		LineageItem copy = null;
 		if (isLeaf()) {
 			copy = new LineageItem(this);
 			return copy;
 		}
 
-		LineageItem[] copyinputs = new LineageItem[getInputs().length];
+		LineageItem[] copyInputs = new LineageItem[getInputs().length];
 		for (int i=0; i<_inputs.length; i++) 
-			copyinputs[i] = _inputs[i].DeepCopy();
+			copyInputs[i] = _inputs[i].deepCopy();
 
-		copy = new LineageItem(_name, _opcode, copyinputs);
+		copy = new LineageItem(_name, _opcode, copyInputs);
 		return copy;
 	}
 	

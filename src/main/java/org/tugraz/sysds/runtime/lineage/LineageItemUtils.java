@@ -354,9 +354,15 @@ public class LineageItemUtils {
 		item.setVisited();
 	}
 
-	public static LineageItem ConstructLineageFromHops(Hop root) {
+	public static LineageItem constructLineageFromHops(Hop root) {
+		//probe for the mapped lineage DAG
+		if (LineageCodegenItem.probeLineageItem(root.getHopID()))
+			return LineageCodegenItem.getLineageItem(root.getHopID());
+
 		Map<Long, LineageItem> operands = new HashMap<>();
 		rConstructLineageFromHops(root, operands);
+		//cache to avoid reconstruction
+		LineageCodegenItem.putLineageItem(root.getHopID(), operands.get(root.getHopID()));
 		return(operands.get(root.getHopID()));
 	}
 
@@ -509,6 +515,7 @@ public class LineageItemUtils {
 
 		//find and replace the old leaves
 		HashSet<LineageItem> oldLeaves = new HashSet<>();
+		root.resetVisitStatus();
 		rGetDagLeaves(oldLeaves, root);
 		for (LineageItem leaf : oldLeaves) {
 			if (leaf.getType() != LineageItemType.Literal)
@@ -517,12 +524,16 @@ public class LineageItemUtils {
 	}
 
 	public static void rGetDagLeaves(HashSet<LineageItem> leaves, LineageItem root) {
+		if (root.isVisited())
+			return;
+		
 		if (root.isLeaf())
 			leaves.add(root);
 		else {
 			for (LineageItem li : root.getInputs())
 				rGetDagLeaves(leaves, li);
 		}
+		root.setVisited();
 	}
 	
 	private static Hop[] createNaryInputs(LineageItem item, Map<Long, Hop> operands) {

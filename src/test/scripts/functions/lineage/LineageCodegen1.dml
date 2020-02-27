@@ -15,7 +15,6 @@
 # limitations under the License.
 #
 #-------------------------------------------------------------
-# Increase k for better performance gains
 
 X = matrix( 3, rows=4000, cols=2000)
 U = matrix( 4, rows=4000, cols=10)
