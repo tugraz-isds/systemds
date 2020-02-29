@@ -23,9 +23,16 @@ package org.tugraz.sysds.test.functions.federated;
 import org.junit.Test;
 import org.junit.runners.Parameterized;
 import org.junit.runner.RunWith;
+import org.tugraz.sysds.api.DMLScript;
+import org.tugraz.sysds.common.Types;
+import org.tugraz.sysds.runtime.meta.MatrixCharacteristics;
 import org.tugraz.sysds.test.AutomatedTestBase;
 import org.tugraz.sysds.test.TestConfiguration;
+import org.tugraz.sysds.test.TestUtils;
+
 import java.util.Arrays;
+
+import static java.lang.Thread.sleep;
 
 
 @RunWith(Parameterized.class)
@@ -34,7 +41,7 @@ public class FederatedMatrixScalarOperationsTest extends AutomatedTestBase
 	@Parameterized.Parameters
 	public static Iterable<Object[]> data() {
 		return Arrays.asList(new Object[][] {
-			{ 1, 1 }
+			{ 5, 5 }
 //			{ 1, 100 },
 //			{ 1, 10000 },
 //			{ 100, 1 },
@@ -55,12 +62,14 @@ public class FederatedMatrixScalarOperationsTest extends AutomatedTestBase
 	//System test paths
 	private static final String TEST_DIR = "functions/federated/matrix_scalar/";
 	private static final String TEST_CLASS_DIR = TEST_DIR + FederatedMatrixScalarOperationsTest.class.getSimpleName() + "/";
-	private static final String MATRIX_TEST_FILE = "M";
-	
+	private static final String TEST_PROG_MATRIX_ADDITION_SCALAR = "FederatedMatrixAdditionScalar";
+	private static final String FEDERATED_WORKER_HOST = "localhost";
+	private static final int FEDERATED_WORKER_PORT = 1222;
+
 	@Override
 	public void setUp() 
 	{
-
+		//setOutAndExpectedDeletionDisabled(true);
 		//int matrix_rows = 
 
 		//Create test matrix used in all cases
@@ -70,19 +79,62 @@ public class FederatedMatrixScalarOperationsTest extends AutomatedTestBase
 			getRandomMatrix(rows, cols, -10, 10, 1, 1)
 			, false, new MatrixCharacteristics(rows, cols, blocksize, rows * cols)); */
 
-
-		addTestConfiguration("FederatedMatrixLocalScalarAdditionTest", 
-			new TestConfiguration(TEST_CLASS_DIR, "FederatedMatrixLocalScalarAdditionTest", new String [] {"result"}));
-    }
+		//Save Result to File R
+		addTestConfiguration(new TestConfiguration(TEST_CLASS_DIR, TEST_PROG_MATRIX_ADDITION_SCALAR, new String [] {"R"}));
+	}
     
     @Test
 	public void testLocalIntegerFederatedMatrixAddition() {
-		TestConfiguration config = availableTestConfigurations.get("FederatedMatrixLocalScalarAdditionTest");
-/* 		config.addVariable("rows", rows);
-		config.addVariable("cols", cols);
-		config.addVariable("summand", 2); */
+		boolean sparkConfigOld = DMLScript.USE_LOCAL_SPARK_CONFIG;
+		Types.ExecMode platformOld = rtplatform;
 
-		loadTestConfiguration(config);
-		runTest();
+
+
+		Thread t = null;
+		try {
+			getAndLoadTestConfiguration(TEST_PROG_MATRIX_ADDITION_SCALAR);
+
+			double[][] m = getRandomMatrix(this.rows, this.cols, -1, 1, 1.0, 1);
+			writeInputMatrixWithMTD("M", m, true);
+			int s = TestUtils.getRandomInt();
+			double[][] r = new double[rows][cols];
+			for(int i = 0; i < rows; i++) {
+				for(int j = 0; j < cols; j++) {
+					r[i][j] = m[i][j];// + s;
+				}
+			}
+			writeExpectedMatrix("R", r);
+
+			programArgs = new String[] {"-w", Integer.toString(FEDERATED_WORKER_PORT)};
+			t = new Thread(() -> runTest(true, false, null, -1));
+			t.start();
+			sleep(FED_WORKER_WAIT);
+
+			//t = TestUtils.startFederatedWorker(config, FEDERATED_WORKER_PORT);
+			fullDMLScriptName = SCRIPT_DIR + TEST_DIR + TEST_PROG_MATRIX_ADDITION_SCALAR + ".dml";
+			programArgs = new String[]{"-args",
+					TestUtils.federatedAddress(FEDERATED_WORKER_HOST, FEDERATED_WORKER_PORT, input("M")),
+					Integer.toString(rows), Integer.toString(cols),
+					Integer.toString(s),
+					output("R")};
+			runTest(true, false, null, -1);
+
+//			fullDMLScriptName = SCRIPT_DIR + TEST_DIR + config.getTestScript() + "Reference.dml";
+//			programArgs = new String[]{"-args",
+//					input("M"),
+//					Integer.toString(s),
+//					expected("R")};
+//			runTest(true, false, null, -1);
+
+			compareResults();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+			assert (false);
+		} finally {
+			rtplatform = platformOld;
+			TestUtils.shutdownThread(t);
+			rtplatform = platformOld;
+			DMLScript.USE_LOCAL_SPARK_CONFIG = sparkConfigOld;
+		}
 	}
 }

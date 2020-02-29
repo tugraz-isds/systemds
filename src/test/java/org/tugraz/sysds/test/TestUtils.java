@@ -2298,4 +2298,47 @@ public class TestUtils
 	public static String federatedAddress(String host, int port, String input) {
 		return host + ':' + port + '/' + input;
 	}
+
+//	public static Thread startFederatedWorker(TestConfiguration config) {
+//		return startFederatedWorker(config, 1222);
+//	}
+//
+//	public static Thread startFederatedWorker(TestConfiguration config, int port) {
+//
+//		class FederatedTestBase extends AutomatedTestBase implements Runnable {
+//			private int port;
+//			private TestConfiguration testConfig;
+//
+//			// ctor
+//			public FederatedTestBase(TestConfiguration config, int port) {
+//				this.port = port;
+//				this.testConfig = config;
+//				setUpBase();
+//			}
+//
+//			@Override
+//			public void setUp() {
+//			}
+//
+//			@Override
+//			public void run() {
+//				//loadTestConfiguration(this.testConfig);
+//				addTestConfiguration(this.testConfig);
+//				loadTestConfiguration(this.testConfig);
+//				setOutAndExpectedDeletionDisabled(true); //if false this federatedTestBase instance will clean testbase
+//
+//				programArgs = new String [] {"-w", Integer.toString(this.port)};
+//				try {
+//					runTest(true, false, null, -1);
+//				} catch (Exception e) {
+//					e.printStackTrace();
+//				}
+//			}
+//		}
+//		Thread t = new Thread(new FederatedTestBase(config, port));
+//		t.start();
+//		return t;
+//	}
+	
+
 }
