@@ -16,8 +16,8 @@
 
 package org.tugraz.sysds.runtime.instructions.fed;
 
+import org.tugraz.sysds.common.Types;
 import org.tugraz.sysds.common.Types.DataType;
-import org.tugraz.sysds.common.Types.ValueType;
 import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.instructions.InstructionUtils;
 import org.tugraz.sysds.runtime.instructions.cp.CPOperand;
@@ -30,15 +30,17 @@ public abstract class BinaryFEDInstruction extends ComputationFEDInstruction {
 			String istr) {
 		super(type, op, in1, in2, out, opcode, istr);
 	}
-	
+
 	public static BinaryFEDInstruction parseInstruction(String str) {
-		CPOperand in1 = new CPOperand("", ValueType.UNKNOWN, DataType.UNKNOWN);
-		CPOperand in2 = new CPOperand("", ValueType.UNKNOWN, DataType.UNKNOWN);
-		CPOperand out = new CPOperand("", ValueType.UNKNOWN, DataType.UNKNOWN);
-		//String opcode = parseBinaryInstruction(str, in1, in2, out);
-		
+		CPOperand in1 = new CPOperand("", Types.ValueType.UNKNOWN, DataType.UNKNOWN);
+		CPOperand in2 = new CPOperand("", Types.ValueType.UNKNOWN, DataType.UNKNOWN);
+		CPOperand out = new CPOperand("", Types.ValueType.UNKNOWN, DataType.UNKNOWN);
+		String opcode = parseBinaryInstruction(str, in1, in2, out);
+
 		checkOutputDataType(in1, in2, out);
-		
+
+		Operator operator = InstructionUtils.parseBinaryOrBuiltinOperator(opcode, in1, in2);
+
 		//Operator operator = InstructionUtils.parseBinaryOrBuiltinOperator(opcode, in1, in2);
 		// TODO different binary instructions
 		if( in1.getDataType() == DataType.SCALAR && in2.getDataType() == DataType.SCALAR )
@@ -47,8 +49,12 @@ public abstract class BinaryFEDInstruction extends ComputationFEDInstruction {
 			throw new DMLRuntimeException("Federated binary matrix matrix operations not yet supported");
 		else if( in1.getDataType() == DataType.TENSOR && in2.getDataType() == DataType.TENSOR )
 			throw new DMLRuntimeException("Federated binary tensor tensor operations not yet supported");
+		else if( in1.isMatrix() && in2.isScalar() )
+			return new BinaryMatrixScalarFEDInstruction(operator, in1, in2, out, opcode, str);
+		else if( in1.isMatrix() && in2.isScalar() )
+			return new BinaryMatrixScalarFEDInstruction(operator, in1, in2, out, opcode, str);
 		else
-			throw new DMLRuntimeException("Federated binary matrix scalar operations not yet supported");
+			throw new DMLRuntimeException("Federated binary operations not yet supported:" + opcode);
 	}
 	
 	protected static String parseBinaryInstruction(String instr, CPOperand in1, CPOperand in2, CPOperand out) {

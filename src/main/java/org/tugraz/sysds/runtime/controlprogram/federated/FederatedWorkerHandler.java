@@ -47,6 +47,7 @@ import org.tugraz.sysds.runtime.matrix.data.OutputInfo;
 import org.tugraz.sysds.runtime.matrix.operators.AggregateBinaryOperator;
 import org.tugraz.sysds.runtime.matrix.operators.AggregateOperator;
 import org.tugraz.sysds.runtime.matrix.operators.AggregateUnaryOperator;
+import org.tugraz.sysds.runtime.matrix.operators.ScalarOperator;
 import org.tugraz.sysds.runtime.meta.MatrixCharacteristics;
 import org.tugraz.sysds.runtime.meta.MetaDataFormat;
 import org.tugraz.sysds.utils.JSONHelper;
@@ -88,31 +89,26 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 
 	private FederatedResponse constructResponse(FederatedRequest request) {
 		FederatedRequest.FedMethod method = request.getMethod();
-		FederatedResponse response;
 		try {
 			switch (method) {
 				case READ:
-					response = readMatrix(request);
-					break;
+					return readMatrix(request);
 				case MATVECMULT:
-					response = executeMatVecMult(request);
-					break;
+					return executeMatVecMult(request);
 				case TRANSFER:
-					response = getVariableData(request);
-					break;
+					return getVariableData(request);
 				case AGGREGATE:
-					response = executeAggregation(request);
-					break;
-
+					return executeAggregation(request);
+				case SCALAR:
+					return executeScalarOperation(request);
 				default:
 					String message = String.format("Method %s is not supported.", method);
-					response = new FederatedResponse(FederatedResponse.Type.ERROR, message);
+					return new FederatedResponse(FederatedResponse.Type.ERROR, message);
 			}
 		}
 		catch (Exception exception) {
-			response = new FederatedResponse(FederatedResponse.Type.ERROR, ExceptionUtils.getFullStackTrace(exception));
+			return new FederatedResponse(FederatedResponse.Type.ERROR, ExceptionUtils.getFullStackTrace(exception));
 		}
-		return response;
 	}
 
 	private FederatedResponse readMatrix(FederatedRequest request) {
@@ -251,7 +247,28 @@ public class FederatedWorkerHandler extends ChannelInboundHandlerAdapter {
 		return new FederatedResponse(FederatedResponse.Type.SUCCESS, ret);
 	}
 
-	@SuppressWarnings("unused")
+	private FederatedResponse executeScalarOperation(FederatedRequest request) {
+		checkNumParams(request.getNumParams(), 2);
+		ScalarOperator operator = (ScalarOperator) request.getParam(0);
+		long varID = (Long) request.getParam(1);
+		return executeScalarOperation(varID, operator);
+	}
+
+	private FederatedResponse executeScalarOperation(long varID, ScalarOperator operator) {
+		Data dataObject = _vars.get(varID);
+		if (dataObject.getDataType() != Types.DataType.MATRIX) {
+			return new FederatedResponse(FederatedResponse.Type.ERROR,
+					"FederatedWorkerHandler: ScalarOperator dont support "
+							+ dataObject.getDataType().name());
+		}
+
+		MatrixObject matrixObject = (MatrixObject) dataObject;
+		MatrixBlock inBlock = matrixObject.acquireRead();
+		MatrixBlock retBlock = inBlock.scalarOperations(operator, new MatrixBlock());
+		return new FederatedResponse(FederatedResponse.Type.SUCCESS, retBlock);
+	}
+
+
 	private FederatedResponse createMatrixObject(MatrixBlock result) {
 		MatrixObject resTo = new MatrixObject(Types.ValueType.FP64, OptimizerUtils.getUniqueTempFileName());
 		MetaDataFormat metadata = new MetaDataFormat(

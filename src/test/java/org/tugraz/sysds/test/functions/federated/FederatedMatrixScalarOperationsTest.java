@@ -41,15 +41,8 @@ public class FederatedMatrixScalarOperationsTest extends AutomatedTestBase
 	@Parameterized.Parameters
 	public static Iterable<Object[]> data() {
 		return Arrays.asList(new Object[][] {
-			{ 5, 5 }
-//			{ 1, 100 },
-//			{ 1, 10000 },
-//			{ 100, 1 },
-//			{ 100, 100 },
-//			{ 100, 10000 },
-//			{ 10000, 1 },
-//			{ 10000, 100 },
-//			{ 10000, 10000 }
+			{ 100, 100 },
+			{ 10000, 100 },
 		 });
 	}
 
@@ -100,17 +93,20 @@ public class FederatedMatrixScalarOperationsTest extends AutomatedTestBase
 			double[][] r = new double[rows][cols];
 			for(int i = 0; i < rows; i++) {
 				for(int j = 0; j < cols; j++) {
-					r[i][j] = m[i][j];// + s;
+					r[i][j] = m[i][j] + s;
 				}
 			}
 			writeExpectedMatrix("R", r);
 
+			// we need the reference file to not be written to hdfs, so we get the correct format
+			rtplatform = Types.ExecMode.SINGLE_NODE;
+			if (rtplatform == Types.ExecMode.SPARK) {
+				DMLScript.USE_LOCAL_SPARK_CONFIG = true;
+			}
 			programArgs = new String[] {"-w", Integer.toString(FEDERATED_WORKER_PORT)};
 			t = new Thread(() -> runTest(true, false, null, -1));
 			t.start();
 			sleep(FED_WORKER_WAIT);
-
-			//t = TestUtils.startFederatedWorker(config, FEDERATED_WORKER_PORT);
 			fullDMLScriptName = SCRIPT_DIR + TEST_DIR + TEST_PROG_MATRIX_ADDITION_SCALAR + ".dml";
 			programArgs = new String[]{"-args",
 					TestUtils.federatedAddress(FEDERATED_WORKER_HOST, FEDERATED_WORKER_PORT, input("M")),
@@ -118,13 +114,6 @@ public class FederatedMatrixScalarOperationsTest extends AutomatedTestBase
 					Integer.toString(s),
 					output("R")};
 			runTest(true, false, null, -1);
-
-//			fullDMLScriptName = SCRIPT_DIR + TEST_DIR + config.getTestScript() + "Reference.dml";
-//			programArgs = new String[]{"-args",
-//					input("M"),
-//					Integer.toString(s),
-//					expected("R")};
-//			runTest(true, false, null, -1);
 
 			compareResults();
 		} catch (InterruptedException e) {
