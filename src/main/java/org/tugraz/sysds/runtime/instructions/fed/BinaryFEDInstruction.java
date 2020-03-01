@@ -51,7 +51,7 @@ public abstract class BinaryFEDInstruction extends ComputationFEDInstruction {
 			throw new DMLRuntimeException("Federated binary tensor tensor operations not yet supported");
 		else if( in1.isMatrix() && in2.isScalar() )
 			return new BinaryMatrixScalarFEDInstruction(operator, in1, in2, out, opcode, str);
-		else if( in1.isMatrix() && in2.isScalar() )
+		else if( in2.isMatrix() && in1.isScalar() )
 			return new BinaryMatrixScalarFEDInstruction(operator, in1, in2, out, opcode, str);
 		else
 			throw new DMLRuntimeException("Federated binary operations not yet supported:" + opcode);

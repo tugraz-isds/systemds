@@ -56,48 +56,145 @@ public class FederatedMatrixScalarOperationsTest extends AutomatedTestBase
 	private static final String TEST_DIR = "functions/federated/matrix_scalar/";
 	private static final String TEST_CLASS_DIR = TEST_DIR + FederatedMatrixScalarOperationsTest.class.getSimpleName() + "/";
 	private static final String TEST_PROG_MATRIX_ADDITION_SCALAR = "FederatedMatrixAdditionScalar";
+	private static final String TEST_PROG_MATRIX_SUBTRACTION_SCALAR = "FederatedMatrixSubtractionScalar";
+	private static final String TEST_PROG_MATRIX_MULTIPLICATION_SCALAR = "FederatedMatrixMultiplicationScalar";
+	private static final String TEST_PROG_SCALAR_ADDITION_MATRIX = "ScalarAdditionFederatedMatrix";
+	private static final String TEST_PROG_SCALAR_SUBTRACTION_MATRIX = "ScalarSubtractionFederatedMatrix";
+	private static final String TEST_PROG_SCALAR_MULTIPLICATION_MATRIX = "ScalarMultiplicationFederatedMatrix";
+
 	private static final String FEDERATED_WORKER_HOST = "localhost";
 	private static final int FEDERATED_WORKER_PORT = 1222;
 
 	@Override
 	public void setUp() 
 	{
-		//setOutAndExpectedDeletionDisabled(true);
-		//int matrix_rows = 
-
-		//Create test matrix used in all cases
-		//currently federated Read only supports MTD files
-		/* writeInputMatrixWithMTD(
-			MATRIX_TEST_FILE,
-			getRandomMatrix(rows, cols, -10, 10, 1, 1)
-			, false, new MatrixCharacteristics(rows, cols, blocksize, rows * cols)); */
-
 		//Save Result to File R
 		addTestConfiguration(new TestConfiguration(TEST_CLASS_DIR, TEST_PROG_MATRIX_ADDITION_SCALAR, new String [] {"R"}));
+		addTestConfiguration(new TestConfiguration(TEST_CLASS_DIR, TEST_PROG_MATRIX_SUBTRACTION_SCALAR, new String [] {"R"}));
+		addTestConfiguration(new TestConfiguration(TEST_CLASS_DIR, TEST_PROG_MATRIX_MULTIPLICATION_SCALAR, new String [] {"R"}));
+		addTestConfiguration(new TestConfiguration(TEST_CLASS_DIR, TEST_PROG_SCALAR_ADDITION_MATRIX, new String [] {"R"}));
+		addTestConfiguration(new TestConfiguration(TEST_CLASS_DIR, TEST_PROG_SCALAR_SUBTRACTION_MATRIX, new String [] {"R"}));
+		addTestConfiguration(new TestConfiguration(TEST_CLASS_DIR, TEST_PROG_SCALAR_MULTIPLICATION_MATRIX, new String [] {"R"}));
 	}
     
     @Test
-	public void testLocalIntegerFederatedMatrixAddition() {
+	public void testFederatedMatrixAdditionScalar() {
+		getAndLoadTestConfiguration(TEST_PROG_MATRIX_ADDITION_SCALAR);
+
+		double[][] m = getRandomMatrix(this.rows, this.cols, -1, 1, 1.0, 1);
+		writeInputMatrixWithMTD("M", m, true);
+		int s = TestUtils.getRandomInt();
+		double[][] r = new double[rows][cols];
+		for(int i = 0; i < rows; i++) {
+			for(int j = 0; j < cols; j++) {
+				r[i][j] = m[i][j] + s;
+			}
+		}
+		writeExpectedMatrix("R", r);
+
+		runGenericTest(TEST_PROG_MATRIX_ADDITION_SCALAR, s);
+	}
+
+	@Test
+	public void testFederatedMatrixSubtractionScalar() {
+		getAndLoadTestConfiguration(TEST_PROG_MATRIX_SUBTRACTION_SCALAR);
+
+		double[][] m = getRandomMatrix(this.rows, this.cols, -1, 1, 1.0, 1);
+		writeInputMatrixWithMTD("M", m, true);
+		int s = TestUtils.getRandomInt();
+		double[][] r = new double[rows][cols];
+		for(int i = 0; i < rows; i++) {
+			for(int j = 0; j < cols; j++) {
+				r[i][j] = m[i][j] - s;
+			}
+		}
+		writeExpectedMatrix("R", r);
+
+		runGenericTest(TEST_PROG_MATRIX_SUBTRACTION_SCALAR, s);
+	}
+
+	@Test
+	public void testFederatedMatrixMultiplicationScalar() {
+		getAndLoadTestConfiguration(TEST_PROG_MATRIX_MULTIPLICATION_SCALAR);
+
+		double[][] m = getRandomMatrix(this.rows, this.cols, -1, 1, 1.0, 1);
+		writeInputMatrixWithMTD("M", m, true);
+		int s = TestUtils.getRandomInt();
+		double[][] r = new double[rows][cols];
+		for(int i = 0; i < rows; i++) {
+			for(int j = 0; j < cols; j++) {
+				r[i][j] = m[i][j] * s;
+			}
+		}
+		writeExpectedMatrix("R", r);
+
+		runGenericTest(TEST_PROG_MATRIX_MULTIPLICATION_SCALAR, s);
+	}
+
+	@Test
+	public void testScalarAdditionFederatedMatrix() {
+		getAndLoadTestConfiguration(TEST_PROG_SCALAR_ADDITION_MATRIX);
+
+		double[][] m = getRandomMatrix(this.rows, this.cols, -1, 1, 1.0, 1);
+		writeInputMatrixWithMTD("M", m, true);
+		int s = TestUtils.getRandomInt();
+		double[][] r = new double[rows][cols];
+		for(int i = 0; i < rows; i++) {
+			for(int j = 0; j < cols; j++) {
+				r[i][j] = m[i][j] + s;
+			}
+		}
+		writeExpectedMatrix("R", r);
+
+		runGenericTest(TEST_PROG_SCALAR_ADDITION_MATRIX, s);
+	}
+
+	@Test
+	public void testScalarSubtractionFederatedMatrix() {
+		getAndLoadTestConfiguration(TEST_PROG_SCALAR_SUBTRACTION_MATRIX);
+
+		double[][] m = getRandomMatrix(this.rows, this.cols, -1, 1, 1.0, 1);
+		writeInputMatrixWithMTD("M", m, true);
+		int s = TestUtils.getRandomInt();
+		double[][] r = new double[rows][cols];
+		for(int i = 0; i < rows; i++) {
+			for(int j = 0; j < cols; j++) {
+				r[i][j] = s - m[i][j];
+			}
+		}
+		writeExpectedMatrix("R", r);
+
+		runGenericTest(TEST_PROG_SCALAR_SUBTRACTION_MATRIX, s);
+	}
+
+	@Test
+	public void testScalarMultiplicationFederatedMatrix() {
+		getAndLoadTestConfiguration(TEST_PROG_SCALAR_MULTIPLICATION_MATRIX);
+
+		double[][] m = getRandomMatrix(this.rows, this.cols, -1, 1, 1.0, 1);
+		writeInputMatrixWithMTD("M", m, true);
+		int s = TestUtils.getRandomInt();
+		double[][] r = new double[rows][cols];
+		for(int i = 0; i < rows; i++) {
+			for(int j = 0; j < cols; j++) {
+				r[i][j] = m[i][j] * s;
+			}
+		}
+		writeExpectedMatrix("R", r);
+
+		runGenericTest(TEST_PROG_SCALAR_MULTIPLICATION_MATRIX, s);
+	}
+
+
+
+
+	private void runGenericTest(String dmlFile, int s)
+	{
 		boolean sparkConfigOld = DMLScript.USE_LOCAL_SPARK_CONFIG;
 		Types.ExecMode platformOld = rtplatform;
 
-
-
 		Thread t = null;
 		try {
-			getAndLoadTestConfiguration(TEST_PROG_MATRIX_ADDITION_SCALAR);
-
-			double[][] m = getRandomMatrix(this.rows, this.cols, -1, 1, 1.0, 1);
-			writeInputMatrixWithMTD("M", m, true);
-			int s = TestUtils.getRandomInt();
-			double[][] r = new double[rows][cols];
-			for(int i = 0; i < rows; i++) {
-				for(int j = 0; j < cols; j++) {
-					r[i][j] = m[i][j] + s;
-				}
-			}
-			writeExpectedMatrix("R", r);
-
 			// we need the reference file to not be written to hdfs, so we get the correct format
 			rtplatform = Types.ExecMode.SINGLE_NODE;
 			if (rtplatform == Types.ExecMode.SPARK) {
@@ -107,7 +204,7 @@ public class FederatedMatrixScalarOperationsTest extends AutomatedTestBase
 			t = new Thread(() -> runTest(true, false, null, -1));
 			t.start();
 			sleep(FED_WORKER_WAIT);
-			fullDMLScriptName = SCRIPT_DIR + TEST_DIR + TEST_PROG_MATRIX_ADDITION_SCALAR + ".dml";
+			fullDMLScriptName = SCRIPT_DIR + TEST_DIR + dmlFile + ".dml";
 			programArgs = new String[]{"-args",
 					TestUtils.federatedAddress(FEDERATED_WORKER_HOST, FEDERATED_WORKER_PORT, input("M")),
 					Integer.toString(rows), Integer.toString(cols),
