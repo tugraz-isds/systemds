@@ -1620,7 +1620,6 @@ public class RewriteAlgebraicSimplificationStatic extends HopRewriteRule
 	private static Hop removeUnnecessaryRemoveEmpty(Hop parent, Hop hi, int pos)
 	{
 		Hop hnew = null;
-
 		if( hi instanceof AggUnaryOp 
 			&& HopRewriteUtils.isRemoveEmpty(hi.getInput().get(0), true)
 			&& hi.getInput().get(0).getParent().size() == 1 )
@@ -1640,8 +1639,23 @@ public class RewriteAlgebraicSimplificationStatic extends HopRewriteRule
 				}
 			}
 		}
+		// if( ( hi instanceof AggUnaryOp || HopRewriteUtils.isUnary(hi, OpOp1.NROW) )
+		// 	&& HopRewriteUtils.isRemoveEmpty(hi.getInput().get(0), true)
+		// 	&& hi.getInput().get(0).getParent().size() == 1 )
+		// {
+		// 	ParameterizedBuiltinOp rm = (ParameterizedBuiltinOp) hi.getInput().get(0);
+			
+		// 	Hop input = (rm.getParameterHop("select") != null) ?
+		// 		rm.getParameterHop("select") :
+		// 		(rm.getDim2() == 1) ? rm.getTargetHop() : 
+		// 		null;
+		// 	if( input != null ) {
+		// 		HopRewriteUtils.removeAllChildReferences(rm);
+		// 		hnew = HopRewriteUtils.createComputeNnz(input);
+		// 	}
+		// }
 		
-		if( HopRewriteUtils.isUnary(hi, OpOp1.NROW)
+ 		if( HopRewriteUtils.isUnary(hi, OpOp1.NROW)
 			&& HopRewriteUtils.isRemoveEmpty(hi.getInput().get(0), true)
 			&& hi.getInput().get(0).getParent().size() == 1 )
 		{
