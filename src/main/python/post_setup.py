@@ -1,4 +1,4 @@
-#-------------------------------------------------------------
+# -------------------------------------------------------------
 #
 # Modifications Copyright 2020 Graz University of Technology
 #
@@ -19,7 +19,7 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-#-------------------------------------------------------------
+# -------------------------------------------------------------
 
 from __future__ import print_function
 import os
@@ -30,14 +30,15 @@ try:
     exec(open('systemds/project_info.py').read())
 except IOError:
     print("Could not read project_info.py.", file=sys.stderr)
-    sys.exit
+    sys.exit()
 ARTIFACT_NAME = __project_artifact_id__
 ARTIFACT_VERSION = __project_version__
 ARTIFACT_VERSION_SHORT = ARTIFACT_VERSION.split("-")[0]
 
 root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.getcwd())))
 src_path_prefix = os.path.join(root_dir, 'target', ARTIFACT_NAME + '-' + ARTIFACT_VERSION_SHORT)
-src_path = src_path_prefix + '.zip' if platform.system() == "Windows" and os.path.exists(src_path_prefix + '.zip') else src_path_prefix + '.tar.gz' 
+src_path = src_path_prefix + '.zip' if platform.system() == "Windows" and os.path.exists(
+    src_path_prefix + '.zip') else src_path_prefix + '.tar.gz'
 os.rename(
     src_path,
     os.path.join(root_dir, 'target', ARTIFACT_NAME + '-' + ARTIFACT_VERSION + '-python.tar.gz'))

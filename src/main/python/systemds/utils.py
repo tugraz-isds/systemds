@@ -62,10 +62,9 @@ def get_gateway() -> JavaGateway:
                 classpath = separator.join(files)
             else:
                 libs = os.path.join(_get_module_dir(), 'systemds-java', 'lib', '*')
-                classes = os.path.join(_get_module_dir(), 'systemds-java', 'classes')
-                classpath = separator.join([libs, classes] + files)
+                classpath = separator.join([libs] + files)
             process = subprocess.Popen(
-                ['java', '-cp', classpath, 'org.tugraz.sysds.pythonapi.pythonDMLScript'], stdout=subprocess.PIPE)
+                ['java', '-cp', classpath, 'org.tugraz.sysds.pythonapi.PythonDMLScript'], stdout=subprocess.PIPE)
             process.stdout.readline()  # wait for 'Gateway Server Started\n' written by server
         JAVA_GATEWAY = JavaGateway()
     return JAVA_GATEWAY

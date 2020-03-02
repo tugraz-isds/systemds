@@ -101,7 +101,7 @@ class OperationNode(DAGNode):
     def __floordiv__(self, other: VALID_ARITHMETIC_TYPES):
         return OperationNode('//', [self, other])
 
-    def __lt__(self, other):
+    def __lt__(self, other) -> OperationNode:
         return OperationNode('<', [self, other])
 
     def __le__(self, other):
@@ -129,77 +129,50 @@ class OperationNode(DAGNode):
         params_dict.update(kwargs)
         return OperationNode('l2svm', named_input_nodes=params_dict)
 
-    def sum(self) -> OperationNode:
+    def sum(self, axis: int = None) -> OperationNode:
         """
         Calculate sum of matrix.
+        :type axis: can be 0 or 1 to do either row or column sums
         :return: `OperationNode` representing operation
         """
         self._check_matrix_op()
-        return OperationNode('sum', [self], output_type=OutputType.DOUBLE)
+        if axis == 0:
+            return OperationNode('colSums', [self])
+        elif axis == 1:
+            return OperationNode('rowSums', [self])
+        elif axis is None:
+            return OperationNode('sum', [self], output_type=OutputType.DOUBLE)
+        raise ValueError(f"Axis has to be either 0, 1 or None, for column, row or complete {self.operation}")
 
-    def col_sums(self) -> OperationNode:
-        """
-        Calculate sum of cols.
-        :return: `OperationNode` representing operation
-        """
-        self._check_matrix_op()
-        return OperationNode('colSums', [self])
-
-    def row_sums(self) -> OperationNode:
-        """
-        Calculate sum of rows.
-        :return: `OperationNode` representing operation
-        """
-        self._check_matrix_op()
-        return OperationNode('rowSums', [self])
-
-    def mean(self) -> OperationNode:
+    def mean(self, axis: int = None) -> OperationNode:
         """
         Calculate mean of matrix.
+        :type axis: can be 0 or 1 to do either row or column means
         :return: `OperationNode` representing operation
         """
         self._check_matrix_op()
-        return OperationNode('mean', [self], output_type=OutputType.DOUBLE)
+        if axis == 0:
+            return OperationNode('colMeans', [self])
+        elif axis == 1:
+            return OperationNode('rowMeans', [self])
+        elif axis is None:
+            return OperationNode('mean', [self], output_type=OutputType.DOUBLE)
+        raise ValueError(f"Axis has to be either 0, 1 or None, for column, row or complete {self.operation}")
 
-    def col_means(self) -> OperationNode:
-        """
-        Calculate means of cols.
-        :return: `OperationNode` representing operation
-        """
-        self._check_matrix_op()
-        return OperationNode('colMeans', [self])
-
-    def row_means(self) -> OperationNode:
-        """
-        Calculate means of rows.
-        :return: `OperationNode` representing operation
-        """
-        self._check_matrix_op()
-        return OperationNode('rowMeans', [self])
-
-    def var(self) -> OperationNode:
+    def var(self, axis: int = None) -> OperationNode:
         """
         Calculate variance of matrix.
+        :type axis: can be 0 or 1 to do either row or column vars
         :return: `OperationNode` representing operation
         """
         self._check_matrix_op()
-        return OperationNode('var', [self], output_type=OutputType.DOUBLE)
-
-    def col_vars(self) -> OperationNode:
-        """
-        Calculate variances of cols.
-        :return: `OperationNode` representing operation
-        """
-        self._check_matrix_op()
-        return OperationNode('colVars', [self])
-
-    def row_vars(self) -> OperationNode:
-        """
-        Calculate variances of rows.
-        :return: `OperationNode` representing operation
-        """
-        self._check_matrix_op()
-        return OperationNode('rowVars', [self])
+        if axis == 0:
+            return OperationNode('colVars', [self])
+        elif axis == 1:
+            return OperationNode('rowVars', [self])
+        elif axis is None:
+            return OperationNode('var', [self], output_type=OutputType.DOUBLE)
+        raise ValueError(f"Axis has to be either 0, 1 or None, for column, row or complete {self.operation}")
 
     def abs(self) -> OperationNode:
         """
