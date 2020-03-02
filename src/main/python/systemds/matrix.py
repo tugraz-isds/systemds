@@ -97,10 +97,9 @@ def federated(addresses: Iterable[str], ranges: Iterable[Tuple[Iterable[int], It
     return OperationNode('federated', args, named_params)
 
 
-# TODO consider different naming for functions
 def full(shape: Tuple[int, int], value: Union[float, int]) -> OperationNode:
     """
-    Generates a matrix completely filled with
+    Generates a matrix completely filled with a value
     :param shape: shape (rows and cols) of the matrix TODO tensor
     :param value: the value to fill all cells with
     :return: the DAGNode representing this operation

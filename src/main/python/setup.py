@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # -------------------------------------------------------------
 #
 # Modifications Copyright 2020 Graz University of Technology
@@ -58,7 +59,7 @@ PACKAGE_DATA = PACKAGE_DATA + [os.path.join(python_dir, 'LICENSE'),
 setup(
     name=ARTIFACT_NAME,
     version=ARTIFACT_VERSION_SHORT,
-    description='Apache SystemDS is a distributed and declarative machine learning platform.',
+    description='SystemDS is a distributed and declarative machine learning platform.',
     long_description='''
     
     SystemDS is a versatile system for the end-to-end data science lifecycle from data integration,
