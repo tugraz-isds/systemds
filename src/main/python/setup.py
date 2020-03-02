@@ -67,6 +67,7 @@ setup(
     R-like syntax for 
     (1) the different tasks of the data-science lifecycle, and 
     (2) users with different expertise. 
+    
     These high-level scripts are compiled into hybrid execution plans of local, in-memory CPU and GPU operations, 
     as well as distributed operations on Apache Spark. In contrast to existing systems 
     - that either provide homogeneous tensors or 2D Datasets - and in order to serve the entire
@@ -76,7 +77,7 @@ setup(
     ''',
     url='https://github.com/tugraz-isds/systemds',
     author='SystemDS',
-    author_email='dev@systemds.apache.org',
+    author_email='damslab@mlist.tugraz.at',
     packages=find_packages(),
     install_requires=REQUIRED_PACKAGES,
     include_package_data=True,

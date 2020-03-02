@@ -23,7 +23,7 @@ import numpy as np
 from py4j.java_gateway import JVMView, JavaObject
 
 from .converters import numpy_to_matrix_block
-from .dag import VALID_INPUT_TYPES, DAGNode
+from .dag import VALID_INPUT_TYPES
 from .operation_node import OperationNode
 
 

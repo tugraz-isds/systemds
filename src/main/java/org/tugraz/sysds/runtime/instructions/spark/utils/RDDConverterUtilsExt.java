@@ -1,5 +1,5 @@
 /*
- * Modifications Copyright 2019 Graz University of Technology
+ * Modifications Copyright 2020 Graz University of Technology
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -41,6 +41,7 @@ import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
+import org.tugraz.sysds.common.Types;
 import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.instructions.spark.data.ReblockBuffer;
 import org.tugraz.sysds.runtime.matrix.data.MatrixBlock;
@@ -102,20 +103,16 @@ public class RDDConverterUtilsExt
 		return df.select(columns.get(0), scala.collection.JavaConversions.asScalaBuffer(columnToSelect).toList());
 	}
 
-	public static MatrixBlock convertPy4JArrayToMB(byte [] data, long rlen, long clen) {
-		return convertPy4JArrayToMB(data, (int)rlen, (int)clen, false, 2);
-	}
-
-	public static MatrixBlock convertPy4JArrayToMB(byte [] data, long rlen, long clen, int dataType) {
-		return convertPy4JArrayToMB(data, (int)rlen, (int)clen, false, dataType);
-	}
-
 	public static MatrixBlock convertPy4JArrayToMB(byte [] data, int rlen, int clen) {
-		return convertPy4JArrayToMB(data, rlen, clen, false, 2);
+		return convertPy4JArrayToMB(data, rlen, clen, false, Types.ValueType.FP64);
 	}
 	
-	public static MatrixBlock convertPy4JArrayToMB(byte [] data, int rlen, int clen, long dataType) {
-		return convertPy4JArrayToMB(data, rlen, clen, false, dataType);
+	public static MatrixBlock convertPy4JArrayToMB(byte [] data, int rlen, int clen, Types.ValueType valueType) {
+		return convertPy4JArrayToMB(data, rlen, clen, false, valueType);
+	}
+	
+	public static MatrixBlock convertPy4JArrayToMB(byte [] data, long rlen, long clen, boolean isSparse) {
+		return convertPy4JArrayToMB(data, (int) rlen, (int) clen, isSparse, Types.ValueType.FP64);
 	}
 
 	public static MatrixBlock convertSciPyCOOToMB(byte [] data, byte [] row, byte [] col, long rlen, long clen, long nnz) {
@@ -140,10 +137,6 @@ public class RDDConverterUtilsExt
 		mb.recomputeNonZeros();
 		mb.examSparsity();
 		return mb;
-	}
-
-	public static MatrixBlock convertPy4JArrayToMB(byte [] data, long rlen, long clen, boolean isSparse) {
-		return convertPy4JArrayToMB(data, (int) rlen, (int) clen, isSparse, 2);
 	}
 
 	public static MatrixBlock allocateDenseOrSparse(int rlen, int clen, boolean isSparse) {
@@ -178,33 +171,35 @@ public class RDDConverterUtilsExt
 		ret.recomputeNonZeros();
 		ret.examSparsity();
 	}
-
-	// dataType: 0...int, 1...float, 2...double
-	public static MatrixBlock convertPy4JArrayToMB(byte [] data, int rlen, int clen, boolean isSparse, long dataType) {
+	
+	public static MatrixBlock convertPy4JArrayToMB(byte[] data, int rlen, int clen, boolean isSparse,
+			Types.ValueType valueType) {
 		MatrixBlock mb = new MatrixBlock(rlen, clen, isSparse, -1);
 		if(isSparse) {
 			throw new DMLRuntimeException("Convertion to sparse format not supported");
 		}
 		else {
-			long limit = rlen*clen;
+			long limit = (long) rlen * clen;
 			if( limit > Integer.MAX_VALUE )
 				throw new DMLRuntimeException("Dense NumPy array of size " + limit + " cannot be converted to MatrixBlock");
 			double [] denseBlock = new double[(int) limit];
 			ByteBuffer buf = ByteBuffer.wrap(data);
 			buf.order(ByteOrder.nativeOrder());
-			if(dataType == 0) {
-				for(int i = 0; i < rlen*clen; i++)
-					denseBlock[i] = buf.getInt();
+			switch (valueType) {
+				case INT32:
+					for (int i = 0; i < rlen * clen; i++)
+						denseBlock[i] = buf.getInt();
+					break;
+				case FP32:
+					for (int i = 0; i < rlen * clen; i++)
+						denseBlock[i] = buf.getFloat();
+					break;
+				case FP64:
+					for (int i = 0; i < rlen * clen; i++)
+						denseBlock[i] = buf.getDouble();
+					break;
 			}
-			else if(dataType == 1) {
-				for(int i = 0; i < rlen*clen; i++)
-					denseBlock[i] = buf.getFloat();
-			}
-			else if(dataType == 2) {
-				for(int i = 0; i < rlen*clen; i++)
-					denseBlock[i] = buf.getDouble();
-			}
-			mb.init( denseBlock, rlen, clen );
+			mb.init(denseBlock, rlen, clen);
 		}
 		mb.recomputeNonZeros();
 		mb.examSparsity();

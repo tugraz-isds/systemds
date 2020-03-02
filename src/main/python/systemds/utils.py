@@ -53,8 +53,6 @@ def get_gateway() -> JavaGateway:
     global JAVA_GATEWAY
     if JAVA_GATEWAY is None:
         if AUTO_START_JMLC_SERVER:
-            # copied with changes from:
-            #   https://stackoverflow.com/questions/43282447/py4j-launch-gateway-not-connecting-properly
             separator = ':'
             # note that windows has a different separator for classpath
             if platform.system() == 'Windows':
@@ -67,8 +65,7 @@ def get_gateway() -> JavaGateway:
                 classes = os.path.join(_get_module_dir(), 'systemds-java', 'classes')
                 classpath = separator.join([libs, classes] + files)
             process = subprocess.Popen(
-                ['java', '-cp', classpath, 'org.tugraz.sysds.pythonapi.pythonDMLScript', '--die-on-exit'],
-                stdout=subprocess.PIPE)
+                ['java', '-cp', classpath, 'org.tugraz.sysds.pythonapi.pythonDMLScript'], stdout=subprocess.PIPE)
             process.stdout.readline()  # wait for 'Gateway Server Started\n' written by server
         JAVA_GATEWAY = JavaGateway()
     return JAVA_GATEWAY

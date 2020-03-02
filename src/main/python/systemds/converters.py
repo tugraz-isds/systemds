@@ -23,20 +23,18 @@ def numpy_to_matrix_block(jvm: JVMView, np_arr: np.array):
     cols = np_arr.shape[1] if np_arr.ndim == 2 else 1
     if not isinstance(np_arr, np.ndarray):
         np_arr = np.asarray(np_arr, dtype=np.float64)
-    # data_type: 0: int, 1: float and 2: double
     if np_arr.dtype is np.dtype(np.int32):
         arr = np_arr.ravel().astype(np.int32)
-        data_type = 0
+        value_type = jvm.org.tugraz.sysds.common.Types.ValueType.INT32
     elif np_arr.dtype is np.dtype(np.float32):
         arr = np_arr.ravel().astype(np.float32)
-        data_type = 1
+        value_type = jvm.org.tugraz.sysds.common.Types.ValueType.FP32
     else:
         arr = np_arr.ravel().astype(np.float64)
-        data_type = 2
+        value_type = jvm.org.tugraz.sysds.common.Types.ValueType.FP64
     buf = bytearray(arr.tostring())
-    return jvm.org.tugraz.sysds.runtime.instructions.spark.utils.RDDConverterUtilsExt.convertPy4JArrayToMB(buf, rows,
-                                                                                                           cols,
-                                                                                                           data_type)
+    convert_method = jvm.org.tugraz.sysds.runtime.instructions.spark.utils.RDDConverterUtilsExt.convertPy4JArrayToMB
+    return convert_method(buf, rows, cols, value_type)
 
 
 def matrix_block_to_numpy(jvm: JVMView, mb: JavaObject):
