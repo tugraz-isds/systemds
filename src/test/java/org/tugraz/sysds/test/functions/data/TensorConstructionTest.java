@@ -27,6 +27,8 @@ import org.tugraz.sysds.lops.LopProperties;
 import org.tugraz.sysds.test.AutomatedTestBase;
 import org.tugraz.sysds.test.TestConfiguration;
 
+import static org.junit.Assert.assertTrue;
+
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -89,6 +91,9 @@ public class TensorConstructionTest extends AutomatedTestBase {
 			DMLScript.USE_LOCAL_SPARK_CONFIG = true;
 		}
 		try {
+			//TODO test correctness
+			assertTrue("the test is not done, needs comparison, of result.", false);
+
 			getAndLoadTestConfiguration(testName);
 
 			String HOME = SCRIPT_DIR + TEST_DIR;

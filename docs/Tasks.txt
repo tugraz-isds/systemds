@@ -204,6 +204,12 @@ SYSTEMDS-260 Misc Tools
 SYSTEMDS-270 Compressed Matrix Blocks
  * 271 Reintroduce compressed matrix blocks from SystemML             OK
  * 272 Simplify and speedup compression tests                         OK
+ 
+SYSTEMDS-300 Github Workflow/Actions
+ * 301 Initial Setup of GitHub Actions for automatic testing          OK
+ * 302 Workflow for Application tests                                 OK
+ * 303 Workflow for Function tests                                    OK
+ * 304 WOrkflow make documentation                                    OK
 
 Others:
  * Break append instruction to cbind and rbind 

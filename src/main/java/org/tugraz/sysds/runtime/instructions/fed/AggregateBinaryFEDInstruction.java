@@ -94,6 +94,7 @@ public class AggregateBinaryFEDInstruction extends BinaryFEDInstruction {
 	 * 
 	 * @param mo1 the federated matrix object
 	 * @param mo2 the other matrix object (currently has to be a vector)
+	 * @param output the matrix used as output location for the aggregate result
 	 * @param op the operation
 	 * @param swapParams if <code>this</code> and <code>other</code> should be swapped (other op this, instead of
 	 *                   this op other)

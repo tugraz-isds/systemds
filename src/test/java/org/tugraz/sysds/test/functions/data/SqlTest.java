@@ -26,6 +26,8 @@ import org.tugraz.sysds.common.Types.ExecMode;
 import org.tugraz.sysds.test.AutomatedTestBase;
 import org.tugraz.sysds.test.TestConfiguration;
 
+import static org.junit.Assert.assertTrue;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -95,6 +97,9 @@ public class SqlTest extends AutomatedTestBase {
 			throw new RuntimeException(e);
 		}
 		try {
+			//TODO test correctness
+			assertTrue("the test is not done, needs comparison, of result.", false);
+
 			getAndLoadTestConfiguration(SqlTest.TEST_NAME);
 			String HOME = SCRIPT_DIR + TEST_DIR;
 			
