@@ -9,8 +9,6 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        # , macOS-latest]
-        # windows-latest
         java: [ 1.8 ]
     name: Component Tests ${{ matrix.os }}
     steps:

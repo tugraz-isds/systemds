@@ -36,4 +36,4 @@ limitations under the License.
 ![Documentation](https://github.com/tugraz-isds/systemds/workflows/Documentation/badge.svg)
 ![Component Test](https://github.com/tugraz-isds/systemds/workflows/Component%20Test/badge.svg)
 ![Application Test](https://github.com/tugraz-isds/systemds/workflows/Application%20Test/badge.svg)
-![Application Test](https://github.com/tugraz-isds/systemds/workflows/Function%20Test/badge.svg)
+![Function Test](https://github.com/tugraz-isds/systemds/workflows/Function%20Test/badge.svg)

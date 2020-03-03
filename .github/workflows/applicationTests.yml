@@ -1,12 +1,12 @@
 name: Application Test
 
-on: [push, pull_request]
-  # push:
-  #   branches:
-  #     - master
-  # pull_request:
-  #   branches:
-  #     - master
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
 
 jobs:
   applicationsTests:
@@ -16,8 +16,6 @@ jobs:
       matrix:
         tests: [A,B,C,G,H,I,L,M,N,O,P,S,U,W]
         os: [ubuntu-latest]
-        # , macOS-latest]
-        # windows-latest
         java: [ 1.8 ]
     name:  Ap Test ${{ matrix.tests }} 
     steps:
@@ -45,6 +43,3 @@ jobs:
 
     - name: Run all tests starting with "${{ matrix.tests }}"
       run: mvn surefire:test -DskipTests=false -Dtest=org.tugraz.sysds.test.applications.${{ matrix.tests }}**
-
-
-    
