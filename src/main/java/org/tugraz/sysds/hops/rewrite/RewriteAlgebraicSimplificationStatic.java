@@ -1620,22 +1620,19 @@ public class RewriteAlgebraicSimplificationStatic extends HopRewriteRule
 	private static Hop removeUnnecessaryRemoveEmpty(Hop parent, Hop hi, int pos)
 	{
 		Hop hnew = null;
-		if( hi instanceof AggUnaryOp 
-			&& HopRewriteUtils.isRemoveEmpty(hi.getInput().get(0), true)
+		if( (HopRewriteUtils.isSum(hi) || HopRewriteUtils.isSumSq(hi))
+			&& HopRewriteUtils.isRemoveEmpty(hi.getInput().get(0))
 			&& hi.getInput().get(0).getParent().size() == 1 )
 		{	
-			if ( ((AggUnaryOp) hi).getOp() == AggOp.SUM || ((AggUnaryOp) hi).getOp() == AggOp.SUM_SQ)
+			ParameterizedBuiltinOp rmEmpty = (ParameterizedBuiltinOp) hi.getInput().get(0);
+			if (rmEmpty.getParameterHop("select") == null)
 			{
-				ParameterizedBuiltinOp rm = (ParameterizedBuiltinOp) hi.getInput().get(0);
-				if (rm.getParameterHop("select") == null)
+				Hop input = rmEmpty.getTargetHop();
+				//create new expression w/o rmEmpty if applicable
+				if( input != null ) 
 				{
-					Hop input = rm.getTargetHop();
-					//create new expression w/o rmEmpty if applicable
-					if( input != null ) 
-					{
-						HopRewriteUtils.removeAllChildReferences(rm);
-						hnew = HopRewriteUtils.createComputeNnz(input);
-					}
+					HopRewriteUtils.replaceChildReference(hi, rmEmpty, input);
+					return hi;
 				}
 			}
 		}
