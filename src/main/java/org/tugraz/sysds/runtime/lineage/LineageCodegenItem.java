@@ -1,5 +1,5 @@
 /*
- * Modifications Copyright 2020 Graz University of Technology
+ * Copyright 2020 Graz University of Technology
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,20 @@
  * limitations under the License.
  */
 
-package org.tugraz.sysds.runtime.compress.estim;
+package org.tugraz.sysds.runtime.lineage;
 
-import org.tugraz.sysds.runtime.matrix.data.MatrixBlock;
+import java.util.HashMap;
+import java.util.Map;
 
-public class CompressedSizeEstimatorFactory {
-	public static final boolean EXTRACT_SAMPLE_ONCE = true;
+public class LineageCodegenItem {
+	private static Map<String, LineageItem> _codegentraces = new HashMap<>();
 
-	public static CompressedSizeEstimator getSizeEstimator(MatrixBlock data, int numRows, long seed, double sampling_ratio) {
-		return (sampling_ratio == 1.0) ? new CompressedSizeEstimatorExact(data) : new CompressedSizeEstimatorSample(
-			data, (int) Math.ceil(numRows * sampling_ratio), seed);
+	public static LineageItem setCodegenLTrace(String classname, LineageItem li) {
+		return _codegentraces.put(classname, li);
+	}
+
+	public static LineageItem getCodegenLTrace(String classname) {
+		return _codegentraces.get(classname);
+		//TODO: test with parfor (synchronization, placeholders, etc)
 	}
 }
