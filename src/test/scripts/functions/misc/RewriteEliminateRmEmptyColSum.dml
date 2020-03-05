@@ -17,5 +17,5 @@
 #-------------------------------------------------------------
 
 A = read($1);
-sum = colSums(removeEmpty(target=A, margin="cols"));
+sum = colSums(removeEmpty(target=A, margin="rows"));
 write(sum,$2,format="text");

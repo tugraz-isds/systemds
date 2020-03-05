@@ -1617,9 +1617,16 @@ public class RewriteAlgebraicSimplificationStatic extends HopRewriteRule
 		return hi;
 	}
 	
+	/* 
+		Eliminate RemoveEmpty for SUM, SUM_SQ, and NNZ (number of non-zeros)
+	*/
 	private static Hop removeUnnecessaryRemoveEmpty(Hop parent, Hop hi, int pos)
 	{
-		Hop hnew = null;
+		//check if SUM or SUM_SQ is computed with input rmEmpty without select vector
+		//rewrite pattern:
+		//sum(removeEmpty(target=X)) -> sum(X)
+		//rowSums(removeEmpty(target=X,margin="cols")) -> rowSums(X)
+		//colSums(removeEmpty(target=X,margin="rows")) -> colSums(X)
 		if( (HopRewriteUtils.isSum(hi) || HopRewriteUtils.isSumSq(hi))
 			&& HopRewriteUtils.isRemoveEmpty(hi.getInput().get(0))
 			&& hi.getInput().get(0).getParent().size() == 1 )
@@ -1628,36 +1635,25 @@ public class RewriteAlgebraicSimplificationStatic extends HopRewriteRule
 			if (rmEmpty.getParameterHop("select") == null)
 			{
 				Hop input = rmEmpty.getTargetHop();
-				//create new expression w/o rmEmpty if applicable
 				if( input != null ) 
 				{
+					//eliminate rmEmpty
 					HopRewriteUtils.replaceChildReference(hi, rmEmpty, input);
 					return hi;
 				}
 			}
 		}
-		// if( ( hi instanceof AggUnaryOp || HopRewriteUtils.isUnary(hi, OpOp1.NROW) )
-		// 	&& HopRewriteUtils.isRemoveEmpty(hi.getInput().get(0), true)
-		// 	&& hi.getInput().get(0).getParent().size() == 1 )
-		// {
-		// 	ParameterizedBuiltinOp rm = (ParameterizedBuiltinOp) hi.getInput().get(0);
-			
-		// 	Hop input = (rm.getParameterHop("select") != null) ?
-		// 		rm.getParameterHop("select") :
-		// 		(rm.getDim2() == 1) ? rm.getTargetHop() : 
-		// 		null;
-		// 	if( input != null ) {
-		// 		HopRewriteUtils.removeAllChildReferences(rm);
-		// 		hnew = HopRewriteUtils.createComputeNnz(input);
-		// 	}
-		// }
 		
+		//check if nnz is called on the output of removeEmpty
  		if( HopRewriteUtils.isUnary(hi, OpOp1.NROW)
 			&& HopRewriteUtils.isRemoveEmpty(hi.getInput().get(0), true)
 			&& hi.getInput().get(0).getParent().size() == 1 )
 		{
 			ParameterizedBuiltinOp rm = (ParameterizedBuiltinOp) hi.getInput().get(0);
 			//obtain optional select vector or input if col vector
+			//(nnz will be the same as the select vector if 
+			// the select vector is provided and it will be the same
+			// as the input if the select vector is not provided)
 			//NOTE: part of static rewrites despite size dependence for phase 
 			//ordering before rewrite for DAG splits after table/removeEmpty
 			Hop input = (rm.getParameterHop("select") != null) ?
@@ -1667,15 +1663,15 @@ public class RewriteAlgebraicSimplificationStatic extends HopRewriteRule
 			//create new expression w/o rmEmpty if applicable
 			if( input != null ) {
 				HopRewriteUtils.removeAllChildReferences(rm);
-				hnew = HopRewriteUtils.createComputeNnz(input);
+				Hop hnew = HopRewriteUtils.createComputeNnz(input);
+
+				//modify dag if nnz is called on the output of removeEmpty
+				if( hnew != null ){ 
+					HopRewriteUtils.replaceChildReference(parent, hi, hnew, pos);
+					hi = hnew;
+					LOG.debug("Applied removeUnnecessaryRemoveEmpty (line " + hi.getBeginLine() + ")");
+				}
 			}
-		}
-		
-		//modify dag if one of the above rules applied
-		if( hnew != null ){ 
-			HopRewriteUtils.replaceChildReference(parent, hi, hnew, pos);
-			hi = hnew;
-			LOG.debug("Applied removeUnnecessaryRemoveEmpty (line " + hi.getBeginLine() + ")");
 		}
 		
 		return hi;
