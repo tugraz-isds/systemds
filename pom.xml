@@ -316,27 +316,6 @@
 			</plugin>
 
 			<plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>exec-maven-plugin</artifactId>
-				<version>1.6.0</version>
-				<executions>
-					<execution>
-						<id>install-dependency-for-integration-tests</id>
-						<phase>prepare-package</phase>
-						<goals>
-							<goal>java</goal>
-						</goals>
-						<configuration>
-							<mainClass>org.tugraz.sysds.utils.InstallDependencyForIntegrationTests</mainClass>
-							<arguments>
-								<argument>true</argument> <!-- <argument>${skipTests}</argument> -->
-								<argument>${enableGPU}</argument>
-							</arguments>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
 				<version>0.7.6.201602180812</version>
@@ -413,21 +392,6 @@
 		</profile>
 
 		<profile>
-			<!-- Profile for Windows builds. Not currently needed, but might be needed 
-				in the future. -->
-			<id>platform-windows</id>
-			<activation>
-				<os>
-					<family>windows</family>
-				</os>
-			</activation>
-			<properties>
-				<!-- Extra JVM args for Windows go here. -->
-				<integrationTestExtraJVMArgs />
-			</properties>
-		</profile>
-
-		<profile>
 			<id>eclipse-only</id>
 			<activation>
 				<property>
@@ -480,20 +444,6 @@
 												<versionRange>[2.10,)</versionRange>
 												<goals>
 													<goal>copy-dependencies</goal>
-												</goals>
-											</pluginExecutionFilter>
-											<action>
-												<ignore>
-												</ignore>
-											</action>
-										</pluginExecution>
-										<pluginExecution>
-											<pluginExecutionFilter>
-												<groupId>org.codehaus.mojo</groupId>
-												<artifactId>build-helper-maven-plugin</artifactId>
-												<versionRange>[1.8,)</versionRange>
-												<goals>
-													<goal>add-test-source</goal>
 												</goals>
 											</pluginExecutionFilter>
 											<action>
