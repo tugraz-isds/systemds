@@ -19,18 +19,21 @@
  * specific language governing permissions and limitations
  * under the License.
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+		 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>org.apache</groupId>
 		<artifactId>apache</artifactId>
 		<version>18</version>
 	</parent>
-	<groupId>org.tugraz.systemds</groupId>
+	<groupId>org.tugraz.sysds</groupId>
 	<version>0.2.0-SNAPSHOT</version>
 	<artifactId>systemds</artifactId>
 	<packaging>jar</packaging>
 	<name>SystemDS</name>
+	<url>https://github.com/tugraz-isds/systemds</url>
 	<description>Declarative End-to-End Data Science</description>
 	<licenses>
 		<license>
@@ -45,7 +48,6 @@
 		<spark.version>2.1.0</spark.version>
 		<scala.version>2.11.8</scala.version>
 		<scala.binary.version>2.11</scala.binary.version>
-		<scala.test.version>2.2.6</scala.test.version>
 		<maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss z</maven.build.timestamp.format>
 		<enableGPU>false</enableGPU>
 		<jcuda.scope>provided</jcuda.scope>
@@ -732,7 +734,7 @@
 		</profile>
 		
 	</profiles>
-
+	
 	<dependencies>
 		<dependency>
 			<groupId>org.jcuda</groupId>
