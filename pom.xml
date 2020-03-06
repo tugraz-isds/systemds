@@ -687,6 +687,7 @@
 	        	</exclusion>
 	      	</exclusions>
 		</dependency>
+
 		<dependency>
 			<groupId>org.jcuda</groupId>
 			<artifactId>jcublas</artifactId>
@@ -700,6 +701,7 @@
 	        	</exclusion>
 	      	</exclusions>
 		</dependency>
+
 		<dependency>
 			<groupId>org.jcuda</groupId>
 			<artifactId>jcusparse</artifactId>
@@ -713,6 +715,7 @@
 	        	</exclusion>
 	      	</exclusions>
 		</dependency>
+
 		<dependency>
 			<groupId>org.jcuda</groupId>
 			<artifactId>jcusolver</artifactId>
@@ -726,6 +729,7 @@
 	        	</exclusion>
 	      	</exclusions>
 		</dependency>
+
 		<dependency>
 			<groupId>org.jcuda</groupId>
 			<artifactId>jcudnn</artifactId>
@@ -748,6 +752,7 @@
 			<version>${jcuda.version}</version>
 			<scope>${jcuda.scope}</scope>
 		</dependency>
+
 		<dependency>
 			<groupId>org.jcuda</groupId>
 			<artifactId>jcublas-natives</artifactId>
@@ -755,6 +760,7 @@
 			<version>${jcuda.version}</version>
 			<scope>${jcuda.scope}</scope>
 		</dependency>
+
 		<dependency>
 			<groupId>org.jcuda</groupId>
 			<artifactId>jcusparse-natives</artifactId>
@@ -762,6 +768,7 @@
 			<version>${jcuda.version}</version>
 			<scope>${jcuda.scope}</scope>
 		</dependency>
+
 		<dependency>
 			<groupId>org.jcuda</groupId>
 			<artifactId>jcusolver-natives</artifactId>
@@ -769,6 +776,7 @@
 			<version>${jcuda.version}</version>
 			<scope>${jcuda.scope}</scope>
 		</dependency>
+
 		<dependency>
 			<groupId>org.jcuda</groupId>
 			<artifactId>jcudnn-natives</artifactId>
@@ -784,6 +792,7 @@
 			<version>${jcuda.version}</version>
 			<scope>${jcuda.scope}</scope>
 		</dependency>
+
 		<dependency>
 			<groupId>org.jcuda</groupId>
 			<artifactId>jcublas-natives</artifactId>
@@ -791,6 +800,7 @@
 			<version>${jcuda.version}</version>
 			<scope>${jcuda.scope}</scope>
 		</dependency>
+
 		<dependency>
 			<groupId>org.jcuda</groupId>
 			<artifactId>jcusparse-natives</artifactId>
@@ -798,6 +808,7 @@
 			<version>${jcuda.version}</version>
 			<scope>${jcuda.scope}</scope>
 		</dependency>
+
 		<dependency>
 			<groupId>org.jcuda</groupId>
 			<artifactId>jcusolver-natives</artifactId>
@@ -805,6 +816,7 @@
 			<version>${jcuda.version}</version>
 			<scope>${jcuda.scope}</scope>
 		</dependency>
+
 		<dependency>
 			<groupId>org.jcuda</groupId>
 			<artifactId>jcudnn-natives</artifactId>
@@ -813,52 +825,14 @@
 			<scope>${jcuda.scope}</scope>
 		</dependency>
 
-		<!-- Commented until the PowerPC jcuda libraries are deployed for 0.9.0 version
 		<dependency>
 			<groupId>org.jcuda</groupId>
 			<artifactId>jcuda-natives</artifactId>
-			<classifier>linux-ppc_64</classifier>
+			<classifier>apple-x86_64</classifier>
 			<version>${jcuda.version}</version>
 			<scope>${jcuda.scope}</scope>
 		</dependency>
-		<dependency>
-			<groupId>org.jcuda</groupId>
-			<artifactId>jcublas-natives</artifactId>
-			<classifier>linux-ppc_64</classifier>
-			<version>${jcuda.version}</version>
-			<scope>${jcuda.scope}</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.jcuda</groupId>
-			<artifactId>jcusparse-natives</artifactId>
-			<classifier>linux-ppc_64</classifier>
-			<version>${jcuda.version}</version>
-			<scope>${jcuda.scope}</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.jcuda</groupId>
-			<artifactId>jcusolver-natives</artifactId>
-			<classifier>linux-ppc_64</classifier>
-			<version>${jcuda.version}</version>
-			<scope>${jcuda.scope}</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.jcuda</groupId>
-			<artifactId>jcudnn-natives</artifactId>
-			<classifier>linux-ppc_64</classifier>
-			<version>${jcuda.version}</version>
-			<scope>${jcuda.scope}</scope>
-		</dependency>
-		 -->
 
-		 <!-- Commented until the MacOS jcuda libraries are deployed for 0.9.0 version
-		<dependency>
-			<groupId>org.jcuda</groupId>
-			<artifactId>jcuda-natives</artifactId>
-			<classifier>apple-x86_64</classifier>
-			<version>${jcuda.version}</version>
-			<scope>${jcuda.scope}</scope>
-		</dependency>
 		<dependency>
 			<groupId>org.jcuda</groupId>
 			<artifactId>jcublas-natives</artifactId>
@@ -866,6 +840,7 @@
 			<version>${jcuda.version}</version>
 			<scope>${jcuda.scope}</scope>
 		</dependency>
+
 		<dependency>
 			<groupId>org.jcuda</groupId>
 			<artifactId>jcusparse-natives</artifactId>
@@ -873,6 +848,7 @@
 			<version>${jcuda.version}</version>
 			<scope>${jcuda.scope}</scope>
 		</dependency>
+
 		<dependency>
 			<groupId>org.jcuda</groupId>
 			<artifactId>jcusolver-natives</artifactId>
@@ -880,6 +856,7 @@
 			<version>${jcuda.version}</version>
 			<scope>${jcuda.scope}</scope>
 		</dependency>
+
 		<dependency>
 			<groupId>org.jcuda</groupId>
 			<artifactId>jcudnn-natives</artifactId>
@@ -887,7 +864,6 @@
 			<version>${jcuda.version}</version>
 			<scope>${jcuda.scope}</scope>
 		</dependency>
-		 -->
 
 		<dependency>
 			<groupId>org.apache.spark</groupId>
