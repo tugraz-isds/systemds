@@ -88,6 +88,8 @@
 				<directory>src/main/cpp/kernels</directory>
 				<excludes>
 					<exclude>*.cu</exclude>
+					<exclude>*.cuh</exclude>
+					<exclude>Makefile</exclude>
 				</excludes>
 				<targetPath>kernels</targetPath>
 			</resource>
