@@ -162,11 +162,8 @@ echo
 echo "SYSTEMDS_ROOT       ==> $SYSTEMDS_ROOT"
 echo "Git reference       ==> $GIT_REF"
 echo "release version     ==> $RELEASE_VERSION"
-
-echo "  "
-echo "Deploying to :"
-echo $RELEASE_STAGING_LOCATION
-echo "  "
+echo "Deploying to        ==> $RELEASE_STAGING_LOCATION"
+echo
 
 function checkout_code {
     # Checkout code
@@ -189,6 +186,10 @@ echo "Preparing release $RELEASE_VERSION"
 if [[ ! -d $RELEASE_WORK_DIR || FORCE_DL -eq 1 ]]; then
     echo "Cloning source repo..."
     checkout_code
+fi
+
+if [[ ! -d $RELEASE_STAGING_LOCATION ]]; then
+  mkdir -p $RELEASE_STAGING_LOCATION
 fi
 
 cd $RELEASE_WORK_DIR/systemds
