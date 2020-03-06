@@ -53,7 +53,6 @@
 		<jcuda.scope>provided</jcuda.scope>
 		<jcuda.version>10.1.0</jcuda.version>
 		<skipTests>true</skipTests>
-		<integrationTestExtraJVMArgs />
 	</properties>
 
 	<repositories>
@@ -732,7 +731,7 @@
 				</plugins>
 			</build>
 		</profile>
-		
+
 	</profiles>
 	
 	<dependencies>
