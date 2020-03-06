@@ -343,7 +343,7 @@ public class RewriteMatrixMultChainOptimization extends HopRewriteRule
 	 * 
 	 * @param hop high-level operator
 	 * @param chain list of high-level operators
-	 * @param dimArray dimension array
+	 * @param dimsArray dimension array
 	 * @return true if all dimensions known
 	 */
 	protected static boolean getDimsArray( Hop hop, ArrayList<Hop> chain, double[] dimsArray )
