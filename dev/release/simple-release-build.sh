@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #-------------------------------------------------------------
 #
-# Modifications Copyright 2019 Graz University of Technology
+# Modifications Copyright 2020 Graz University of Technology
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -24,85 +24,95 @@
 
 #function pause(){ read -p 'Press [Enter] key to continue...' }
 
-#ToDo: Document simplified release script
 function exit_with_usage {
   cat << EOF
 
-Simplified release script. Documentation is yet to come ;-)
+simple-release-build.sh - A simplified version of the release scripts for producting versioned code/binary bundles
 
+SYNOPSIS
+
+usage: simple-release-build.sh [--overrideVersion=<version>] [--gitUrl=<repository-url]
+                               [--gitCommitHash=<commit-or-branch-name>] [--force-download]
+
+DESCRIPTION
+
+This script omits all the bells and whistles to simply produce *-bin.tbz et al 
+
+OPTIONS
+
+-v=    --overrideVersion=<no-default>
+         Specifies the version of the release
+  
+-u=    --gitUrl=https://github.com/tugraz-isds/systemds.git
+         The URL of the repository to clone
+  
+-g=    --gitCommitHash=master
+         The tag, branch name or commit hash to check out
+
+-f     --force-download
+         Clone the repository again (to overwrite in consecutive runs)
+
+-h     --help
+         Call for help (print this text)
+EXAMPLE
+
+SYSTEMDS_ROOT=`pwd` GNUPGHOME=<path-to-gnupg-dir> GPG_KEYID="<0xKeyID>" GPG_PASSPHRASE="<passphrase>"  dev/release/simple-release-build.sh --overrideVersion=1.2.3 -g=prep-release-0.2
+
+<<
 EOF
   exit 1
 }
 
 set -e
 
-if [ $# -eq 0 ]; then
-  exit_with_usage
-fi
-
+#if [ $# -eq 0 ]; then
+#  exit_with_usage
+#fi
 
 # Process each provided argument configuration
 while [ "${1+defined}" ]; do
   IFS="=" read -ra PARTS <<< "$1"
   case "${PARTS[0]}" in
-    --release-prepare)
-      GOAL="release-prepare"
-      RELEASE_PREPARE=true
-      shift
-      ;;
-    --release-publish)
-      GOAL="release-publish"
-      RELEASE_PUBLISH=true
-      shift
-      ;;
-    --release-snapshot)
-      GOAL="release-snapshot"
-      RELEASE_SNAPSHOT=true
-      shift
-      ;;
-    --gitCommitHash)
+    -g | --gitCommitHash)
       GIT_REF="${PARTS[1]}"
       shift
       ;;
-    --gitTag)
-      GIT_TAG="${PARTS[1]}"
-      shift
-      ;;
-    --releaseVersion)
+    -v | --overrideVersion)
       RELEASE_VERSION="${PARTS[1]}"
       shift
       ;;
-    --developmentVersion)
-      DEVELOPMENT_VERSION="${PARTS[1]}"
+    -u | --gitUrl)
+      GIT_URL="${PARTS[1]}"
       shift
       ;;
-    --releaseRc)
-      RELEASE_RC="${PARTS[1]}"
+    -f | --force-download)
+      FORCE_DL=1
       shift
       ;;
-    --tag)
-      RELEASE_TAG="${PARTS[1]}"
-      shift
-      ;;
-    --dryRun)
-      DRY_RUN="-DdryRun=true"
-      shift
-      ;;
-
     *help* | -h)
       exit_with_usage
-     exit 0
-     ;;
+      exit 0
+      ;;
     -*)
-     echo "Error: Unknown option: $1" >&2
-     exit 1
-     ;;
+      echo "Error: Unknown option: $1" >&2
+      exit 1
+      ;;
     *)  # No more options
      break
      ;;
   esac
 done
 
+if [[ -z "$SYSTEMDS_ROOT" ]]; then
+    echo
+    echo "-------------------------------------------------------------"
+    echo 'The environment variable SYSTEMDS_ROOT is not set. This'
+    echo 'variable needs to point to the base of your SystemDS source'
+    echo 'tree.'
+    echo "-------------------------------------------------------------"
+
+    exit_with_usage
+fi
 
 if [[ -z "$GPG_PASSPHRASE" ]]; then
     echo 'The environment variable GPG_PASSPHRASE is not set. Enter the passphrase to'
@@ -118,41 +128,17 @@ if [[ -z "$GPG_KEYID" ]]; then
     stty -echo && printf "GPG key ID: " && read GPG_KEYID && printf '\n' && stty echo
 fi
 
-if [[ "$RELEASE_PREPARE" == "true" && -z "$RELEASE_VERSION" ]]; then
-    echo "ERROR: --releaseVersion must be passed as an argument to run this script"
-    exit_with_usage
-fi
-
-if [[ "$RELEASE_PREPARE" == "true" && -z "$DEVELOPMENT_VERSION" ]]; then
-    echo "ERROR: --developmentVersion must be passed as an argument to run this script"
-    exit_with_usage
-fi
-
-if [[ "$RELEASE_PUBLISH" == "true"  ]]; then
-    if [[ "$GIT_REF" && "$GIT_TAG" ]]; then
-        echo "ERROR: Only one argumented permitted when publishing : --gitCommitHash or --gitTag"
-        exit_with_usage
-    fi
-    if [[ -z "$GIT_REF" && -z "$GIT_TAG" ]]; then
-        echo "ERROR: --gitCommitHash OR --gitTag must be passed as an argument to run this script"
-        exit_with_usage
-    fi
-fi
-
-if [[ "$RELEASE_PUBLISH" == "true" && "$DRY_RUN" ]]; then
-    echo "ERROR: --dryRun not supported for --release-publish"
-    exit_with_usage
-fi
-
-if [[ "$RELEASE_SNAPSHOT" == "true" && "$DRY_RUN" ]]; then
-    echo "ERROR: --dryRun not supported for --release-publish"
-    exit_with_usage
-fi
-
 # Commit ref to checkout when building
 GIT_REF=${GIT_REF:-master}
 if [[ "$RELEASE_PUBLISH" == "true" && "$GIT_TAG" ]]; then
     GIT_REF="tags/$GIT_TAG"
+fi
+
+# Commit ref to checkout when building
+GIT_REF=${GIT_REF:-master}
+if [[ -z "$GIT_URL" ]]; then
+    echo "Using default URL"
+    GIT_URL="https://github.com/tugraz-isds/systemds.git"
 fi
 
 BASE_DIR=$(pwd)
@@ -164,25 +150,18 @@ MVN="mvn"
 
 PUBLISH_PROFILES="-Pdistribution,rat"
 
-if [ -z "$RELEASE_RC" ]; then
-  RELEASE_RC="rc1"
-fi
-
-if [ -z "$RELEASE_TAG" ]; then
-  RELEASE_TAG="v$RELEASE_VERSION-$RELEASE_RC"
-fi
-
 RELEASE_STAGING_LOCATION="${SYSTEMDS_ROOT}/temp"
 
+TIMESTAMP=`date +%Y-%m-%dT%H:%M:%S`
 
 echo "  "
 echo "-------------------------------------------------------------"
 echo "------- Release preparation with the following parameters ---"
 echo "-------------------------------------------------------------"
-echo "Executing           ==> $GOAL"
+echo
+echo "SYSTEMDS_ROOT       ==> $SYSTEMDS_ROOT"
 echo "Git reference       ==> $GIT_REF"
 echo "release version     ==> $RELEASE_VERSION"
-echo "development version ==> $DEVELOPMENT_VERSION"
 
 echo "  "
 echo "Deploying to :"
@@ -194,33 +173,34 @@ function checkout_code {
     rm -rf $RELEASE_WORK_DIR
     mkdir -p $RELEASE_WORK_DIR
     cd $RELEASE_WORK_DIR
-#     git clone https://github.com/tugraz-isds/systemds.git
-    git clone https://github.com/corepointer/systemds.git
+    git clone $GIT_URL
     cd systemds
     git checkout $GIT_REF
     git_hash=`git rev-parse --short HEAD`
     echo "Checked out SystemDS git hash $git_hash"
 
     git clean -d -f -x
-    #rm .gitignore
-    #rm -rf .git
 
     cd "$BASE_DIR" #return to base dir
 }
 
-if [[ "$RELEASE_PUBLISH" == "true" ]]; then
-    echo "Preparing release $RELEASE_VERSION"
+echo "Preparing release $RELEASE_VERSION"
+
+if [[ ! -d $RELEASE_WORK_DIR || FORCE_DL -eq 1 ]]; then
+    echo "Cloning source repo..."
     checkout_code
-    cd $RELEASE_WORK_DIR/systemds
-
-    $MVN clean package verify install:install deploy:deploy -DaltDeploymentRepository=altDepRepo::default::file://$SYSTEMDS_ROOT/temp -DskiptTests -Dgpg.keyname=$GPG_KEYID -Dgpg.passphrase=$GPG_PASSPHRASE \
-    -Darguments="-DskipTests -DaltDeploymentRepository='altDepRepo::default::file://$SYSTEMDS_ROOT/temp' -Dgpg.keyname='$GPG_KEYID' -Dgpg.passphrase='$GPG_PASSPHRASE'" $PUBLISH_PROFILES | tee $BASE_DIR/publish-output.log
-
-    cd "$BASE_DIR" #exit target
-
-    exit 0
 fi
 
-cd "$BASE_DIR" #return to base dir
-echo "ERROR: wrong execution goals"
-exit_with_usage
+cd $RELEASE_WORK_DIR/systemds
+
+if [[ ! -z $RELEASE_VERSION ]]; then
+    echo "resetting version in pom.xml..." ; sleep 3
+    $MVN versions:set -DnewVersion=$RELEASE_VERSION
+fi
+
+# skipped mvn clean verify release:update-versions verify install:install deploy:deploy
+$MVN $PUBLISH_PROFILES deploy -DskiptTests \
+  -DaltDeploymentRepository=altDepRepo::default::file://$SYSTEMDS_ROOT/temp \
+  -Dgpg.keyname=$GPG_KEYID -Dgpg.passphrase=$GPG_PASSPHRASE | tee $SYSTEMDS_ROOT/temp/publish-output-$TIMESTAMP.log
+
+cd "$BASE_DIR"
