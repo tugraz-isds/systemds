@@ -561,18 +561,6 @@
 								</configuration>
 							</execution>
 							<execution>
-								<id>create-binary-distribution</id>
-								<phase>package</phase>
-								<goals>
-									<goal>single</goal>
-								</goals>
-								<configuration>
-									<descriptors>
-										<descriptor>src/assembly/bin.xml</descriptor>
-									</descriptors>
-								</configuration>
-							</execution>
-							<execution>
 								<id>create-extra-jar</id>
 								<phase>package</phase>
 								<goals>
@@ -589,6 +577,18 @@
 											<Version>${project.version}</Version>
 										</manifestEntries>
 									</archive>
+								</configuration>
+							</execution>
+							<execution>
+								<id>create-binary-distribution</id>
+								<phase>package</phase>
+								<goals>
+									<goal>single</goal>
+								</goals>
+								<configuration>
+									<descriptors>
+										<descriptor>src/assembly/bin.xml</descriptor>
+									</descriptors>
 								</configuration>
 							</execution>
 						</executions>

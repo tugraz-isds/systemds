@@ -143,5 +143,9 @@
 			<outputDirectory>.</outputDirectory>
 			<destName>SystemDS.jar</destName>
 		</file>
+		<file>
+			<source>target/${artifactId}-${project.version}-extra.jar</source>
+			<outputDirectory>./lib/</outputDirectory>
+		</file>
 	</files>
 </assembly>
