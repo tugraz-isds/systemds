@@ -55,26 +55,6 @@
 			</includes>
 			<outputDirectory>scripts</outputDirectory>
 		</fileSet>
-
-		<fileSet>
-			<directory>${basedir}/conf</directory>
-			<includes>
-				<include>log4j.properties</include>
-				<include>SystemDS-config.xml</include>
-			</includes>
-			<outputDirectory>.</outputDirectory>
-		</fileSet>
-
-    <fileSet>
-			<directory>${basedir}/src/main/standalone</directory>
-			<includes>
-				<include>log4j.properties</include>
-				<include>SystemDS-config.xml</include>
-			</includes>
-			<outputDirectory>.</outputDirectory>
-		</fileSet>
-
-
 		<fileSet>
 			<directory>${basedir}/src/test/config/hadoop_bin_windows/bin</directory>
 			<includes>
@@ -147,6 +127,16 @@
 		<file>
 			<source>target/${artifactId}-${project.version}-extra.jar</source>
 			<outputDirectory>./lib/</outputDirectory>
+		</file>
+		<file>
+			<source>${basedir}/src/conf/log4j.properties.template</source>
+			<outputDirectory>./conf/</outputDirectory>
+			<destName>log4j.properties</destName>
+		</file>
+		<file>
+			<source>${basedir}/src/conf/SystemDS-config.xml.template</source>
+			<outputDirectory>./conf/</outputDirectory>
+			<destName>SystemDS-config.xml</destName>
 		</file>
 	</files>
 </assembly>
