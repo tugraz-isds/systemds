@@ -1,7 +1,7 @@
 #!/bin/bash
 #-------------------------------------------------------------
 #
-# Modifications Copyright 2019 Graz University of Technology
+# Modifications Copyright 2020 Graz University of Technology
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -32,7 +32,7 @@ Default Java options (-Xmx4g -Xms4g -Xmn400m) can be overridden by setting SYSTE
 EOF
   exit 1
 }
-#    Script internally invokes 'java [SYSTEMDS_STANDALONE_OPTS] -jar StandaloneSystemDS.jar -f <dml-filename> -exec singlenode -config=SystemDS-config.xml [arguments]'
+#    Script internally invokes 'java [SYSTEMDS_STANDALONE_OPTS] -jar StandaloneSystemDS.jar -f <dml-filename> -exec singlenode -config=conf/SystemDS-config.xml [arguments]'
 
 while getopts "h:" options; do
   case $options in
@@ -63,7 +63,7 @@ for f in ${CURRENT_PATH}/lib/*.jar; do
   CLASSPATH=${CLASSPATH}:$f;
 done
 
-LOG4JPROP=log4j.properties
+LOG4JPROP=conf/log4j.properties
 
 # set default java opts if none supplied
 if [ -z "$SYSTEMDS_STANDALONE_OPTS" ] ; then
@@ -78,7 +78,7 @@ java ${SYSTEMDS_STANDALONE_OPTS} \
 org.tugraz.sysds.api.DMLScript \
 -f ${SCRIPT_FILE} \
 -exec singlenode \
--config $CURRENT_PATH"/SystemDS-config.xml" \
+-config $CURRENT_PATH"/conf/SystemDS-config.xml" \
 $@"
 
 $CMD

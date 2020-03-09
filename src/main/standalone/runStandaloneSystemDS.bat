@@ -33,7 +33,7 @@ SET HADOOP_HOME=%CD%/lib/hadoop
 
 set CLASSPATH=./lib/*
 
-set LOG4JPROP=log4j.properties
+set LOG4JPROP=conf/log4j.properties
 
 for /f "tokens=1,* delims= " %%a in ("%*") do set ALLBUTFIRST=%%b
 
@@ -48,7 +48,7 @@ set CMD=java %SYSTEMDS_STANDALONE_OPTS% ^
      org.tugraz.sysds.api.DMLScript ^
      -f %1 ^
      -exec singlenode ^
-     -config SystemDS-config.xml ^
+     -config conf/SystemDS-config.xml ^
      %ALLBUTFIRST%
 
 :: execute the java command
@@ -74,6 +74,6 @@ GOTO Msg
 :Msg
 ECHO Usage: runStandaloneSystemDS.bat ^<dml-filename^> [arguments] [-help]
 ECHO Default Java options (-Xmx4g -Xms4g -Xmn400m) can be overridden by setting SYSTEMDS_STANDALONE_OPTS.
-ECHO Script internally invokes 'java [SYSTEMDS_STANDALONE_OPTS] -cp ./lib/* -Dlog4j.configuration=file:log4j.properties org.tugraz.sysds.api.DMLScript -f ^<dml-filename^> -exec singlenode -config SystemDS-config.xml [arguments]'
+ECHO Script internally invokes 'java [SYSTEMDS_STANDALONE_OPTS] -cp ./lib/* -Dlog4j.configuration=file:conf/log4j.properties org.tugraz.sysds.api.DMLScript -f ^<dml-filename^> -exec singlenode -config conf/SystemDS-config.xml [arguments]'
 
 :End

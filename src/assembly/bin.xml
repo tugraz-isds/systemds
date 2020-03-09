@@ -116,12 +116,12 @@
 			<outputDirectory>./lib/</outputDirectory>
 		</file>
 		<file>
-			<source>${basedir}/src/conf/log4j.properties.template</source>
+			<source>${basedir}/conf/log4j.properties.template</source>
 			<outputDirectory>./conf/</outputDirectory>
 			<destName>log4j.properties</destName>
 		</file>
 		<file>
-			<source>${basedir}/src/conf/SystemDS-config.xml.template</source>
+			<source>${basedir}/conf/SystemDS-config.xml.template</source>
 			<outputDirectory>./conf/</outputDirectory>
 			<destName>SystemDS-config.xml</destName>
 		</file>
