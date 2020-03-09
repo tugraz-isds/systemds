@@ -116,6 +116,7 @@
 				<include>*:commons-httpclient*</include>
 				<include>*:commons-io*</include>
 				<include>*:commons-lang</include>
+				<include>*:commons-lang3</include>
 				<include>*:commons-logging*</include>
 				<include>*:commons-math3*</include>
 				<include>*:guava*</include>
