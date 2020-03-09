@@ -80,9 +80,9 @@ class OperationNode(DAGNode):
         raise NotImplementedError('Operation node has no python local data. Missing implementation in derived class?')
 
     def _check_matrix_op(self):
-        """
-        Perform checks to assure operation is allowed to be performed on data type of this `OperationNode`
-        :return:
+        """Perform checks to assure operation is allowed to be performed on data type of this `OperationNode`
+
+        :raise: AssertionError
         """
         assert self.output_type == OutputType.MATRIX, f'{self.operation} only supported for matrices'
 
@@ -120,8 +120,8 @@ class OperationNode(DAGNode):
         return OperationNode('!=', [self, other])
 
     def l2svm(self, labels: DAGNode, **kwargs) -> OperationNode:
-        """
-        Perform l2svm on matrix with labels given.
+        """Perform l2svm on matrix with labels given.
+
         :return: `OperationNode` representing operation
         """
         self._check_matrix_op()
@@ -130,9 +130,9 @@ class OperationNode(DAGNode):
         return OperationNode('l2svm', named_input_nodes=params_dict)
 
     def sum(self, axis: int = None) -> OperationNode:
-        """
-        Calculate sum of matrix.
-        :type axis: can be 0 or 1 to do either row or column sums
+        """Calculate sum of matrix.
+
+        :param axis: can be 0 or 1 to do either row or column sums
         :return: `OperationNode` representing operation
         """
         self._check_matrix_op()
@@ -145,9 +145,9 @@ class OperationNode(DAGNode):
         raise ValueError(f"Axis has to be either 0, 1 or None, for column, row or complete {self.operation}")
 
     def mean(self, axis: int = None) -> OperationNode:
-        """
-        Calculate mean of matrix.
-        :type axis: can be 0 or 1 to do either row or column means
+        """Calculate mean of matrix.
+
+        :param axis: can be 0 or 1 to do either row or column means
         :return: `OperationNode` representing operation
         """
         self._check_matrix_op()
@@ -160,9 +160,9 @@ class OperationNode(DAGNode):
         raise ValueError(f"Axis has to be either 0, 1 or None, for column, row or complete {self.operation}")
 
     def var(self, axis: int = None) -> OperationNode:
-        """
-        Calculate variance of matrix.
-        :type axis: can be 0 or 1 to do either row or column vars
+        """Calculate variance of matrix.
+
+        :param axis: can be 0 or 1 to do either row or column vars
         :return: `OperationNode` representing operation
         """
         self._check_matrix_op()
@@ -175,8 +175,8 @@ class OperationNode(DAGNode):
         raise ValueError(f"Axis has to be either 0, 1 or None, for column, row or complete {self.operation}")
 
     def abs(self) -> OperationNode:
-        """
-        Calculate absolute.
+        """Calculate absolute.
+
         :return: `OperationNode` representing operation
         """
         return OperationNode('abs', [self])

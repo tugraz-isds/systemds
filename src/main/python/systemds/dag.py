@@ -30,26 +30,24 @@ class OutputType(Enum):
 
 
 class DAGNode(ABC):
-    """
-    A Node in the directed-acyclic-graph (DAG) defining all operations.
-    """
+    """A Node in the directed-acyclic-graph (DAG) defining all operations."""
     unnamed_input_nodes: Sequence[Union[DAGNode, str, int, float, bool]]
     named_input_nodes: Dict[str, Union[DAGNode, str, int, float, bool]]
     output_type: OutputType
     is_python_local_data: bool
 
     def compute(self, verbose: bool = False) -> Any:
-        """
-        Get result of this operation. Builds the dml script and executes it in SystemDS, before this method is called
+        """Get result of this operation. Builds the dml script and executes it in SystemDS, before this method is called
         all operations are only building the DAG without actually executing (lazy evaluation).
+
         :param verbose: Can be activated to print additional information such as created DML-Script
         :return: the output as an python builtin data type or numpy array
         """
         raise NotImplementedError
 
     def code_line(self, var_name: str, unnamed_input_vars: Sequence[str], named_input_vars: Dict[str, str]) -> str:
-        """
-        Generates the DML code line equal to the intended action of this node.
+        """Generates the DML code line equal to the intended action of this node.
+
         :param var_name: Name of DML-variable this nodes result should be saved in
         :param unnamed_input_vars: all strings representing the unnamed parameters
         :param named_input_vars: all strings representing the named parameters (name value pairs)
@@ -58,8 +56,8 @@ class DAGNode(ABC):
         raise NotImplementedError
 
     def pass_python_data_to_prepared_script(self, jvm: JVMView, var_name: str, prepared_script: JavaObject) -> None:
-        """
-        Passes data from python to the prepared script object.
+        """Passes data from python to the prepared script object.
+
         :param jvm: the java virtual machine object
         :param var_name: the variable name the data should get in java
         :param prepared_script: the prepared script

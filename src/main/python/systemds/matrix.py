@@ -34,9 +34,9 @@ class Matrix(OperationNode):
 
     def __init__(self, mat: Union[os.PathLike, np.array], *args: Sequence[VALID_INPUT_TYPES],
                  **kwargs: Dict[str, VALID_INPUT_TYPES]) -> None:
-        """
-        Generate DAGNode representing matrix with data either given by a numpy array, which will be sent to SystemDS
+        """Generate DAGNode representing matrix with data either given by a numpy array, which will be sent to SystemDS
         on need, or a path pointing to a matrix.
+
         :param mat: the numpy array or path to matrix file
         :param args: unnamed parameters
         :param kwargs: named parameters
@@ -79,8 +79,8 @@ class Matrix(OperationNode):
 
 def federated(addresses: Iterable[str], ranges: Iterable[Tuple[Iterable[int], Iterable[int]]], *args,
               **kwargs) -> OperationNode:
-    """
-    Create federated matrix object.
+    """Create federated matrix object.
+
     :param addresses: addresses of the federated workers
     :param ranges: for each federated worker a pair of begin and end index of their held matrix
     :param args: unnamed params
@@ -98,8 +98,8 @@ def federated(addresses: Iterable[str], ranges: Iterable[Tuple[Iterable[int], It
 
 
 def full(shape: Tuple[int, int], value: Union[float, int]) -> OperationNode:
-    """
-    Generates a matrix completely filled with a value
+    """Generates a matrix completely filled with a value
+
     :param shape: shape (rows and cols) of the matrix TODO tensor
     :param value: the value to fill all cells with
     :return: the DAGNode representing this operation
@@ -110,10 +110,10 @@ def full(shape: Tuple[int, int], value: Union[float, int]) -> OperationNode:
 
 
 def seq(start: Union[float, int], stop: Union[float, int] = None, step: Union[float, int] = 1) -> OperationNode:
-    """
-    Create a single column vector with values from `start` to `stop` and an increment of `step`.
+    """Create a single column vector with values from `start` to `stop` and an increment of `step`.
     If no stop is defined and only one parameter is given, then start will be 0 and the parameter will be interpreted as
     stop.
+
     :param start: the starting value
     :param stop: the maximum value
     :param step: the step size

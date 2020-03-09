@@ -28,9 +28,9 @@ __all__ = ['DMLScript']
 
 
 class DMLScript:
-    """
-    DMLScript is the class used to describe our intended behaviour in DML. This script can be then executed to
+    """DMLScript is the class used to describe our intended behaviour in DML. This script can be then executed to
     get the results.
+
     TODO caching
     TODO multiple outputs
     TODO rerun with different inputs without recompilation
@@ -49,24 +49,24 @@ class DMLScript:
         self._variable_counter = 0
 
     def add_code(self, code: str) -> None:
-        """
-        Add a dml code line to our script
+        """Add a dml code line to our script
+
         :param code: the dml code line
         """
         self.dml_script += code + '\n'
 
     def add_input_from_python(self, var_name: str, input_var: DAGNode) -> None:
-        """
-        Add an input for our preparedScript. Should only be executed for data that is python local.
+        """Add an input for our preparedScript. Should only be executed for data that is python local.
+
         :param var_name: name of variable
         :param input_var: the DAGNode object which has data
         """
         self.inputs[var_name] = input_var
 
     def execute(self) -> JavaObject:
-        """
-        If not already created, create a preparedScript from our DMLCode, pass python local data to our prepared script,
-        then execute our script and return the resultVariables
+        """If not already created, create a preparedScript from our DMLCode, pass python local data to our prepared
+        script, then execute our script and return the resultVariables
+
         :return: resultVariables of our execution
         """
         # we could use the gateway directly, non defined functions will be automatically
@@ -84,16 +84,16 @@ class DMLScript:
         return self.prepared_script.executeScript()
 
     def build_code(self, dag_root: DAGNode) -> None:
-        """
-        Builds code from our DAG
+        """Builds code from our DAG
+
         :param dag_root: the topmost operation of our DAG, result of operation will be output
         """
         self.out_var_name = self._dfs_dag_nodes(dag_root)
         self.add_code(f'write({self.out_var_name}, \'./tmp\');')
 
     def _dfs_dag_nodes(self, dag_node: VALID_INPUT_TYPES) -> str:
-        """
-        Uses Depth-First-Search to create code from DAG
+        """Uses Depth-First-Search to create code from DAG
+
         :param dag_node: current DAG node
         :return: the variable name the current DAG node operation created
         """
@@ -115,8 +115,8 @@ class DMLScript:
         return curr_var_name
 
     def _next_unique_var(self) -> str:
-        """
-        Gets the next unique variable name
+        """Gets the next unique variable name
+
         :return: the next variable name (id)
         """
         var_id = self._variable_counter
@@ -126,8 +126,8 @@ class DMLScript:
 
 # Helper Functions
 def _list_to_java_array(py_list: Union[Collection[str], KeysView[str]]) -> JavaArray:
-    """
-    Convert python collection to java array.
+    """Convert python collection to java array.
+
     :param py_list: python collection
     :return: java array
     """

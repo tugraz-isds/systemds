@@ -43,3 +43,6 @@ src_path = src_path_prefix + '.zip' if platform.system() == "Windows" and os.pat
 os.rename(
     src_path,
     os.path.join(root_dir, 'target', ARTIFACT_NAME + '-' + ARTIFACT_VERSION + '-python.tar.gz'))
+wheel_name = '-'.join([ARTIFACT_NAME, ARTIFACT_VERSION_SHORT, 'py3', 'none', 'any.whl'])
+wheel = os.path.join(root_dir, 'src', 'main', 'python', 'dist', wheel_name)
+os.rename(wheel, os.path.join(root_dir, 'target', wheel_name))

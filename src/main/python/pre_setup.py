@@ -42,3 +42,7 @@ for file in os.listdir(os.path.join(root_dir, 'target')):
         shutil.copyfile(os.path.join(root_dir, 'target', file), os.path.join(java_dir_full_path, file))
     if file == "lib":
         shutil.copytree(os.path.join(root_dir, 'target', file), os.path.join(java_dir_full_path, file))
+
+root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.getcwd())))
+shutil.copyfile(os.path.join(root_dir, 'LICENSE'), 'LICENSE')
+shutil.copyfile(os.path.join(root_dir, 'NOTICE'), 'NOTICE')
