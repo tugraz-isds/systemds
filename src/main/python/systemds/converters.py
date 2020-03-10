@@ -33,12 +33,12 @@ def numpy_to_matrix_block(jvm: JVMView, np_arr: np.array):
         arr = np_arr.ravel().astype(np.float64)
         value_type = jvm.org.tugraz.sysds.common.Types.ValueType.FP64
     buf = bytearray(arr.tostring())
-    convert_method = jvm.org.tugraz.sysds.runtime.instructions.spark.utils.RDDConverterUtilsExt.convertPy4JArrayToMB
+    convert_method = jvm.org.tugraz.sysds.runtime.compress.utils.Py4jConverterUtils.convertPy4JArrayToMB
     return convert_method(buf, rows, cols, value_type)
 
 
 def matrix_block_to_numpy(jvm: JVMView, mb: JavaObject):
     numRows = mb.getNumRows()
     numCols = mb.getNumColumns()
-    buf = jvm.org.tugraz.sysds.runtime.instructions.spark.utils.RDDConverterUtilsExt.convertMBtoPy4JDenseArr(mb)
+    buf = jvm.org.tugraz.sysds.runtime.compress.utils.Py4jConverterUtils.convertMBtoPy4JDenseArr(mb)
     return np.frombuffer(buf, count=numRows * numCols, dtype=np.float64).reshape((numRows, numCols))
