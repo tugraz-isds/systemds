@@ -16,6 +16,6 @@
 #
 #-------------------------------------------------------------
 
-A = read($1);
-s = sum(removeEmpty(target=A, margin="rows"));
+A = read($1)
+s = sum(table(matrix(1,12,1),A))
 write(s,$2);

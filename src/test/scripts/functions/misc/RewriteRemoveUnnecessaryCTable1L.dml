@@ -16,6 +16,6 @@
 #
 #-------------------------------------------------------------
 
-A = read($1);
-s = sum(removeEmpty(target=A, margin="rows"));
+A = read($1)
+s = sum(table(A,1))
 write(s,$2);

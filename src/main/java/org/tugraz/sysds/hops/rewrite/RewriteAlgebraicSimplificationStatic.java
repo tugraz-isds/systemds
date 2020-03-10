@@ -147,6 +147,7 @@ public class RewriteAlgebraicSimplificationStatic extends HopRewriteRule
 			hi = simplifyBinaryToUnaryOperation(hop, hi, i);     //e.g., X*X -> X^2 (pow2), X+X -> X*2, (X>0)-(X<0) -> sign(X)
 			hi = canonicalizeMatrixMultScalarAdd(hi);            //e.g., eps+U%*%t(V) -> U%*%t(V)+eps, U%*%t(V)-eps -> U%*%t(V)+(-eps) 
 			hi = simplifyCTableWithConstMatrixInputs(hi);        //e.g., table(X, matrix(1,...)) -> table(X, 1)
+			hi = removeUnnecessaryCTable(hop, hi, i);					 //e.g., sum(table(X, 1)) -> nrow(X) and sum(table(1, Y)) -> nrow(Y) and sum(table(X, Y)) -> nrow(X)
 			hi = simplifyReverseOperation(hop, hi, i);           //e.g., table(seq(1,nrow(X),1),seq(nrow(X),1,-1)) %*% X -> rev(X)
 			if(OptimizerUtils.ALLOW_OPERATOR_FUSION)
 				hi = simplifyMultiBinaryToBinaryOperation(hi);       //e.g., 1-X*Y -> X 1-* Y
@@ -685,6 +686,19 @@ public class RewriteAlgebraicSimplificationStatic extends HopRewriteRule
 						+ i + " (line "+hi.getBeginLine()+").");
 				}
 			}
+		}
+		return hi;
+	}
+
+	private static Hop removeUnnecessaryCTable( Hop parent, Hop hi, int pos )
+	{
+		if ( HopRewriteUtils.isAggUnaryOp(hi, AggOp.SUM) && HopRewriteUtils.isTernary(hi.getInput().get(0), OpOp3.CTABLE))
+		{
+			Hop matrixInput = hi.getInput().get(0).getInput().get(0);
+			HopRewriteUtils.removeChildReference(hi, hi.getInput().get(0));
+			Hop newOpNRow = HopRewriteUtils.createUnary(matrixInput, OpOp1.NROW);
+			HopRewriteUtils.replaceChildReference(parent, hi, newOpNRow, pos);
+			hi = parent.getInput().get(pos);
 		}
 		return hi;
 	}
