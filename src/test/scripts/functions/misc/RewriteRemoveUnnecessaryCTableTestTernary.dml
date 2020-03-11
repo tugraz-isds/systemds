@@ -17,5 +17,7 @@
 #-------------------------------------------------------------
 
 A = read($1)
-s = sum(table(matrix(1,nrow(A),ncol(A)),A))
-write(s,$2);
+B = read($2)
+C = read($3)
+s = sum(table(A,B,C))
+write(s,$4);
