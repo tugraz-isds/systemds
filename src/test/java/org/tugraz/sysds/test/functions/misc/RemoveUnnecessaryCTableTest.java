@@ -37,6 +37,7 @@ public class RemoveUnnecessaryCTableTest extends AutomatedTestBase
 	private static final String TEST_CLASS_DIR = TEST_DIR + RemoveUnnecessaryCTableTest.class.getSimpleName() + "/";
     private static final double[][] A = {{1},{2},{3},{4},{5},{6},{1},{2},{3},{4},{5},{6}};
     private static final double[][] ATransposed = {{1,2,3,4,5,6,7,8,9,10,11,12}};
+    private static final double[][] AMultiColMultiRow = {{1,2,3},{4,5,6},{7,8,9}};
 
 
     @Override
@@ -57,8 +58,14 @@ public class RemoveUnnecessaryCTableTest extends AutomatedTestBase
 
     @Test
 	public void testRemoveCTable1LTransposed() {
-        double[][] sum = {{1}};
+        double[][] sum = {{12}};
 		testRewriteRemoveUnnecessaryCTable(TEST_NAME1, ATransposed, sum, true);
+    }
+
+    @Test
+	public void testRemoveCTable1LMultiColMultiRow() {
+        double[][] sum = {{9}};
+		testRewriteRemoveUnnecessaryCTable(TEST_NAME1, AMultiColMultiRow, sum, true);
     }
 
     @Test
@@ -69,8 +76,14 @@ public class RemoveUnnecessaryCTableTest extends AutomatedTestBase
 
     @Test
 	public void testRemoveCTable1RTransposed() {
-        double[][] sum = {{1}};
+        double[][] sum = {{12}};
 		testRewriteRemoveUnnecessaryCTable(TEST_NAME2, ATransposed, sum, false);
+    }
+
+    @Test
+	public void testRemoveCTable1RMultiColMultiRow() {
+        double[][] sum = {{9}};
+		testRewriteRemoveUnnecessaryCTable(TEST_NAME2, AMultiColMultiRow, sum, false);
     }
 
     @Test
@@ -81,8 +94,14 @@ public class RemoveUnnecessaryCTableTest extends AutomatedTestBase
 
     @Test
 	public void testRemoveCTableSameATransposed() {
-        double[][] sum = {{1}};
+        double[][] sum = {{12}};
 		testRewriteRemoveUnnecessaryCTable(TEST_NAME3, ATransposed, ATransposed, sum, true);
+    }
+
+    @Test
+	public void testRemoveCTableSameAMultiColMultiRow() {
+        double[][] sum = {{9}};
+		testRewriteRemoveUnnecessaryCTable(TEST_NAME3, AMultiColMultiRow, AMultiColMultiRow, sum, true);
     }
 
     @Test
@@ -95,7 +114,7 @@ public class RemoveUnnecessaryCTableTest extends AutomatedTestBase
     @Test
 	public void testRemoveCTableBTransposed() {
         double[][] B = {{1,2,3,4,5,6,7,8,9,10,11,12}};
-        double[][] sum = {{1}};
+        double[][] sum = {{12}};
 		testRewriteRemoveUnnecessaryCTable(TEST_NAME3, ATransposed, B, sum, true);
     }
 

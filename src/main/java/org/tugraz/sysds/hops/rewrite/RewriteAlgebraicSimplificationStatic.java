@@ -696,8 +696,8 @@ public class RewriteAlgebraicSimplificationStatic extends HopRewriteRule
 		{
 			Hop matrixInput = hi.getInput().get(0).getInput().get(0);
 			HopRewriteUtils.removeChildReference(hi, hi.getInput().get(0));
-			Hop newOpNRow = HopRewriteUtils.createUnary(matrixInput, OpOp1.NROW);
-			HopRewriteUtils.replaceChildReference(parent, hi, newOpNRow, pos);
+			Hop newOpLength = new UnaryOp("length", DataType.SCALAR, ValueType.INT64, OpOp1.LENGTH, matrixInput);
+			HopRewriteUtils.replaceChildReference(parent, hi, newOpLength, pos);
 			hi = parent.getInput().get(pos);
 		}
 		return hi;
