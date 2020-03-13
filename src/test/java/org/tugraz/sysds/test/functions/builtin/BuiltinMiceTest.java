@@ -27,10 +27,10 @@ import org.tugraz.sysds.test.TestUtils;
 
 import java.util.HashMap;
 
-public class BuiltinMiceNominalTest extends AutomatedTestBase {
-	private final static String TEST_NAME = "mice_nominal";
+public class BuiltinMiceTest extends AutomatedTestBase {
+	private final static String TEST_NAME = "mice";
 	private final static String TEST_DIR = "functions/builtin/";
-	private static final String TEST_CLASS_DIR = TEST_DIR + BuiltinMiceNominalTest.class.getSimpleName() + "/";
+	private static final String TEST_CLASS_DIR = TEST_DIR + BuiltinMiceTest.class.getSimpleName() + "/";
 
 	private final static String DATASET = SCRIPT_DIR +"functions/transform/input/ChickWeight.csv";
 	private final static double eps = 0.2;

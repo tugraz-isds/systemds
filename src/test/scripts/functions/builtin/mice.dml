@@ -23,7 +23,7 @@
 
 X = read($X, data_type="frame", format="csv");
 M = read($Mask)
-[dataset, singleSet]= mice_nominal(F=X, cMask=M, iter=$iteration, complete=$com)
+[dataset, singleSet]= mice(F=X, cMask=M, iter=$iteration, complete=$com)
 n = as.matrix(dataset) * (1-M)
 n = removeEmpty(target=n, margin = "cols")
 c = as.matrix(dataset) * (M)

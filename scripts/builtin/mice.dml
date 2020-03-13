@@ -43,7 +43,7 @@
 
 # Assumption missing value are represented with empty string i.e ",," in csv file  
 # variables with suffix n are storing continous/numeric data and variables with suffix c are storing categorical data
-s_mice_nominal= function(Frame[String] F, Matrix[Double] cMask, Integer iter = 3, Integer complete = 3)
+s_mice= function(Frame[String] F, Matrix[Double] cMask, Integer iter = 3, Integer complete = 3)
 return(Frame[String] dataset, Frame[String] singleSet)
 {
 
