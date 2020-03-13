@@ -37,12 +37,12 @@ custom_install <- function(pkg) {
 } 
 
 custom_install("Matrix");
-custom_install("plotrix");
 custom_install("psych");
 custom_install("moments");
 custom_install("boot");
 custom_install("matrixStats");
 
+# custom_install("plotrix");
 # custom_install("batch");
 # custom_install("outliers");
 # custom_install("caret");
