@@ -142,7 +142,7 @@ fi
 BASE_DIR=$(pwd)
 RELEASE_WORK_DIR=$BASE_DIR/target/release
 
-MVN="mvn --batch-mode --debug --errors"
+MVN="mvn --batch-mode --errors"
 
 PUBLISH_PROFILES="-Pdistribution,rat"
 
