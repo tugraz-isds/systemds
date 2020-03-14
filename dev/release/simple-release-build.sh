@@ -54,7 +54,7 @@ OPTIONS
          Call for help (print this text)
 EXAMPLE
 
-SYSTEMDS_ROOT=`pwd` GNUPGHOME=<path-to-gnupg-dir> GPG_KEYID="<0xKeyID>" GPG_PASSPHRASE="<passphrase>"  dev/release/simple-release-build.sh --overrideVersion=1.2.3 -g=prep-release-0.2
+SYSTEMDS_ROOT=$(pwd) GNUPGHOME=<path-to-gnupg-dir> GPG_KEYID="<0xKeyID>" GPG_PASSPHRASE="<passphrase>"  dev/release/simple-release-build.sh --overrideVersion=1.2.3 -g=prep-release-0.2
 
 <<
 EOF
@@ -148,7 +148,7 @@ PUBLISH_PROFILES="-Pdistribution,rat"
 
 RELEASE_STAGING_LOCATION="${SYSTEMDS_ROOT}/temp"
 
-TIMESTAMP=`date +%Y-%m-%dT%H:%M:%S`
+TIMESTAMP=$(date +%Y-%m-%dT%H:%M:%S)
 
 echo "  "
 echo "-------------------------------------------------------------"
@@ -163,13 +163,13 @@ echo
 
 function checkout_code {
     # Checkout code
-    rm -rf $RELEASE_WORK_DIR
-    mkdir -p $RELEASE_WORK_DIR
-    cd $RELEASE_WORK_DIR
+    rm -rf "$RELEASE_WORK_DIR"
+    mkdir -p "$RELEASE_WORK_DIR"
+    cd "$RELEASE_WORK_DIR"
     git clone $GIT_URL
     cd systemds
-    git checkout $GIT_REF
-    git_hash=`git rev-parse --short HEAD`
+    git checkout "$GIT_REF"
+    git_hash=$(git rev-parse --short HEAD)
     echo "Checked out SystemDS git hash $git_hash"
 
     git clean -d -f -x
@@ -185,21 +185,21 @@ if [[ ! -d $RELEASE_WORK_DIR || FORCE_DL -eq 1 ]]; then
 fi
 
 if [[ ! -d $RELEASE_STAGING_LOCATION ]]; then
-  mkdir -p $RELEASE_STAGING_LOCATION
+  mkdir -p "$RELEASE_STAGING_LOCATION"
 fi
 
-cd $RELEASE_WORK_DIR/systemds
+cd "$RELEASE_WORK_DIR"/systemds
 
-if [[ ! -z $RELEASE_VERSION ]]; then
+if [[ -n $RELEASE_VERSION ]]; then
     echo "resetting version in pom.xml..." ; sleep 3
-    $MVN versions:set -DnewVersion=$RELEASE_VERSION
+    $MVN versions:set -DnewVersion="$RELEASE_VERSION"
 fi
 
 # skipped mvn clean verify release:update-versions verify install:install deploy:deploy
 $MVN $PUBLISH_PROFILES deploy \
   -DskiptTests \
-  -DaltDeploymentRepository=altDepRepo::default::file://$SYSTEMDS_ROOT/temp \
-  -Dgpg.keyname=$GPG_KEYID -Dgpg.passphrase=$GPG_PASSPHRASE \
-  | tee $SYSTEMDS_ROOT/temp/publish-output-$TIMESTAMP.log
+  -DaltDeploymentRepository=altDepRepo::default::file://"$SYSTEMDS_ROOT"/temp \
+  -Dgpg.keyname="$GPG_KEYID" -Dgpg.passphrase="$GPG_PASSPHRASE" \
+  | tee "$SYSTEMDS_ROOT"/temp/publish-output-"$TIMESTAMP".log
 
 cd "$BASE_DIR"
