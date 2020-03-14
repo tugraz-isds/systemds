@@ -68,7 +68,6 @@ public abstract class MatrixReader
 	 * @param rlen number of rows
 	 * @param clen number of columns
 	 * @param blen number of columns in a block
-	 * @param blen number of rows in a block
 	 * @param estnnz estimated number of non-zeros
 	 * @param mallocDense if true and not sparse, allocate dense block unsafe
 	 * @param mallocSparse if true and sparse, allocate sparse rows block

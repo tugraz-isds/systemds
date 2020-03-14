@@ -637,14 +637,6 @@
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-javadoc-plugin</artifactId>
 						<version>3.1.1</version>
-						<configuration>
-							<!-- Need to include the following packages, so exclude others: org.tugraz.sysds.api 
-								org.tugraz.sysds.runtime.instructions.spark.utils (for RDDConverterUtils,
-								etc) org.tugraz.sysds.runtime.matrix (for MatrixCharacteristics, etc) org.tugraz.sysds.runtime.matrix.data 
-								(for MatrixIndexes, MatrixBlock, etc) org.tugraz.sysds.udf -->
-							<excludePackageNames>org.tugraz.sysds.hops:org.tugraz.sysds.lops:org.tugraz.sysds.parser:org.tugraz.sysds.runtime.controlprogram:org.tugraz.sysds.runtime.functionobjects:org.tugraz.sysds.runtime.instructions.cp:org.tugraz.sysds.runtime.instructions.cpfile:org.tugraz.sysds.runtime.instructions.mr:org.tugraz.sysds.runtime.instructions.spark.data:org.tugraz.sysds.runtime.instructions.spark.functions:org.tugraz.sysds.runtime.io:org.tugraz.sysds.runtime.matrix.data.hadoopfix:org.tugraz.sysds.runtime.matrix.mapred:org.tugraz.sysds.runtime.matrix.operators:org.tugraz.sysds.runtime.matrix.sort:org.tugraz.sysds.runtime.transform:org.tugraz.sysds.runtime.util:org.tugraz.sysds.utils:org.tugraz.sysds.yarn</excludePackageNames>
-							<doclint>none</doclint>
-						</configuration>
 						<executions>
 							<execution>
 								<id>attach-javadocs</id>

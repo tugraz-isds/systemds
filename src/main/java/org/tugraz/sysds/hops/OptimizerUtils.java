@@ -799,8 +799,7 @@ public class OptimizerUtils
 	 * @param ru rows upper
 	 * @param cl cols lower
 	 * @param cu cols upper
-	 * @param blen rows per block
-	 * @param blen cols per block
+	 * @param blen rows/cols per block
 	 * @return true if indexing range is block aligned
 	 */
 	public static boolean isIndexingRangeBlockAligned(long rl, long ru, long cl, long cu, long blen) {
