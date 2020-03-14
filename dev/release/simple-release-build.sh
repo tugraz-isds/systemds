@@ -22,8 +22,6 @@
 #
 #-------------------------------------------------------------
 
-#function pause(){ read -p 'Press [Enter] key to continue...' }
-
 function exit_with_usage {
   cat << EOF
 
@@ -200,8 +198,10 @@ if [[ ! -z $RELEASE_VERSION ]]; then
 fi
 
 # skipped mvn clean verify release:update-versions verify install:install deploy:deploy
-$MVN $PUBLISH_PROFILES deploy -DskiptTests \
+$MVN $PUBLISH_PROFILES deploy \
+  -DskiptTests \
   -DaltDeploymentRepository=altDepRepo::default::file://$SYSTEMDS_ROOT/temp \
-  -Dgpg.keyname=$GPG_KEYID -Dgpg.passphrase=$GPG_PASSPHRASE | tee $SYSTEMDS_ROOT/temp/publish-output-$TIMESTAMP.log
+  -Dgpg.keyname=$GPG_KEYID -Dgpg.passphrase=$GPG_PASSPHRASE \
+  | tee $SYSTEMDS_ROOT/temp/publish-output-$TIMESTAMP.log
 
 cd "$BASE_DIR"

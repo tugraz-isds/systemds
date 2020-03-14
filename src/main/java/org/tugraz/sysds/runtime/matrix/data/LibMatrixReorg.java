@@ -572,7 +572,7 @@ public class LibMatrixReorg
 	 * @param rmRows ?
 	 * @param len ?
 	 * @param blen block length
-     * @param outList list of indexed matrix values
+	 * @param outList list of indexed matrix values
 	 */
 	public static void rmempty(IndexedMatrixValue data, IndexedMatrixValue offset, boolean rmRows, long len, long blen, ArrayList<IndexedMatrixValue> outList) {
 		//sanity check inputs

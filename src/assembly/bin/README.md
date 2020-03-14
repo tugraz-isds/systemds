@@ -21,12 +21,13 @@ limitations under the License.
 
 # SystemDS
 
-###Overview:
+### Overview
+
  SystemDS is a versatile system for the end-to-end data science lifecycle from data integration, cleaning, and feature engineering, over efficient, local and distributed ML model training, to deployment and serving. To this end, we aim to provide a stack of declarative languages with R-like syntax for (1) the different tasks of the data-science lifecycle, and (2) users with different expertise. These high-level scripts are compiled into hybrid execution plans of local, in-memory CPU and GPU operations, as well as distributed operations on Apache Spark. In contrast to existing systems - that either provide homogeneous tensors or 2D Datasets - and in order to serve the entire data science lifecycle, the underlying data model are DataTensors, i.e., tensors (multi-dimensional arrays) whose first dimension may have a heterogeneous and nested schema.
 
-**Documentation:** [SystemDS Documentation](https://github.com/tugraz-isds/systemds/tree/master/docs)<br/>
+**Documentation:** [SystemDS Documentation](https://github.com/tugraz-isds/systemds/tree/master/docs)
 
-####Getting started:
+#### Getting started
 
 Create a text file called hello.dml containing the content 
  ```shell script
@@ -40,12 +41,14 @@ write(Z, "Z")
 
 Now run that first script you created by running one of the following commands depending on your operating system:
 
-#####Linux/Bash: 
+##### Linux/Bash 
+
 ```shell script
 $ runStandaloneSystemDS.sh hello.dml -args 10 10 1.0
 ```
 
-#####Windows/CMD: 
+##### Windows/CMD
+ 
 ```shell script
 $ runStandaloneSystemDS.bat hello.dml -args 10 10 1.0
 ```
@@ -54,6 +57,7 @@ $ runStandaloneSystemDS.bat hello.dml -args 10 10 1.0
 As you can see, DML can access these parameters by specifying $1, $2, ... etc
 
 The output should read something similar to this (the warning can be safely ignored):
+
 ```shell script
 20/03/09 16:40:29 INFO api.DMLScript: BEGIN DML run 03/09/2020 16:40:29
 20/03/09 16:40:30 WARN util.NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
@@ -74,4 +78,3 @@ Total execution time:           0,122 sec.
 
 20/03/09 16:40:30 INFO api.DMLScript: END DML run 03/09/2020 16:40:30
 ```
- 
