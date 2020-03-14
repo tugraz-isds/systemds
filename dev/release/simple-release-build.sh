@@ -142,9 +142,7 @@ fi
 BASE_DIR=$(pwd)
 RELEASE_WORK_DIR=$BASE_DIR/target/release
 
-# used for debugging build scripts:
-#MVN="mvn --batch-mode --debug --errors"
-MVN="mvn"
+MVN="mvn --batch-mode --debug --errors"
 
 PUBLISH_PROFILES="-Pdistribution,rat"
 
