@@ -160,6 +160,16 @@
 								<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
 									<mainClass>org.tugraz.sysds.api.DMLScript</mainClass>
 								</transformer>
+								<transformer implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer">
+								</transformer>
+								<transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
+									<resource>META-INF/LICENSE</resource>
+									<file>src/assembly/bin/LICENSE</file>
+								</transformer>
+								<transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
+									<resource>META-INF/NOTICE</resource>
+									<file>NOTICE</file>
+								</transformer>
 							</transformers>
 							<createDependencyReducedPom>false</createDependencyReducedPom>
 						</configuration>
@@ -168,7 +178,9 @@
 				<configuration>
 					<!-- Include signature files so that recent versions of Java will run 
 						the resulting jar without complaining about "Invalid signature file digest 
-						for Manifest main attributes". -->
+						for Manifest main attributes".
+						Furthermore, the excluded notice and license files will be explicitly
+						added by the resource transformers above -->
 					<filters>
 						<filter>
 							<artifact>*:*</artifact>
@@ -176,6 +188,8 @@
 								<exclude>META-INF/*.SF</exclude>
 								<exclude>META-INF/*.DSA</exclude>
 								<exclude>META-INF/*.RSA</exclude>
+								<exclude>META-INF/LICENSE</exclude>
+								<exclude>META-INF/NOTICE</exclude>
 							</excludes>
 						</filter>
 					</filters>
