@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Graz University of Technology
+ * Copyright 2020 Graz University of Technology
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ public class AggregateBinaryFEDInstruction extends BinaryFEDInstruction {
 		String[] parts = InstructionUtils.getInstructionPartsWithValueType(str);
 		String opcode = parts[0];
 		
-		if (!opcode.equalsIgnoreCase("ba+*")) {
+		if(!opcode.equalsIgnoreCase("ba+*")) {
 			throw new DMLRuntimeException("AggregateBinaryInstruction.parseInstruction():: Unknown opcode " + opcode);
 		}
 		
@@ -83,7 +83,6 @@ public class AggregateBinaryFEDInstruction extends BinaryFEDInstruction {
 		MatrixObject mo2 = ec.getMatrixObject(input2.getName());
 		MatrixObject out = ec.getMatrixObject(output.getName());
 		
-		// TODO compute matrix multiplication
 		// compute matrix-vector multiplication
 		AggregateBinaryOperator ab_op = (AggregateBinaryOperator) _optr;
 		if (mo1.isFederated() && mo2.getNumColumns() == 1) {// MV
@@ -141,14 +140,17 @@ public class AggregateBinaryFEDInstruction extends BinaryFEDInstruction {
 		else
 			mo1.release();
 		// combine results
-		out.acquireModify(combinePartialMMResults(results, mo1.getNumRows(), mo2.getNumColumns()));
+		if (mo1.getNumRows() > Integer.MAX_VALUE || mo2.getNumColumns() > Integer.MAX_VALUE) {
+			throw new DMLRuntimeException("Federated matrix is too large for federated distribution");
+		}
+		out.acquireModify(combinePartialMMResults(results, (int) mo1.getNumRows(), (int) mo2.getNumColumns()));
 		out.release();
 	}
 	
-	private MatrixBlock combinePartialMMResults(ArrayList<Pair<FederatedRange, MatrixBlock>> results, long rows,
-			long cols) {
+	private MatrixBlock combinePartialMMResults(ArrayList<Pair<FederatedRange, MatrixBlock>> results, int rows,
+		int cols) {
 		// TODO support large blocks with > int size
-		MatrixBlock resultBlock = new MatrixBlock((int) rows, (int) cols, false);
+		MatrixBlock resultBlock = new MatrixBlock(rows, cols, false);
 		for (Pair<FederatedRange, MatrixBlock> partialResult : results) {
 			FederatedRange range = partialResult.getLeft();
 			MatrixBlock partialBlock = partialResult.getRight();
@@ -215,7 +217,9 @@ public class AggregateBinaryFEDInstruction extends BinaryFEDInstruction {
 		int[] beginDims = range.getBeginDimsInt();
 		MatrixBlock mb = (MatrixBlock) federatedResponse.getData();
 		// TODO performance optimizations
-		// TODO Improve Vector Matrix multiplication accuracy
+		// TODO Improve Vector Matrix multiplication accuracy: An idea would be to make use of kahan plus here,
+		//  this should improve accuracy a bit, although we still lose out on the small error lost on the worker
+		//  without having to return twice the amount of data (value + sum error)
 		// Add worker response to resultBlock
 		for (int r = 0; r < mb.getNumRows(); r++)
 			for (int c = 0; c < mb.getNumColumns(); c++) {
