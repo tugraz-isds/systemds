@@ -231,7 +231,6 @@ public class BitmapEncoder {
 		// scan rows and probe/build distinct items
 		final int m = CompressedMatrixBlock.TRANSPOSE_INPUT ? rawblock.getNumColumns() : rawblock.getNumRows();
 
-		
 		if(rawblock.isInSparseFormat() // SPARSE
 			&& CompressedMatrixBlock.TRANSPOSE_INPUT) {
 			SparseBlock a = rawblock.getSparseBlock();
@@ -275,7 +274,6 @@ public class BitmapEncoder {
 		}
 		else // GENERAL CASE
 		{
-			// System.out.println(rawblock.toString());
 			for(int i = 0; i < m; i++) {
 				double val = CompressedMatrixBlock.TRANSPOSE_INPUT ? rawblock.quickGetValue(colIndex, i) : rawblock
 					.quickGetValue(i, colIndex);

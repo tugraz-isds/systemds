@@ -33,13 +33,14 @@ public class CompressedTestBase extends TestBase {
 
 	protected static SparsityType[] usedSparsityTypes = new SparsityType[] { // Sparsity 0.9, 0.1, 0.01 and 0.0
 		SparsityType.DENSE,
-		// SparsityType.SPARSE, 
-		//SparsityType.ULTRA_SPARSE,
+		SparsityType.SPARSE, 
+		SparsityType.ULTRA_SPARSE,
 		// SparsityType.EMPTY
 	};
-	protected static ValueType[] usedValueTypes = new ValueType[] {//ValueType.RAND,
+	protected static ValueType[] usedValueTypes = new ValueType[] {
+		ValueType.RAND,
 		// ValueType.CONST,
-		//ValueType.RAND_ROUND_DDC, 
+		ValueType.RAND_ROUND_DDC, 
 		ValueType.RAND_ROUND_OLE};
 
 	protected static ValueRange[] usedValueRanges = new ValueRange[] {ValueRange.SMALL,
@@ -51,10 +52,10 @@ public class CompressedTestBase extends TestBase {
 	};
 
 	protected static MatrixType[] usedMatrixType = new MatrixType[] { // Selected Matrix Types
-		// MatrixType.SMALL,
+		MatrixType.SMALL,
 		// MatrixType.LARGE,
-		// MatrixType.FEW_COL,
-		// MatrixType.FEW_ROW,
+		MatrixType.FEW_COL,
+		MatrixType.FEW_ROW,
 		// MatrixType.SINGLE_COL,
 		// MatrixType.SINGLE_ROW,
 		MatrixType.L_ROWS,
