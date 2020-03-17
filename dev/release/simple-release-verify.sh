@@ -82,6 +82,12 @@ if [ $# -eq 0 ]; then
   exit_with_usage
 fi
 
+# detect operating system to set correct directory separator
+if [ "$OSTYPE" == "win32" ] ||  [ "$OSTYPE" == "msys" ] ; then
+  echo "This script currently does not support Windows, as it makes use of symbolic linking via 'ln -s'"
+  exit 1
+fi
+
 # Process each provided argument configuration
 while [ "${1+defined}" ]; do
   IFS="=" read -ra PARTS <<< "$1"
