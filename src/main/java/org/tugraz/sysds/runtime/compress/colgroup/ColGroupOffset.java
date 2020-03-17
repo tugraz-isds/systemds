@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.tugraz.sysds.runtime.compress;
+package org.tugraz.sysds.runtime.compress.colgroup;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -23,15 +23,17 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 
+import org.tugraz.sysds.runtime.compress.BitmapEncoder;
+import org.tugraz.sysds.runtime.compress.UncompressedBitmap;
 import org.tugraz.sysds.runtime.compress.utils.LinearAlgebraUtils;
 import org.tugraz.sysds.runtime.functionobjects.Builtin;
+import org.tugraz.sysds.runtime.functionobjects.Builtin.BuiltinCode;
 import org.tugraz.sysds.runtime.functionobjects.KahanFunction;
 import org.tugraz.sysds.runtime.functionobjects.KahanPlus;
 import org.tugraz.sysds.runtime.functionobjects.KahanPlusSq;
 import org.tugraz.sysds.runtime.functionobjects.ReduceAll;
 import org.tugraz.sysds.runtime.functionobjects.ReduceCol;
 import org.tugraz.sysds.runtime.functionobjects.ReduceRow;
-import org.tugraz.sysds.runtime.functionobjects.Builtin.BuiltinCode;
 import org.tugraz.sysds.runtime.matrix.data.IJV;
 import org.tugraz.sysds.runtime.matrix.data.MatrixBlock;
 import org.tugraz.sysds.runtime.matrix.operators.AggregateUnaryOperator;
@@ -46,7 +48,7 @@ import org.tugraz.sysds.runtime.matrix.operators.AggregateUnaryOperator;
 public abstract class ColGroupOffset extends ColGroupValue {
 	private static final long serialVersionUID = -1635828933479403125L;
 
-	protected static final boolean CREATE_SKIPLIST = true;
+	protected static final boolean CREATE_SKIP_LIST = true;
 
 	protected static final int READ_CACHE_BLKSZ = 2 * BitmapEncoder.BITMAP_BLOCK_SZ;
 	public static final int WRITE_CACHE_BLKSZ = 2 * BitmapEncoder.BITMAP_BLOCK_SZ;
@@ -55,9 +57,6 @@ public abstract class ColGroupOffset extends ColGroupValue {
 	/** Bitmaps, one per uncompressed value in {@link #_values}. */
 	protected int[] _ptr; // bitmap offsets per value
 	protected char[] _data; // linearized bitmaps (variable length)
-	protected boolean _zeros; // contains zero values
-
-	protected int[] _skiplist;
 
 	public ColGroupOffset() {
 		super();
@@ -107,16 +106,11 @@ public abstract class ColGroupOffset extends ColGroupValue {
 
 	@Override
 	public long estimateInMemorySize() {
-		long size = super.estimateInMemorySize();
 
-		// adding bitmaps size
-		size += 16; // array references
-		if(_data != null) {
-			size += 32 + _ptr.length * 4; // offsets
-			size += 32 + _data.length * 2; // bitmaps
-		}
-
-		return size;
+		return (_data == null) ? ColGroupSizes.estimateInMemorySizeOffset(getNumCols(),
+			_colIndexes.length,
+			0,
+			0) : ColGroupSizes.estimateInMemorySizeOffset(getNumCols(), _values.length, _ptr.length, _data.length);
 	}
 
 	// generic decompression for OLE/RLE, to be overwritten for performance

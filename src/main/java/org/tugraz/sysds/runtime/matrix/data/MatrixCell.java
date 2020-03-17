@@ -26,7 +26,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 
-import org.apache.hadoop.io.WritableComparable;
+// import org.apache.hadoop.io.WritableComparable;
 import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.functionobjects.CTable;
 import org.tugraz.sysds.runtime.functionobjects.ReduceDiag;
@@ -40,8 +40,8 @@ import org.tugraz.sysds.runtime.matrix.operators.ScalarOperator;
 import org.tugraz.sysds.runtime.matrix.operators.UnaryOperator;
 import org.tugraz.sysds.runtime.util.IndexRange;
 
-@SuppressWarnings("rawtypes")
-public class MatrixCell extends MatrixValue implements WritableComparable, Serializable
+// @SuppressWarnings("rawtypes")
+public class MatrixCell extends MatrixValue implements  Serializable
 {
 	private static final long serialVersionUID = -7755996717411912578L;
 	

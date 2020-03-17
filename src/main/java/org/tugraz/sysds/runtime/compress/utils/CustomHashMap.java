@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-package org.tugraz.sysds.runtime.compress.estim;
+package org.tugraz.sysds.runtime.compress.utils;
 
-import org.tugraz.sysds.runtime.matrix.data.MatrixBlock;
+/**
+ * This class provides a memory-efficient base for Custom HashMaps for restricted use
+ * cases.
+ */
+public abstract class CustomHashMap{
+	protected static final int INIT_CAPACITY = 8;
+	protected static final int RESIZE_FACTOR = 2;
+	protected static final float LOAD_FACTOR = 0.75f;
 
-public class CompressedSizeEstimatorFactory {
-	public static final boolean EXTRACT_SAMPLE_ONCE = true;
+	protected int _size = -1;
 
-	public static CompressedSizeEstimator getSizeEstimator(MatrixBlock data, boolean transpose, long seed,
-		double samplingRatio) {
-
-		long elements = transpose ? data.getNumColumns() : data.getNumRows();
-		return (samplingRatio >= 1.0 || elements < 1000) ? new CompressedSizeEstimatorExact(data,
-			transpose) : new CompressedSizeEstimatorSample(data, transpose, (int) Math.ceil(elements * samplingRatio),
-				seed);
-
+	public int size() {
+		return _size;
 	}
 }

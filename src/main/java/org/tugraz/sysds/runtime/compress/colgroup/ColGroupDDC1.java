@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.tugraz.sysds.runtime.compress;
+package org.tugraz.sysds.runtime.compress.colgroup;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 
+import org.tugraz.sysds.runtime.compress.UncompressedBitmap;
 import org.tugraz.sysds.runtime.compress.utils.ConverterUtils;
 import org.tugraz.sysds.runtime.data.DenseBlock;
 import org.tugraz.sysds.runtime.functionobjects.KahanFunction;
@@ -69,6 +70,7 @@ public class ColGroupDDC1 extends ColGroupDDC {
 		}
 	}
 
+	// Internal Constructor, to be used when copying a DDC Colgroup, and for scalar operations
 	public ColGroupDDC1(int[] colIndices, int numRows, double[] values, byte[] data) {
 		super(colIndices, numRows, values);
 		_data = data;
@@ -80,11 +82,11 @@ public class ColGroupDDC1 extends ColGroupDDC {
 	}
 
 	/**
-	 * Getter method to get the data, contained in The DDC ColGroup.
-	 * Not safe if modifications is made to the byte list.
-	 * @return The contained data 
+	 * Getter method to get the data, contained in The DDC ColGroup. Not safe if modifications is made to the byte list.
+	 * 
+	 * @return The contained data
 	 */
-	public  byte[] getData(){
+	public byte[] getData() {
 		return _data;
 	}
 
@@ -192,13 +194,7 @@ public class ColGroupDDC1 extends ColGroupDDC {
 
 	@Override
 	public long estimateInMemorySize() {
-		long size = super.estimateInMemorySize();
-
-		// adding data size
-		if(_data != null)
-			size += _data.length;
-
-		return size;
+		return ColGroupSizes.estimateInMemorySizeDDC1(getNumCols(), getNumRows(), getNumValues(), _data.length);
 	}
 
 	@Override
@@ -236,7 +232,7 @@ public class ColGroupDDC1 extends ColGroupDDC {
 	}
 
 	@Override
-	protected void countNonZerosPerRow(int[] rnnz, int rl, int ru) {
+	public void countNonZerosPerRow(int[] rnnz, int rl, int ru) {
 		final int ncol = getNumCols();
 		final int numVals = getNumValues();
 

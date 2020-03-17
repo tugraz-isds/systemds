@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-package org.tugraz.sysds.runtime.compress;
+package org.tugraz.sysds.runtime.compress.colgroup;
 
 import java.util.Arrays;
 import java.util.Iterator;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.tugraz.sysds.runtime.compress.BitmapEncoder;
+import org.tugraz.sysds.runtime.compress.UncompressedBitmap;
 import org.tugraz.sysds.runtime.compress.utils.ConverterUtils;
 import org.tugraz.sysds.runtime.compress.utils.LinearAlgebraUtils;
 import org.tugraz.sysds.runtime.data.DenseBlock;
@@ -34,12 +36,13 @@ import org.tugraz.sysds.runtime.matrix.operators.ScalarOperator;
 /**
  * Class to encapsulate information about a column group that is encoded with simple lists of offsets for each set of
  * distinct values.
- * 
  */
 public class ColGroupOLE extends ColGroupOffset {
 	private static final long serialVersionUID = -9157676271360528008L;
 
 	private static final Log LOG = LogFactory.getLog(ColGroupOLE.class.getName());
+
+	protected int[] _skiplist;
 
 	public ColGroupOLE() {
 		super();
@@ -66,9 +69,10 @@ public class ColGroupOLE extends ColGroupOffset {
 
 		// compact bitmaps to linearized representation
 		createCompressedBitmaps(numVals, totalLen, lbitmaps);
-		// TODO FIX Skiplist properly... Had to move it out since L2SVM test crash in edge cases. Make Conditions Consistant, or move allocation outside.
+		// TODO FIX Skiplist properly... Had to move it out since L2SVM test crash in edge cases. Make Conditions
+		// Consistant, or move allocation outside.
 		_skiplist = new int[numVals];
-		if(LOW_LEVEL_OPT && CREATE_SKIPLIST && numRows > 2 * BitmapEncoder.BITMAP_BLOCK_SZ) {
+		if(LOW_LEVEL_OPT && CREATE_SKIP_LIST && numRows > 2 * BitmapEncoder.BITMAP_BLOCK_SZ) {
 			int blksz = BitmapEncoder.BITMAP_BLOCK_SZ;
 			// _skiplist = new int[numVals];
 			int rl = (getNumRows() / 2 / blksz) * blksz;
@@ -239,6 +243,12 @@ public class ColGroupOLE extends ColGroupOffset {
 			counts[k] = count;
 		}
 		return counts;
+	}
+
+	@Override
+	public long estimateInMemorySize() {
+		return ColGroupSizes
+			.estimateInMemorySizeOLE(getNumCols(), _values.length, _ptr.length, _data.length, _skiplist.length);
 	}
 
 	@Override
@@ -637,7 +647,7 @@ public class ColGroupOLE extends ColGroupOffset {
 	}
 
 	@Override
-	protected void countNonZerosPerRow(int[] rnnz, int rl, int ru) {
+	public void countNonZerosPerRow(int[] rnnz, int rl, int ru) {
 		final int blksz = BitmapEncoder.BITMAP_BLOCK_SZ;
 		final int blksz2 = ColGroupOffset.WRITE_CACHE_BLKSZ;
 		final int numVals = getNumValues();

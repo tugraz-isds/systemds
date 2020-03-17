@@ -32,6 +32,7 @@ import org.tugraz.sysds.runtime.matrix.data.MatrixBlock;
 public class BitmapEncoder {
 	/** Size of the blocks used in a blocked bitmap representation. */
 	public static final int BITMAP_BLOCK_SZ = 65536;
+	public static boolean MATERIALIZE_ZEROS = false;
 
 	public static int getAlignedBlocksize(int blklen) {
 		return blklen + ((blklen % BITMAP_BLOCK_SZ != 0) ? BITMAP_BLOCK_SZ - blklen % BITMAP_BLOCK_SZ : 0);
@@ -48,16 +49,16 @@ public class BitmapEncoder {
 		// note: no sparse column selection reader because low potential
 		// single column selection
 		if(colIndices.length == 1) {
-			return extractBitmap(colIndices[0], rawblock, !CompressedMatrixBlock.MATERIALIZE_ZEROS);
+			return extractBitmap(colIndices[0], rawblock, !MATERIALIZE_ZEROS);
 		}
 		// multiple column selection (general case)
 		else {
 			ReaderColumnSelection reader = null;
 			if(rawblock.isInSparseFormat() && CompressedMatrixBlock.TRANSPOSE_INPUT)
 				reader = new ReaderColumnSelectionSparse(rawblock, colIndices,
-					!CompressedMatrixBlock.MATERIALIZE_ZEROS);
+					!MATERIALIZE_ZEROS);
 			else
-				reader = new ReaderColumnSelectionDense(rawblock, colIndices, !CompressedMatrixBlock.MATERIALIZE_ZEROS);
+				reader = new ReaderColumnSelectionDense(rawblock, colIndices, !MATERIALIZE_ZEROS);
 
 			return extractBitmap(colIndices, rawblock, reader);
 		}
@@ -69,14 +70,14 @@ public class BitmapEncoder {
 
 		// single column selection
 		if(colIndices.length == 1) {
-			return extractBitmap(colIndices[0], rawblock, sampleIndexes, !CompressedMatrixBlock.MATERIALIZE_ZEROS);
+			return extractBitmap(colIndices[0], rawblock, sampleIndexes, !MATERIALIZE_ZEROS);
 		}
 		// multiple column selection (general case)
 		else {
 			return extractBitmap(colIndices,
 				rawblock,
 				new ReaderColumnSelectionDenseSample(rawblock, colIndices, sampleIndexes,
-					!CompressedMatrixBlock.MATERIALIZE_ZEROS));
+					!MATERIALIZE_ZEROS));
 		}
 	}
 
@@ -230,6 +231,7 @@ public class BitmapEncoder {
 		// scan rows and probe/build distinct items
 		final int m = CompressedMatrixBlock.TRANSPOSE_INPUT ? rawblock.getNumColumns() : rawblock.getNumRows();
 
+		
 		if(rawblock.isInSparseFormat() // SPARSE
 			&& CompressedMatrixBlock.TRANSPOSE_INPUT) {
 			SparseBlock a = rawblock.getSparseBlock();
@@ -273,6 +275,7 @@ public class BitmapEncoder {
 		}
 		else // GENERAL CASE
 		{
+			// System.out.println(rawblock.toString());
 			for(int i = 0; i < m; i++) {
 				double val = CompressedMatrixBlock.TRANSPOSE_INPUT ? rawblock.quickGetValue(colIndex, i) : rawblock
 					.quickGetValue(i, colIndex);

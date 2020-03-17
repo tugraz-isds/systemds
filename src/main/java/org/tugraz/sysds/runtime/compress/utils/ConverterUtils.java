@@ -18,11 +18,11 @@ package org.tugraz.sysds.runtime.compress.utils;
 
 import java.util.Arrays;
 
-import org.tugraz.sysds.runtime.compress.ColGroup;
-import org.tugraz.sysds.runtime.compress.ColGroupDDC1;
-import org.tugraz.sysds.runtime.compress.ColGroupOLE;
-import org.tugraz.sysds.runtime.compress.ColGroupRLE;
-import org.tugraz.sysds.runtime.compress.ColGroupUncompressed;
+import org.tugraz.sysds.runtime.compress.colgroup.ColGroup;
+import org.tugraz.sysds.runtime.compress.colgroup.ColGroupDDC1;
+import org.tugraz.sysds.runtime.compress.colgroup.ColGroupOLE;
+import org.tugraz.sysds.runtime.compress.colgroup.ColGroupRLE;
+import org.tugraz.sysds.runtime.compress.colgroup.ColGroupUncompressed;
 import org.tugraz.sysds.runtime.matrix.data.MatrixBlock;
 import org.tugraz.sysds.runtime.util.DataConverter;
 

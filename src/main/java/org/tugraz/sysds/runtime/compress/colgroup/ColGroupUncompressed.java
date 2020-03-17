@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.tugraz.sysds.runtime.compress;
+package org.tugraz.sysds.runtime.compress.colgroup;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
+import org.tugraz.sysds.runtime.compress.CompressedMatrixBlock;
 import org.tugraz.sysds.runtime.data.SparseBlock;
 import org.tugraz.sysds.runtime.data.SparseBlock.Type;
 import org.tugraz.sysds.runtime.functionobjects.ReduceRow;
@@ -49,7 +50,7 @@ public class ColGroupUncompressed extends ColGroup {
 	private MatrixBlock _data;
 
 	public ColGroupUncompressed() {
-		super((int[]) null, -1);
+		super(new int[]{}, -1);
 	}
 
 	/**
@@ -60,7 +61,7 @@ public class ColGroupUncompressed extends ColGroup {
 	 *                       is called
 	 */
 	@SuppressWarnings("unused")
-	public ColGroupUncompressed(List<Integer> colIndicesList, MatrixBlock rawblock) {
+	public ColGroupUncompressed(int[] colIndicesList, MatrixBlock rawblock) {
 		super(colIndicesList, CompressedMatrixBlock.TRANSPOSE_INPUT ? rawblock.getNumColumns() : rawblock.getNumRows());
 
 		// prepare meta data
@@ -178,10 +179,9 @@ public class ColGroupUncompressed extends ColGroup {
 
 	@Override
 	public long estimateInMemorySize() {
-		long size = super.estimateInMemorySize();
-		// adding the size of colContents
-		return size + 8 + _data.estimateSizeInMemory();
+		return ColGroupSizes.estimateInMemorySizeUncompressed(_numRows, getNumCols(), _data.getSparsity());
 	}
+
 
 	@Override
 	public void decompressToBlock(MatrixBlock target, int rl, int ru) {
@@ -358,7 +358,7 @@ public class ColGroupUncompressed extends ColGroup {
 	}
 
 	@Override
-	protected void countNonZerosPerRow(int[] rnnz, int rl, int ru) {
+	public void countNonZerosPerRow(int[] rnnz, int rl, int ru) {
 		for(int i = rl; i < ru; i++)
 			rnnz[i - rl] += _data.recomputeNonZeros(i, i, 0, _data.getNumColumns() - 1);
 	}

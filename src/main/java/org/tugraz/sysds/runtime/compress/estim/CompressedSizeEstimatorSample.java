@@ -24,9 +24,9 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.commons.math3.analysis.UnivariateFunction;
 import org.apache.commons.math3.analysis.solvers.UnivariateSolverUtils;
 import org.apache.commons.math3.distribution.ChiSquaredDistribution;
+import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.compress.BitmapEncoder;
 import org.tugraz.sysds.runtime.compress.ReaderColumnSelection;
-import org.tugraz.sysds.runtime.compress.CompressedMatrixBlock;
 import org.tugraz.sysds.runtime.compress.UncompressedBitmap;
 import org.tugraz.sysds.runtime.compress.utils.DblArray;
 import org.tugraz.sysds.runtime.matrix.data.MatrixBlock;
@@ -48,20 +48,26 @@ public class CompressedSizeEstimatorSample extends CompressedSizeEstimator {
 
 	/**
 	 * CompressedSizeEstimatorSample, samples from the input data and estimates the size of the compressed matrix.
-	 * @param data the input data sampled from
+	 * 
+	 * @param data       the input data sampled from
 	 * @param sampleSize size of the sampling used
-	 * @param seed Seed for the sampling of the matrix if set to -1 random seed based on system time and class hash is selected
+	 * @param seed       Seed for the sampling of the matrix if set to -1 random seed based on system time and class
+	 *                   hash is selected
 	 */
-	public CompressedSizeEstimatorSample(MatrixBlock data, int sampleSize, long seed) {
-		super(data);
+	public CompressedSizeEstimatorSample(MatrixBlock data, boolean transpose, int sampleSize, long seed) {
+		super(data, transpose);
 		// get sample of rows, incl eager extraction
+		if(_numRows < sampleSize) {
+			throw new DMLRuntimeException("SampleSize should always be less than number of rows");
+		}
+
 		_sampleRows = getSortedUniformSample(_numRows, sampleSize, seed);
+
 		if(CompressedSizeEstimatorFactory.EXTRACT_SAMPLE_ONCE) {
 			MatrixBlock select = new MatrixBlock(_numRows, 1, false);
 			for(int i = 0; i < sampleSize; i++)
 				select.quickSetValue(_sampleRows[i], 0, 1);
-			_data = _data
-				.removeEmptyOperations(new MatrixBlock(), !CompressedMatrixBlock.TRANSPOSE_INPUT, true, select);
+			_data = _data.removeEmptyOperations(new MatrixBlock(), !transpose, true, select);
 		}
 
 		// establish estimator-local cache for numeric solve
@@ -77,7 +83,8 @@ public class CompressedSizeEstimatorSample extends CompressedSizeEstimator {
 		// extract statistics from sample
 		UncompressedBitmap ubm = CompressedSizeEstimatorFactory.EXTRACT_SAMPLE_ONCE ? BitmapEncoder
 			.extractBitmap(colIndexes, _data) : BitmapEncoder.extractBitmapFromSample(colIndexes, _data, sampleRows);
-		SizeEstimationFactors fact = computeSizeEstimationFactors(ubm, false);
+		CompressedSizeEstimationFactors fact = CompressedSizeEstimationFactors
+			.computeSizeEstimationFactors(ubm, false, _numRows, numCols);
 
 		// estimate number of distinct values (incl fixes for anomalies w/ large sample fraction)
 		int totalCardinality = getNumDistinctValues(ubm, _numRows, sampleRows, _solveCache);
@@ -103,23 +110,24 @@ public class CompressedSizeEstimatorSample extends CompressedSizeEstimator {
 		int totalNumSeg = fact.numSegs + numUnseenSeg;
 		int totalNumRuns = getNumRuns(ubm, sampleSize, _numRows, sampleRows) + numUnseenSeg;
 
+		CompressedSizeEstimationFactors totalFacts = new CompressedSizeEstimationFactors(totalCardinality, totalNumSeg,
+			numNonZeros, totalNumRuns, fact.numSingle, _numRows, numCols);
 		// construct new size info summary
-		return new CompressedSizeInfo(totalCardinality, numNonZeros,
-			getRLESize(totalCardinality, totalNumRuns, numCols),
-			getOLESize(totalCardinality, numNonZeros, totalNumSeg, numCols),
-			getDDCSize(totalCardinality, _numRows, numCols));
+		CompressedSizeInfo csi = new CompressedSizeInfo(totalFacts);
+
+		return csi;
+
+
 	}
 
 	@Override
 	public CompressedSizeInfo estimateCompressedColGroupSize(UncompressedBitmap ubm) {
 		// compute size estimation factors
-		SizeEstimationFactors fact = computeSizeEstimationFactors(ubm, true);
+		CompressedSizeEstimationFactors fact = CompressedSizeEstimationFactors
+			.computeSizeEstimationFactors(ubm, true, _numRows, ubm.getNumColumns());
 
 		// construct new size info summary
-		return new CompressedSizeInfo(fact.numVals, fact.numOffs,
-			getRLESize(fact.numVals, fact.numRuns, ubm.getNumColumns()),
-			getOLESize(fact.numVals, fact.numOffs, fact.numSegs, ubm.getNumColumns()),
-			getDDCSize(fact.numVals, _numRows, ubm.getNumColumns()));
+		return new CompressedSizeInfo(fact);
 	}
 
 	private static int getNumDistinctValues(UncompressedBitmap ubm, int numRows, int[] sampleRows,
@@ -297,7 +305,7 @@ public class CompressedSizeEstimatorSample extends CompressedSizeEstimator {
 	 */
 	private static int[] getSortedUniformSample(int range, int smplSize, long seed) {
 		if(smplSize == 0)
-			return new int[] {};
+			throw new DMLRuntimeException("Sample Size of 0 is invalid");
 		return UtilFunctions.getSortedSampleIndexes(range, smplSize, seed);
 	}
 

@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package org.tugraz.sysds.runtime.compress;
+package org.tugraz.sysds.runtime.compress.colgroup;
 
 import java.util.Arrays;
 import java.util.Iterator;
 
+import org.tugraz.sysds.runtime.compress.UncompressedBitmap;
 import org.tugraz.sysds.runtime.functionobjects.Builtin;
 import org.tugraz.sysds.runtime.functionobjects.KahanFunction;
 import org.tugraz.sysds.runtime.functionobjects.KahanPlus;
@@ -99,7 +100,7 @@ public abstract class ColGroupDDC extends ColGroupValue {
 	}
 
 	@Override
-	protected void countNonZerosPerRow(int[] rnnz, int rl, int ru) {
+	public void countNonZerosPerRow(int[] rnnz, int rl, int ru) {
 		int ncol = getNumCols();
 		for(int i = rl; i < ru; i++) {
 			int lnnz = 0;
@@ -233,7 +234,7 @@ public abstract class ColGroupDDC extends ColGroupValue {
 
 	@Override
 	public long estimateInMemorySize() {
-		return super.estimateInMemorySize();
+		return ColGroupSizes.estimateInMemorySizeDDC(getNumCols(), getNumValues());
 	}
 
 	@Override

@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package org.tugraz.sysds.runtime.compress;
+package org.tugraz.sysds.runtime.compress.colgroup;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.tugraz.sysds.runtime.compress.UncompressedBitmap;
 import org.tugraz.sysds.runtime.compress.utils.ConverterUtils;
 import org.tugraz.sysds.runtime.data.DenseBlock;
 import org.tugraz.sysds.runtime.functionobjects.KahanFunction;
@@ -158,13 +159,7 @@ public class ColGroupDDC2 extends ColGroupDDC {
 
 	@Override
 	public long estimateInMemorySize() {
-		long size = super.estimateInMemorySize();
-
-		// adding data size
-		if(_data != null)
-			size += 2 * _data.length;
-
-		return size;
+		return ColGroupSizes.estimateInMemorySizeDDC2(getNumCols(), getNumRows(), getNumValues(), _data.length);
 	}
 
 	@Override
@@ -202,7 +197,7 @@ public class ColGroupDDC2 extends ColGroupDDC {
 	}
 
 	@Override
-	protected void countNonZerosPerRow(int[] rnnz, int rl, int ru) {
+	public void countNonZerosPerRow(int[] rnnz, int rl, int ru) {
 		final int ncol = getNumCols();
 		final int numVals = getNumValues();
 

@@ -19,14 +19,6 @@
 
 package org.tugraz.sysds.test.component.compress;
 
-import org.tugraz.sysds.runtime.compress.CompressedMatrixBlock;
-import org.tugraz.sysds.runtime.functionobjects.CM;
-import org.tugraz.sysds.runtime.matrix.data.MatrixBlock;
-import org.tugraz.sysds.runtime.matrix.operators.CMOperator;
-import org.tugraz.sysds.runtime.matrix.operators.CMOperator.AggregateOperationTypes;
-import org.tugraz.sysds.runtime.util.DataConverter;
-import org.tugraz.sysds.test.TestUtils;
-
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -34,28 +26,20 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+import org.tugraz.sysds.runtime.compress.CompressedMatrixBlock;
+import org.tugraz.sysds.runtime.functionobjects.CM;
+import org.tugraz.sysds.runtime.matrix.data.MatrixBlock;
+import org.tugraz.sysds.runtime.matrix.operators.CMOperator;
+import org.tugraz.sysds.runtime.matrix.operators.CMOperator.AggregateOperationTypes;
 import org.tugraz.sysds.test.TestConstants.CompressionType;
 import org.tugraz.sysds.test.TestConstants.MatrixType;
 import org.tugraz.sysds.test.TestConstants.SparsityType;
-import org.tugraz.sysds.test.TestConstants.ValueType;
 import org.tugraz.sysds.test.TestConstants.ValueRange;
+import org.tugraz.sysds.test.TestConstants.ValueType;
+import org.tugraz.sysds.test.TestUtils;
 
 @RunWith(value = Parameterized.class)
 public class CompressedVectorTest extends CompressedTestBase {
-
-	// Input
-	double[][] input;
-	MatrixBlock mb;
-
-	// Compressed Block
-	CompressedMatrixBlock cmb;
-
-	// Compression Result
-	MatrixBlock cmbResult;
-
-	// Decompressed Result
-	MatrixBlock cmbDeCompressed;
-	double[][] deCompressed;
 
 	protected static MatrixType[] usedMatrixTypeLocal = new MatrixType[] {// types
 		MatrixType.SINGLE_COL, MatrixType.SINGLE_COL_L};
@@ -68,7 +52,7 @@ public class CompressedVectorTest extends CompressedTestBase {
 				for(ValueRange vr : usedValueRanges) {
 					for(CompressionType ct : usedCompressionTypes) {
 						for(MatrixType mt : usedMatrixTypeLocal) {
-							for(double sr : samplingRatio) {
+							for(double sr : samplingRatios) {
 								tests.add(new Object[] {st, vt, vr, ct, mt, true, sr});
 							}
 						}
@@ -82,16 +66,6 @@ public class CompressedVectorTest extends CompressedTestBase {
 	public CompressedVectorTest(SparsityType sparType, ValueType valType, ValueRange valRange, CompressionType compType,
 		MatrixType matrixType, boolean compress, double samplingRatio) {
 		super(sparType, valType, valRange, compType, matrixType, compress, samplingRatio);
-		input = TestUtils.generateTestMatrix(rows, cols, min, max, sparsity, 7);
-		mb = getMatrixBlockInput(input);
-		cmb = new CompressedMatrixBlock(mb);
-		cmb.setSeed(1);
-		cmb.setSamplingRatio(samplingRatio);
-		if(compress) {
-			cmbResult = cmb.compress();
-		}
-		cmbDeCompressed = cmb.decompress();
-		deCompressed = DataConverter.convertToDoubleMatrix(cmbDeCompressed);
 	}
 
 	@Test

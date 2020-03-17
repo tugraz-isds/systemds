@@ -16,6 +16,8 @@
 
 package org.tugraz.sysds.test.component.compress;
 
+import static org.junit.Assert.assertTrue;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
@@ -27,6 +29,7 @@ import org.junit.runners.Parameterized;
 import org.tugraz.sysds.lops.MMTSJ.MMTSJType;
 import org.tugraz.sysds.lops.MapMultChain.ChainType;
 import org.tugraz.sysds.runtime.compress.CompressedMatrixBlock;
+import org.tugraz.sysds.runtime.compress.CompressionStatistics;
 import org.tugraz.sysds.runtime.functionobjects.Multiply;
 import org.tugraz.sysds.runtime.functionobjects.Plus;
 import org.tugraz.sysds.runtime.instructions.InstructionUtils;
@@ -37,43 +40,19 @@ import org.tugraz.sysds.runtime.matrix.operators.AggregateUnaryOperator;
 import org.tugraz.sysds.runtime.matrix.operators.RightScalarOperator;
 import org.tugraz.sysds.runtime.matrix.operators.ScalarOperator;
 import org.tugraz.sysds.runtime.util.DataConverter;
-import org.tugraz.sysds.test.TestUtils;
 import org.tugraz.sysds.test.TestConstants.CompressionType;
 import org.tugraz.sysds.test.TestConstants.MatrixType;
 import org.tugraz.sysds.test.TestConstants.SparsityType;
-import org.tugraz.sysds.test.TestConstants.ValueType;
 import org.tugraz.sysds.test.TestConstants.ValueRange;
+import org.tugraz.sysds.test.TestConstants.ValueType;
+import org.tugraz.sysds.test.TestUtils;
 
 @RunWith(value = Parameterized.class)
 public class CompressedMatrixTest extends CompressedTestBase {
 
-	// Input
-	protected double[][] input;
-	protected MatrixBlock mb;
-
-	// Compressed Block
-	protected CompressedMatrixBlock cmb;
-
-	// Compression Result
-	protected MatrixBlock cmbResult;
-
-	// Decompressed Result
-	protected MatrixBlock cmbDeCompressed;
-	protected double[][] deCompressed;
-
 	public CompressedMatrixTest(SparsityType sparType, ValueType valType, ValueRange valRange, CompressionType compType,
 		MatrixType matrixType, boolean compress, double samplingRatio) {
 		super(sparType, valType, valRange, compType, matrixType, compress, samplingRatio);
-		input = TestUtils.generateTestMatrix(rows, cols, min, max, sparsity, 7);
-		mb = getMatrixBlockInput(input);
-		cmb = new CompressedMatrixBlock(mb);
-		cmb.setSeed(1);
-		cmb.setSamplingRatio(samplingRatio);
-		if(compress) {
-			cmbResult = cmb.compress();
-		}
-		cmbDeCompressed = cmb.decompress();
-		deCompressed = DataConverter.convertToDoubleMatrix(cmbDeCompressed);
 	}
 
 	@Test
@@ -368,10 +347,12 @@ public class CompressedMatrixTest extends CompressedTestBase {
 						break;
 				}
 				// matrix-vector uncompressed
-				MatrixBlock ret1 = mb.aggregateUnaryOperations(auop, new MatrixBlock(), Math.max(rows, cols), null, true);
+				MatrixBlock ret1 = mb
+					.aggregateUnaryOperations(auop, new MatrixBlock(), Math.max(rows, cols), null, true);
 
 				// matrix-vector compressed
-				MatrixBlock ret2 = cmb.aggregateUnaryOperations(auop, new MatrixBlock(), Math.max(rows, cols), null, true);
+				MatrixBlock ret2 = cmb
+					.aggregateUnaryOperations(auop, new MatrixBlock(), Math.max(rows, cols), null, true);
 
 				// compare result with input
 				double[][] d1 = DataConverter.convertToDoubleMatrix(ret1);
@@ -381,7 +362,7 @@ public class CompressedMatrixTest extends CompressedTestBase {
 				int dim2 = (aggType == AggType.COLSUMS || aggType == AggType.COLSUMSSQ || aggType == AggType.COLMAXS ||
 					aggType == AggType.COLMINS) ? cols : 1;
 
-				TestUtils.compareMatricesBitAvgDistance(d1, d2, dim1, dim2, 1024, 20);
+				TestUtils.compareMatricesBitAvgDistance(d1, d2, dim1, dim2, 2048, 20);
 			}
 		}
 		catch(Exception e) {
@@ -421,4 +402,87 @@ public class CompressedMatrixTest extends CompressedTestBase {
 			throw new RuntimeException(this.toString() + "\n" + e.getMessage(), e);
 		}
 	}
+
+	@Test
+	public void testCompressionRatio() {
+		try {
+			if(!(cmbResult instanceof CompressedMatrixBlock))
+				return;
+			CompressionStatistics cStat = cmb.getCompressionStatistics();
+
+			assertTrue("Compression ration if compressed should be larger than 1", cStat.ratio > 1);
+
+		}
+		catch(Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException(this.toString() + "\n" + e.getMessage(), e);
+		}
+	}
+
+	@Test
+	public void testCompressionEstimationVSCompression() {
+		try {
+			if(!(cmbResult instanceof CompressedMatrixBlock))
+				return;
+
+			CompressionStatistics cStat = cmb.getCompressionStatistics();
+
+			long colsEstimate = cStat.estimatedSizeCols;
+			long groupsEstimate = cStat.estimatedSizeColGroups;
+			long actualSize = cStat.size;
+			long originalSize = cStat.originalSize;
+
+			StringBuilder builder = new StringBuilder();
+			builder.append("\n\tActual compressed size: " + actualSize);
+			builder.append(" should be less than the estimated ColGroup compressed size " + groupsEstimate);
+			builder.append(" and both be less than the compressed isolated cols: " + colsEstimate);
+			builder.append(" and all less than original size: " + originalSize);
+			builder.append("\n\tcol groups types: " + cStat.getGroupsTypesString());
+			builder.append("\n\tcol groups sizes: " + cStat.getGroupsSizesString());
+			builder.append("\n\t" + this.toString());
+
+			// System.out.println(builder.toString());
+			assertTrue(builder.toString(), groupsEstimate >= actualSize && colsEstimate >= groupsEstimate);
+			// assertTrue(builder.toString(), groupsEstimate < actualSize && colsEstimate < groupsEstimate);
+
+		}
+		catch(Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException(this.toString() + "\n" + e.getMessage(), e);
+		}
+	}
+
+	@Test
+	public void testCompressionScale() {
+		// This test is here for a sanity check such that we verify that the compression ratio from our Matrix
+		// Compressed Block is not unreasonable.
+		try {
+			if(!(cmbResult instanceof CompressedMatrixBlock))
+				return;
+
+			CompressionStatistics cStat = cmb.getCompressionStatistics();
+
+			double compressRatio = cStat.ratio;
+			long actualSize = cStat.size;
+			long originalSize = cStat.originalSize;
+
+			StringBuilder builder = new StringBuilder();
+			builder.append("Compression Ratio sounds suspiciously good at: " + compressRatio);
+			builder.append("\n\tActual compressed size: " + actualSize);
+			builder.append(" original size: " + originalSize);
+			builder.append("\n\tcol groups types: " + cStat.getGroupsTypesString());
+			builder.append("\n\tcol groups sizes: " + cStat.getGroupsSizesString());
+			builder.append("\n\t" + this.toString());
+
+			// System.out.println(builder.toString());
+			assertTrue(builder.toString(), compressRatio < 100.0);
+			// assertTrue(builder.toString(), groupsEstimate < actualSize && colsEstimate < groupsEstimate);
+
+		}
+		catch(Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException(this.toString() + "\n" + e.getMessage(), e);
+		}
+	}
+
 }

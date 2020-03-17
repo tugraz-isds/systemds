@@ -23,13 +23,13 @@ public class TestConstants {
 
 	private static final int rows[] = {4, 2008, 1283, 5, 1, 251, 5000, 100000, 3123};
 	private static final int cols[] = {20, 20, 13, 998, 321, 1, 30, 21, 1};
-	private static final double[] sparsityValues = {0.9, 0.1, 0.0};
+	private static final double[] sparsityValues = {0.9, 0.1, 0.01, 0.0};
 
 	private static final int[] mins = {-10, -2147};
 	private static final int[] maxs = {10, 2147};
 
 	public enum SparsityType {
-		DENSE, SPARSE, EMPTY,
+		DENSE, SPARSE, ULTRA_SPARSE, EMPTY,
 	}
 
 	public enum ValueType {
@@ -63,10 +63,12 @@ public class TestConstants {
 				return sparsityValues[0];
 			case SPARSE:
 				return sparsityValues[1];
-			case EMPTY:
+			case ULTRA_SPARSE:
 				return sparsityValues[2];
+			case EMPTY:
+				return sparsityValues[3];
 			default:
-				return 0.0; // Never Happens
+				throw new RuntimeException("Invalid Sparsity type"); 
 		}
 	}
 
@@ -77,7 +79,7 @@ public class TestConstants {
 			case LARGE:
 				return mins[1];
 			default:
-				return 0; // Never Happens
+			throw new RuntimeException("Invalid range value enum type"); 
 		}
 	}
 
@@ -88,7 +90,7 @@ public class TestConstants {
 			case LARGE:
 				return maxs[1];
 			default:
-				return 0; // Never Happens
+				throw new RuntimeException("Invalid range value enum type"); 
 		}
 	}
 
@@ -113,7 +115,7 @@ public class TestConstants {
 			case SINGLE_COL_L:
 				return rows[8];
 			default:
-				return 0; // Never Happens
+				throw new RuntimeException("Invalid matrix enum type"); 
 		}
 	}
 
@@ -138,7 +140,7 @@ public class TestConstants {
 			case SINGLE_COL_L:
 				return cols[8];
 			default:
-				return 0; // Never Happens
+				throw new RuntimeException("Invalid matrix enum type"); 
 		}
 	}
 }

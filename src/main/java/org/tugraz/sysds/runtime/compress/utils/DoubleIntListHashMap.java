@@ -23,22 +23,19 @@ import java.util.ArrayList;
  * {@code HashMap<Double,IntArrayList>} for restricted use cases.
  * 
  */
-public class DoubleIntListHashMap 
+public class DoubleIntListHashMap  extends CustomHashMap 
 {
-	private static final int INIT_CAPACITY = 8;
-	private static final int RESIZE_FACTOR = 2;
-	private static final float LOAD_FACTOR = 0.75f;
 
 	private DIListEntry[] _data = null;
-	private int _size = -1;
 
 	public DoubleIntListHashMap() {
 		_data = new DIListEntry[INIT_CAPACITY];
 		_size = 0;
 	}
 
-	public int size() {
-		return _size;
+	public DoubleIntListHashMap(int init_capacity) {
+		_data = new DIListEntry[init_capacity];
+		_size = 0;
 	}
 
 	public IntArrayList get(double key) {
@@ -69,6 +66,10 @@ public class DoubleIntListHashMap
 		DIListEntry enew = new DIListEntry(key, value);
 		enew.next = _data[ix]; // colliding entries / null
 		_data[ix] = enew;
+		if(enew.next != null && enew.next.key == key){
+			enew.next = enew.next.next;
+			_size--;
+		}
 		_size++;
 
 		// resize if necessary

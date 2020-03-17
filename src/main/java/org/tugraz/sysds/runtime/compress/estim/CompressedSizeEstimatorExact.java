@@ -25,8 +25,8 @@ import org.tugraz.sysds.runtime.matrix.data.MatrixBlock;
  * 
  */
 public class CompressedSizeEstimatorExact extends CompressedSizeEstimator {
-	public CompressedSizeEstimatorExact(MatrixBlock data) {
-		super(data);
+	public CompressedSizeEstimatorExact(MatrixBlock data, boolean transpose) {
+		super(data, transpose);
 	}
 
 	@Override
@@ -37,12 +37,10 @@ public class CompressedSizeEstimatorExact extends CompressedSizeEstimator {
 	@Override
 	public CompressedSizeInfo estimateCompressedColGroupSize(UncompressedBitmap ubm) {
 		// compute size estimation factors
-		SizeEstimationFactors fact = computeSizeEstimationFactors(ubm, true);
+		CompressedSizeEstimationFactors fact = CompressedSizeEstimationFactors.computeSizeEstimationFactors(ubm, true, _numRows, _numCols);
 
 		// construct new size info summary
-		return new CompressedSizeInfo(fact.numVals, fact.numOffs,
-			getRLESize(fact.numVals, fact.numRuns, ubm.getNumColumns()),
-			getOLESize(fact.numVals, fact.numOffs, fact.numSegs, ubm.getNumColumns()),
-			getDDCSize(fact.numVals, _numRows, ubm.getNumColumns()));
+		return new CompressedSizeInfo(fact);
+		
 	}
 }

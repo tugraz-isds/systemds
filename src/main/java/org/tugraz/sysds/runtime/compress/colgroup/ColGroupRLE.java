@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-package org.tugraz.sysds.runtime.compress;
+package org.tugraz.sysds.runtime.compress.colgroup;
 
 import java.util.Arrays;
 import java.util.Iterator;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.tugraz.sysds.runtime.compress.BitmapEncoder;
+import org.tugraz.sysds.runtime.compress.UncompressedBitmap;
 import org.tugraz.sysds.runtime.compress.utils.ConverterUtils;
 import org.tugraz.sysds.runtime.compress.utils.LinearAlgebraUtils;
 import org.tugraz.sysds.runtime.data.DenseBlock;
@@ -658,7 +660,7 @@ public class ColGroupRLE extends ColGroupOffset {
 	}
 
 	@Override
-	protected void countNonZerosPerRow(int[] rnnz, int rl, int ru) {
+	public void countNonZerosPerRow(int[] rnnz, int rl, int ru) {
 		final int numVals = getNumValues();
 		final int numCols = getNumCols();
 

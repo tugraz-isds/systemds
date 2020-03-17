@@ -31,45 +31,21 @@ import org.tugraz.sysds.runtime.matrix.operators.AggregateBinaryOperator;
 import org.tugraz.sysds.runtime.matrix.operators.AggregateOperator;
 import org.tugraz.sysds.runtime.matrix.operators.AggregateUnaryOperator;
 import org.tugraz.sysds.runtime.util.DataConverter;
-import org.tugraz.sysds.test.TestUtils;
 import org.tugraz.sysds.test.TestConstants.CompressionType;
 import org.tugraz.sysds.test.TestConstants.MatrixType;
 import org.tugraz.sysds.test.TestConstants.SparsityType;
-import org.tugraz.sysds.test.TestConstants.ValueType;
 import org.tugraz.sysds.test.TestConstants.ValueRange;
+import org.tugraz.sysds.test.TestConstants.ValueType;
+import org.tugraz.sysds.test.TestUtils;
 
 @RunWith(value = Parameterized.class)
 public class ParCompressedMatrixTest extends CompressedTestBase {
-
-	// Input
-	protected double[][] input;
-	protected MatrixBlock mb;
-
-	// Compressed Block
-	protected CompressedMatrixBlock cmb;
-
-	// Compression Result
-	protected MatrixBlock cmbResult;
-
-	// Decompressed Result
-	protected MatrixBlock cmbDeCompressed;
-	protected double[][] deCompressed;
 
 	int k = InfrastructureAnalyzer.getLocalParallelism();
 
 	public ParCompressedMatrixTest(SparsityType sparType, ValueType valType, ValueRange valRange,
 		CompressionType compType, MatrixType matrixType, boolean compress, double samplingRatio) {
 		super(sparType, valType, valRange, compType, matrixType, compress, samplingRatio);
-		input = TestUtils.generateTestMatrix(rows, cols, min, max, sparsity, 7);
-		mb = getMatrixBlockInput(input);
-		cmb = new CompressedMatrixBlock(mb);
-		cmb.setSeed(1);
-		cmb.setSamplingRatio(samplingRatio);
-		if(compress) {
-			cmbResult = cmb.compress(k);
-		}
-		cmbDeCompressed = cmb.decompress(k);
-		deCompressed = DataConverter.convertToDoubleMatrix(cmbDeCompressed);
 	}
 
 	@Test
@@ -172,7 +148,7 @@ public class ParCompressedMatrixTest extends CompressedTestBase {
 	}
 
 	@Test
-	public void testVectorMult() {
+	public void testMatrixVectorMult() {
 		try {
 			if(!(cmbResult instanceof CompressedMatrixBlock))
 				return; // Input was not compressed then just pass test
@@ -192,6 +168,36 @@ public class ParCompressedMatrixTest extends CompressedTestBase {
 			double[][] d1 = DataConverter.convertToDoubleMatrix(ret1);
 			double[][] d2 = DataConverter.convertToDoubleMatrix(ret2);
 			TestUtils.compareMatricesBitAvgDistance(d1, d2, rows, 1, 256, 1);
+		}
+		catch(Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException(this.toString() + "\n" + e.getMessage(), e);
+		}
+	}
+
+	@Test
+	public void testVectorMatrixMult() {
+		try {
+			if(!(cmbResult instanceof CompressedMatrixBlock))
+				return; // Input was not compressed then just pass test
+
+			MatrixBlock vector = DataConverter
+				.convertToMatrixBlock(TestUtils.generateTestMatrix(1, rows, 1, 1, 1.0, 3));
+
+			// Make Operator
+			AggregateOperator aop = new AggregateOperator(0, Plus.getPlusFnObject());
+			AggregateBinaryOperator abop = new AggregateBinaryOperator(Multiply.getMultiplyFnObject(), aop, k);
+
+			// vector-matrix uncompressed
+			MatrixBlock ret1 = mb.aggregateBinaryOperations(vector, mb, new MatrixBlock(), abop);
+
+			// vector-matrix compressed
+			MatrixBlock ret2 = cmb.aggregateBinaryOperations(vector, cmb, new MatrixBlock(), abop);
+
+			// compare result with input
+			double[][] d1 = DataConverter.convertToDoubleMatrix(ret1);
+			double[][] d2 = DataConverter.convertToDoubleMatrix(ret2);
+			TestUtils.compareMatricesBitAvgDistance(d1, d2, 1, cols, 10000, 500);
 		}
 		catch(Exception e) {
 			e.printStackTrace();

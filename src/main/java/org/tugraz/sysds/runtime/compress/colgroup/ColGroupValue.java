@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-package org.tugraz.sysds.runtime.compress;
+package org.tugraz.sysds.runtime.compress.colgroup;
 
 import java.util.Arrays;
 
+import org.tugraz.sysds.runtime.compress.BitmapEncoder;
+import org.tugraz.sysds.runtime.compress.UncompressedBitmap;
 import org.tugraz.sysds.runtime.functionobjects.Builtin;
 import org.tugraz.sysds.runtime.functionobjects.Builtin.BuiltinCode;
 import org.tugraz.sysds.runtime.functionobjects.KahanFunction;
@@ -90,14 +92,10 @@ public abstract class ColGroupValue extends ColGroup {
 
 	@Override
 	public long estimateInMemorySize() {
-		long size = super.estimateInMemorySize();
-
-		// adding the size of values
-		size += 8; // array reference
-		size += getValuesSize(); // values
-
-		return size;
+		return ColGroupSizes.estimateInMemorySizeGroupValue(_colIndexes.length, getValuesSize());
 	}
+
+
 
 	public long getValuesSize() {
 		return (_values != null) ? 32 + _values.length * 8 : 0;

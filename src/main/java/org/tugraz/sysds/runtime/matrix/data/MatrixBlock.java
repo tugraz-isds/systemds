@@ -519,6 +519,16 @@ public class MatrixBlock extends MatrixValue implements CacheBlock, Externalizab
 
 	////////
 	// Data handling
+
+	public Object getBlock(){
+		if (denseBlock == null && sparseBlock == null){
+			throw new RuntimeException("The blocks were not initialized therefore no block is returned");
+		} else if( denseBlock == null){
+			return sparseBlock;
+		} else{
+			return denseBlock;
+		}
+	}
 	
 	public DenseBlock getDenseBlock() {
 		return denseBlock;
@@ -947,6 +957,7 @@ public class MatrixBlock extends MatrixValue implements CacheBlock, Externalizab
 		return evalSparseFormatInMemory(rlen, clen, nonZeros);
 	}
 	
+	// TODO: Why have this when it is unused?
 	@SuppressWarnings("unused")
 	private boolean evalSparseFormatInMemory(boolean transpose)
 	{
@@ -2375,8 +2386,10 @@ public class MatrixBlock extends MatrixValue implements CacheBlock, Externalizab
 	public static long estimateSizeDenseInMemory(long nrows, long ncols)
 	{
 		// basic variables and references sizes
-		double size = 44;
-		
+		double size = 56; // Worst case Uncompressed Pointers JVM for MatrixBlock obj
+		size += 48; // Worst case Uncompressed Pointers JVM for DenseBlockFP64
+		size += 16 * 3; // Array Object headers in DenseBlock and DenseBlockFP64.
+
 		// core dense matrix block (double array)
 		size += 8d * nrows * ncols;
 		
@@ -2391,7 +2404,7 @@ public class MatrixBlock extends MatrixValue implements CacheBlock, Externalizab
 	public static long estimateSizeSparseInMemory(long nrows, long ncols, double sparsity, SparseBlock.Type stype)
 	{
 		// basic variables and references sizes
-		double size = 44;
+		double size = 56; // Worst case Uncompressed Pointers JVM
 		
 		// delegate memory estimate to individual sparse blocks
 		size += SparseBlockFactory.estimateSizeSparseInMemory(

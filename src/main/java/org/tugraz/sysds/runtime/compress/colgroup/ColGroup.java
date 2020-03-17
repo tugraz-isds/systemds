@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package org.tugraz.sysds.runtime.compress;
+package org.tugraz.sysds.runtime.compress.colgroup;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Iterator;
-import java.util.List;
 
+import org.tugraz.sysds.runtime.DMLRuntimeException;
 import org.tugraz.sysds.runtime.matrix.data.IJV;
 import org.tugraz.sysds.runtime.matrix.data.MatrixBlock;
 import org.tugraz.sysds.runtime.matrix.operators.AggregateUnaryOperator;
@@ -41,13 +41,16 @@ public abstract class ColGroup implements Serializable {
 		RLE_BITMAP, // RLE bitmap
 		OLE_BITMAP, // OLE bitmap
 		DDC1, // DDC 1 byte
-		DDC2; // DDC 2 byte
+		DDC2, // DDC 2 byte
+		QUANTIZE_8, //  Quantize the double values to int 8.
 	}
 
 	/**
 	 * Offsets of the columns that make up the column group. Zero-based, and relative to the matrix block.
 	 */
 	protected int[] _colIndexes;
+	// ColGroup Implementation Contains zero values
+	protected boolean _zeros;
 
 	/** Number of rows in the matrix, for use by child classes. */
 	protected int _numRows;
@@ -59,21 +62,16 @@ public abstract class ColGroup implements Serializable {
 	 * @param numRows    total number of rows in the parent block
 	 */
 	protected ColGroup(int[] colIndices, int numRows) {
+		if(colIndices == null) {
+			throw new DMLRuntimeException("null input to ColGroup is invalid");
+		}
+		if(colIndices.length == 0){
+			throw new DMLRuntimeException("0 is an invalid number of columns in a ColGroup");
+		}
+		if(numRows < 1){
+			throw new DMLRuntimeException( numRows + " is an invalid number of rows in a ColGroup");
+		}
 		_colIndexes = colIndices;
-		_numRows = numRows;
-	}
-
-	/**
-	 * Convenience constructor for converting indices to a more compact format.
-	 * 
-	 * @param colIndicesList list of column indices
-	 * @param numRows        total number of rows in the parent block
-	 */
-	protected ColGroup(List<Integer> colIndicesList, int numRows) {
-		_colIndexes = new int[colIndicesList.size()];
-		int i = 0;
-		for(Integer index : colIndicesList)
-			_colIndexes[i++] = index;
 		_numRows = numRows;
 	}
 
@@ -127,11 +125,7 @@ public abstract class ColGroup implements Serializable {
 	 * @return an upper bound on the number of bytes used to store this ColGroup in memory.
 	 */
 	public long estimateInMemorySize() {
-		// object (12B padded to factors of 8), int numRows (4B),
-		// array reference colIndices (8B)
-		// + array object overhead if exists (32B) + 4B per element
-		long size = 24;
-		return (_colIndexes == null) ? size : size + 32 + 4 * _colIndexes.length;
+		return ColGroupSizes.estimateInMemorySizeGroup(_colIndexes.length);
 	}
 
 	/**
@@ -272,7 +266,7 @@ public abstract class ColGroup implements Serializable {
 	 * @param rl   row lower bound, inclusive
 	 * @param ru   row upper bound, exclusive
 	 */
-	protected abstract void countNonZerosPerRow(int[] rnnz, int rl, int ru);
+	public abstract void countNonZerosPerRow(int[] rnnz, int rl, int ru);
 
 	/**
 	 * Base class for column group row iterators. We do not implement the default Iterator interface in order to avoid

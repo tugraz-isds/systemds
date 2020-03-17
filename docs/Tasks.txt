@@ -205,6 +205,7 @@ SYSTEMDS-260 Misc Tools
 SYSTEMDS-270 Compressed Matrix Blocks
  * 271 Reintroduce compressed matrix blocks from SystemML             OK
  * 272 Simplify and speedup compression tests                         OK
+ * 273 Refactor compressed Matrix Block to simplify responsibilities  OK
 
 SYSTEMDS-280 New Rewrites
  * 281 New rewrites sum(rmEmpty), sum(table)                          OK
