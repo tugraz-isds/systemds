@@ -158,7 +158,7 @@ public class OptimizerUtils
 	public static boolean ALLOW_INTER_PROCEDURAL_ANALYSIS = true;
 
 	/**
-	 * Number of inter-procedural analysis (IPA) repetitions. If set to >=2, we apply
+	 * Number of inter-procedural analysis (IPA) repetitions. If set to {@literal >=2}, we apply
 	 * IPA multiple times in order to allow scalar propagation over complex function call
 	 * graphs and various interactions between constant propagation, constant folding,
 	 * and other rewrites such as branch removal and the merge of statement block sequences.

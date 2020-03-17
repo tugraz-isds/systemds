@@ -196,7 +196,7 @@ public class RemoteParForUtils
 	 * @param workerID worker id
 	 * @param vars local variable map
 	 * @param resultVars list of result variables
-	 *
+	 * @param lineage lineage object
 	 * @throws IOException if IOException occurs
 	 */
 	public static void exportLineageItems(long workerID, LocalVariableMap vars, ArrayList<ResultVar> resultVars, Lineage lineage) 
