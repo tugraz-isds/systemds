@@ -14,4 +14,8 @@
 #  limitations under the License.
 # ------------------------------------------------------------------------------
 
-__all__ = ['matrix']
+from .matrix import *
+from .operation_node import *
+
+__all__ = matrix.__all__
+__all__ += operation_node.__all__
