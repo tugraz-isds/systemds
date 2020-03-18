@@ -22,6 +22,8 @@ import java.util.ArrayList;
  * This class provides a memory-efficient replacement for {@code HashMap<DblArray,IntArrayList>} for restricted use
  * cases.
  * 
+ * TODO: Fix allocation of size such that it contains some amount of overhead from the start, to enable hashmap
+ * performance.
  */
 public class DblArrayIntListHashMap extends CustomHashMap {
 
@@ -65,7 +67,7 @@ public class DblArrayIntListHashMap extends CustomHashMap {
 		DArrayIListEntry enew = new DArrayIListEntry(key, value);
 		enew.next = _data[ix]; // colliding entries / null
 		_data[ix] = enew;
-		if(enew.next != null && enew.next.key == key){
+		if(enew.next != null && enew.next.key == key) {
 			enew.next = enew.next.next;
 			_size--;
 		}

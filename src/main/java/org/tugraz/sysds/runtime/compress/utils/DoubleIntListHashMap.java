@@ -19,12 +19,12 @@ package org.tugraz.sysds.runtime.compress.utils;
 import java.util.ArrayList;
 
 /**
- * This class provides a memory-efficient replacement for
- * {@code HashMap<Double,IntArrayList>} for restricted use cases.
+ * This class provides a memory-efficient replacement for {@code HashMap<Double,IntArrayList>} for restricted use cases.
  * 
+ * TODO: Fix allocation of size such that it contains some amount of overhead from the start, to enable hashmap
+ * performance.
  */
-public class DoubleIntListHashMap  extends CustomHashMap 
-{
+public class DoubleIntListHashMap extends CustomHashMap {
 
 	private DIListEntry[] _data = null;
 
@@ -40,7 +40,7 @@ public class DoubleIntListHashMap  extends CustomHashMap
 
 	public IntArrayList get(double key) {
 		// probe for early abort
-		if( _size == 0 )
+		if(_size == 0)
 			return null;
 
 		// compute entry index position
@@ -48,8 +48,8 @@ public class DoubleIntListHashMap  extends CustomHashMap
 		int ix = indexFor(hash, _data.length);
 
 		// find entry
-		for( DIListEntry e = _data[ix]; e != null; e = e.next ) {
-			if( e.key == key ) {
+		for(DIListEntry e = _data[ix]; e != null; e = e.next) {
+			if(e.key == key) {
 				return e.value;
 			}
 		}
@@ -66,22 +66,22 @@ public class DoubleIntListHashMap  extends CustomHashMap
 		DIListEntry enew = new DIListEntry(key, value);
 		enew.next = _data[ix]; // colliding entries / null
 		_data[ix] = enew;
-		if(enew.next != null && enew.next.key == key){
+		if(enew.next != null && enew.next.key == key) {
 			enew.next = enew.next.next;
 			_size--;
 		}
 		_size++;
 
 		// resize if necessary
-		if( _size >= LOAD_FACTOR * _data.length )
+		if(_size >= LOAD_FACTOR * _data.length)
 			resize();
 	}
 
 	public ArrayList<DIListEntry> extractValues() {
 		ArrayList<DIListEntry> ret = new ArrayList<>();
-		for( DIListEntry e : _data ) {
-			if (e != null) {
-				while( e.next != null ) {
+		for(DIListEntry e : _data) {
+			if(e != null) {
+				while(e.next != null) {
 					ret.add(e);
 					e = e.next;
 				}
@@ -94,7 +94,7 @@ public class DoubleIntListHashMap  extends CustomHashMap
 
 	private void resize() {
 		// check for integer overflow on resize
-		if( _data.length > Integer.MAX_VALUE / RESIZE_FACTOR )
+		if(_data.length > Integer.MAX_VALUE / RESIZE_FACTOR)
 			return;
 
 		// resize data array and copy existing contents
@@ -103,9 +103,9 @@ public class DoubleIntListHashMap  extends CustomHashMap
 		_size = 0;
 
 		// rehash all entries
-		for( DIListEntry e : olddata ) {
-			if( e != null ) {
-				while( e.next != null ) {
+		for(DIListEntry e : olddata) {
+			if(e != null) {
+				while(e.next != null) {
 					appendValue(e.key, e.value);
 					e = e.next;
 				}

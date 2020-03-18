@@ -2405,6 +2405,7 @@ public class MatrixBlock extends MatrixValue implements CacheBlock, Externalizab
 	{
 		// basic variables and references sizes
 		double size = 56; // Worst case Uncompressed Pointers JVM
+		// TODO Fix size estimate for sparse tensor.
 		
 		// delegate memory estimate to individual sparse blocks
 		size += SparseBlockFactory.estimateSizeSparseInMemory(

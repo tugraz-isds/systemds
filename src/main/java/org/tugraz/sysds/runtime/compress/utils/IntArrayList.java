@@ -21,6 +21,7 @@ import java.util.Arrays;
 /**
  * This class provides a memory-efficient replacement for {@code ArrayList<Integer>} for
  * restricted use cases.
+ * 
  */
 public class IntArrayList 
 {
