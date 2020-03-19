@@ -17,11 +17,8 @@
 Install SystemDS
 ================
 
-SystemDS can be installed via `pip`.
+SystemDS can be installed via `pip` or installed from source.
 
-.. todo::
-
-  Add instructions for building from source
 
 Pip
 ---
@@ -42,3 +39,31 @@ Check the output of ``java -version``. Output should look similiar to::
 
 The important part is in the first line ``opendjdk version "1.8.0_xxx"``,
 please make sure this is the case.
+
+
+Source
+------
+
+To Install from source involves three steps.
+
+Install Dependencies 
+
+- `Maven <https://maven.apache.org/>`_ 
+- `Python 3.6+ <https://www.python.org/downloads/>`_ and
+- `OpenJDK 1.8 Java <https://openjdk.java.net/install/>`_
+
+Once installed you please verify your version numbers. 
+Additionally you have to install a few python packages.
+Note depending on your installation you might need to use pip3 instead of pip.
+
+- ``pip install numpy py4j wheel``
+
+Then to build the system you  do the following
+
+- Clone the Git Repository <https://github.com/tugraz-isds/systemds.git>.
+- Open an terminal at the root of the repository.
+- Package the Java code using the ``mvn package`` command
+- ``cd src/main/python`` to point at the root of the SystemDS python library.
+- Execute ``python create_python_dist.py``
+
+After this you are ready to go.

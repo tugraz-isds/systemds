@@ -20,15 +20,16 @@ Matrix API
 OperationNode
 -------------
 
-An `OperationNode` represents an operation which we will execute in SystemDS.
-
-A lot of magic methods are overloaded for `OperationNode`, but all of them return an `OperationNode`, even
-comparisons like ``__eq__``, ``__lt__`` etc., therefore one has to call ``.compute()`` to get the actual result.
+An ``OperationNode`` represents an operation that executes in SystemDS.
+Most methods are overloaded for ``OperationNode``.
+This means that they return an ``OperationNode``.
+To get the result from an `OperationNode` you simply call ``.compute()`` on it, thereby getting the numpy equivalent result.
+Even comparisons like ``__eq__``, ``__lt__`` etc. gives `OperationNode`s.
 
 .. note::
 
-  All operations are evaluated lazily, meaning before calling ``.compute()`` nothing will be executed in SystemDS,
-  therefore some errors will not immediately be recognized.
+  All operations are lazily evaluated, meaning before calling ``.compute()`` nothing will be executed in SystemDS.
+  Therefore errors will not immediately be recognized while constructing an sequence of operators.
 
 .. autoclass:: systemds.matrix.OperationNode
   :members:
@@ -36,11 +37,12 @@ comparisons like ``__eq__``, ``__lt__`` etc., therefore one has to call ``.compu
 Matrix
 ------
 
-A `Matrix` is represented either by an `OperationNode`, or the derived class `Matrix`. We can recognize it
-by checking the ``output_type`` of the object.
+A `Matrix` is represented either by an `OperationNode`, or the derived class `Matrix`.
+An Matrix can recognized it by checking the ``output_type`` of the object.
 
-Matrices are the most fundamental objects we operate on. If we can generate the matrix in SystemDS directly via a function
-call, we can use an function which will generate an `OperationNode` e.g. `federated`, `full`, `seq`.
+Matrices are the most fundamental objects we operate on.
+If one generate the matrix in SystemDS directly via a function call,
+it can be used in an function which will generate an `OperationNode` e.g. `federated`, `full`, `seq`.
 
 If we want to work on an numpy array we need to use the class `Matrix`.
 
