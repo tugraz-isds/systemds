@@ -1002,5 +1002,11 @@
 			<version>1.6</version>
 		</dependency>
 
+		<dependency>
+			<groupId>net.sf.py4j</groupId>
+			<artifactId>py4j</artifactId>
+			<version>0.10.4</version>
+		</dependency>
+
 	</dependencies>
 </project>

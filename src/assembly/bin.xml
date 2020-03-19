@@ -104,6 +104,8 @@
 				<include>*:protobuf-java*</include>
 				<include>*:slf4j-api*</include>
 				<include>*:slf4j-log4j*</include>
+				<include>*:netty*</include>
+				<include>*:py4j*</include>
 			</includes>
 			<outputDirectory>./lib</outputDirectory>
 			<scope>compile</scope>
