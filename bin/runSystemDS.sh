@@ -37,12 +37,20 @@ DISTRIBUTED=0
 # set to 1 to disable setup output of this script
 QUIET=0
 
+if [ -n "${SYSTEMDS_STANDALONE_OPTS}" ]; then
+	echo "Overriding SYSTEMDS_STANDALONE_OPTS with env var: ${SYSTEMDS_STANDALONE_OPTS}"
+else
 # specify paramteters  to java when running locally here
 SYSTEMDS_STANDALONE_OPTS="\
       -Xmx4g\
       -Xms4g\
       -Xmn400m"
+#	  -Dhadoop.home.dir=./lib/hadoop"
+fi
 
+if [ -n "${SYSTEMDS_DISTRIBUTED_OPTS_OPTS}" ]; then
+	echo "Overriding SYSTEMDS_DISTRIBUTED_OPTS with env var ${SYSTEMDS_DISTRIBUTED_OPTS_OPTS}"
+else
 # specify parameters to pass to spark-submit when running on spark here
 SYSTEMDS_DISTRIBUTED_OPTS="\
       --master yarn \
@@ -51,6 +59,7 @@ SYSTEMDS_DISTRIBUTED_OPTS="\
       --num-executors 4 \
       --executor-memory 64g \
       --executor-cores 16"
+fi
 
 ##############################################################
 # No need to touch the content below. These commands launch
@@ -105,21 +114,58 @@ win_delim()
     new_path="${new_path}$i\\"
   done
   IFS=$OLDIFS
+  
   ret=${new_path:0:-1}
 }
 
-status_output()
+print_out()
 {
   if [ $QUIET == 0 ]; then
-    echo -e "$1"
+    echo "$1"
   fi
+}
+	
+rel_path()
+{
+  declare -n ret=${1}
+	source=$(pwd)
+	target=${2}
+	common_part=$source
+#	echo "${target#$common_part}"
+	back=
+	while [ "${target#$common_part}" == "${target}" ]; do
+	  common_part=$(dirname $common_part)
+	  back="../${back}"
+	  # echo ${back}
+	  # echo ${common_part}
+	  # if [ back == common_part ]; then 
+		# break 
+	  # fi
+	done
+
+#	 echo ${back}${target#$common_part/}
+
+if [ -z "${back=}" ]; then
+  ret=.
+  else
+	ret=${back}${target#$common_part/}
+	fi
+}
+
+abs_path()
+{
+	OLD=$(pwd)
+	cd ${1}
+	ABS=$(pwd)
+	cd ${OLD}
+	echo ${ABS}/
 }
 
 # Peel off first and/or second argument so that $@ contains arguments to DML script
-if  grep -q "$1" <<< "jar"; then
+if  echo $1 | grep -q "jar"; then
   SYSTEMDS_JAR_FILE=$1
   shift
-  SCRIPT_FILE=$2
+  SCRIPT_FILE=$1
   shift
 else
   SCRIPT_FILE=$1
@@ -130,34 +176,39 @@ fi
 if [ -z "$SYSTEMDS_ROOT" ] ; then
   SYSTEMDS_ROOT=.
 else
-  echo "Using existing SystemDS at ${SYSTEMDS_ROOT}"
+	ABS=$(abs_path ${SYSTEMDS_ROOT})
+	 echo "${ABS}"
+#	 REL=$(rel_path ${ABS})
+	rel_path REL "${ABS}"
+  echo "${REL}"
+	SYSTEMDS_ROOT=${REL}
+	echo "Using existing SystemDS at ${SYSTEMDS_ROOT}"
 fi;
-
 
 # find me a SystemDS jar file to run
 if [ -z "${SYSTEMDS_JAR_FILE}" ];then
   SYSTEMDS_JAR_FILE=$(find $SYSTEMDS_ROOT -iname "systemds.jar" | tail -n 1)
   if [ -z "${SYSTEMDS_JAR_FILE}" ];then
     SYSTEMDS_JAR_FILE=$(find $SYSTEMDS_ROOT -iname "systemds-?.?.?.jar" | tail -n 1)
+    if [ -z "${SYSTEMDS_JAR_FILE}" ];then
+      SYSTEMDS_JAR_FILE=$(find $SYSTEMDS_ROOT -iname "systemds-?.?.?-SNAPSHOT.jar" | tail -n 1)
+    fi
   fi
+else
+	echo "Using user supplied systemds jar file ${SYSTEMDS_JAR_FILE}"
 fi
 
 # check if log4j config file exists, otherwise unset
 # to run with a non fatal complaint by SystemDS
-#LOG4JPROP="conf${DIR_SEP}log4j.properties"
-#if [ ! -f "$LOG4JPROP" ]; then
 LOG4JPROP=$(find $SYSTEMDS_ROOT -iname "log4j*properties" | tail -n 1)
 if [ -z "${LOG4JPROP}" ]; then
   LOG4JPROP=""
 fi
 
-# same as above: set config file param if the
-# file exists
-#CONFIG_FILE="conf${DIR_SEP}SystemDS-config.xml"
-#if [ ! -f $CONFIG_FILE ]; then
+# same as above: set config file param if the file exists
 CONFIG_FILE=$(find $SYSTEMDS_ROOT -iname "SystemDS*config*.xml" | tail -n 1)
 if [ -z "${CONFIG_FILE}" ]; then
-  CONFIG_FILE=""
+  CONFIG_FILE=""  
 else
   CONFIG_FILE="--config ${CONFIG_FILE}"
 fi
@@ -165,33 +216,74 @@ fi
 # detect operating system to set correct directory separator
 if [ "$OSTYPE" == "win32" ] ||  [ "$OSTYPE" == "msys" ] ; then
   DIR_SEP=\\
-  CLASSPATH_SEP=;
+  PATH_SEP=\;
   # fix separator in find output on windows
-  win_delim SYSTEMDS_JAR_FILE
-  if [ -n "$LOG4JPROP" ]; then win_delim LOG4JPROP; fi
-  if [ -n "$CONFIG_FILE" ]; then win_delim CONFIG_FILE;  fi
+  # win_delim SYSTEMDS_JAR_FILE
+  # echo ${SYSTEMDS_JAR_FILE}
+  JARNAME=$(basename ${SYSTEMDS_JAR_FILE})
+  A=$(abs_path $(dirname $SYSTEMDS_JAR_FILE))
+  # echo ${A}
+  # R=$(rel_path ${A})
+  rel_path R ${A}
+  # echo ${R}
+  SYSTEMDS_JAR_FILE=${R}/${JARNAME}
+
+  # if [ -n "$LOG4JPROP" ]; then win_delim LOG4JPROP; fi
+  # if [ -n "$CONFIG_FILE" ]; then win_delim CONFIG_FILE;  fi
+  
+  # to find winutils.exe etc on windows (no need to change dir sep though :-P
+  if [ -z ${HADOOP_HOME} ]; then
+    # find any hadoop dir that has winutils.exe and strip two levels
+	HADOOP_HOME=$(abs_path $(find ${SYSTEMDS_ROOT} -iname winutils.exe | tail -n 1 | xargs dirname | xargs dirname))
+	export HADOOP_HOME
+	
+	rel_path HADOOP_REL ${HADOOP_HOME}
+	# using a relative path saves us from using win_delim()
+	export PATH=${PATH}${PATH_SEP}${HADOOP_REL}${DIR_SEP}bin
+	
+	# export PATH=${PATH}${PATH_SEP}$(rel_path ${HADOOP_HOME})${DIR_SEP}bin
+  fi
 else
   DIR_SEP=/
-  CLASSPATH_SEP=:
+  PATH_SEP=:
 fi
 
+	# source=$(pwd)
+	# target=${HADOOP_HOME}
+
+	# common_part=$source
+	# back=
+	# while [ "${target#$common_part}" = "${target}" ]; do
+	  # common_part=$(dirname $common_part)
+	  # back="../${back}"
+	  # echo ${back}
+	# done
+
+	# echo ${back}${target#$common_part/}
+
+
 # set java class path
-CLASSPATH="${SYSTEMDS_JAR_FILE}${CLASSPATH_SEP}\
-          ${SYSTEMDS_ROOT}${DIR_SEP}lib${DIR_SEP}*${CLASSPATH_SEP}\
+CLASSPATH="${SYSTEMDS_JAR_FILE}${PATH_SEP} \
+          ${SYSTEMDS_ROOT}${DIR_SEP}lib${DIR_SEP}*${PATH_SEP} \
           ${SYSTEMDS_ROOT}${DIR_SEP}target${DIR_SEP}lib${DIR_SEP}*"
 # trim whitespace (introduced by the line breaks above)
-CLASSPATH=$(echo -e "$CLASSPATH" | tr -d '[:space:]')
+CLASSPATH=$(echo "${CLASSPATH}" | tr -d '[:space:]')
 
-status_output "###############################################################################"
-status_output "#  SYSTEMDS_ROOT= ${SYSTEMDS_ROOT}"
-status_output "#  SYSTEMDS_JAR_FILE= ${SYSTEMDS_JAR_FILE}"
-status_output "#  CONFIG_FILE= ${CONFIG_FILE}"
-status_output "#  LOG4JPROP= ${LOG4JPROP}"
+# SYSTEMDS_STANDALONE_OPTS="${SYSTEMDS_STANDALONE_OPTS} -Djava.library.path=\"${HADOOP_HOME}${DIR_SEP}bin${PATH_SEP}${JAVA_HOME}\""
+# echo ${SYSTEMDS_STANDALONE_OPTS}
+print_out "###############################################################################"
+print_out "#  SYSTEMDS_ROOT= ${SYSTEMDS_ROOT}"
+print_out "#  SYSTEMDS_JAR_FILE= ${SYSTEMDS_JAR_FILE}"
+print_out "#  CONFIG_FILE= ${CONFIG_FILE}"
+print_out "#  LOG4JPROP= ${LOG4JPROP}"
+print_out "#  CLASSPATH= ${CLASSPATH}"
+print_out "#  HADOOP_HOME= ${HADOOP_HOME}"
 
 #build the command to run
 if [ ${DISTRIBUTED} == 0 ]; then
-  status_output "#\n#  Runnign locally with opts: $*"
-  status_output "###############################################################################"
+  print_out "#"
+  print_out "#  Runnign locally with opts: $*"
+  print_out "###############################################################################"
   CMD=" \
   java ${SYSTEMDS_STANDALONE_OPTS} \
   -cp ${CLASSPATH} \
@@ -201,16 +293,23 @@ if [ ${DISTRIBUTED} == 0 ]; then
   -exec singlenode \
   $CONFIG_FILE \
   $*"
+  echo "Executing command:  ${CMD}"
+  echo ""  
 else
-  status_output "#\n#  Running distributed with opts: $*"
-  status_output "###############################################################################"
+  print_out "#"
+  print_out "#  Running distributed with opts: $*"
+  print_out "###############################################################################"
 
   export SPARK_MAJOR_VERSION=2
   CMD=" \
   spark-submit ${SYSTEMDS_DISTRIBUTED_OPTS} \
   $SYSTEMDS_JAR_FILE \
   $*"
+  echo "Executing command: ${CMD}"
+  echo ""
 fi
 
 # run
 $CMD
+
+#read -p "Press [Enter] to continue"

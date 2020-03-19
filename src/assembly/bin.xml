@@ -57,9 +57,8 @@
 
 		<!--  Make scripts executable. -->
 		<fileSet>
-			<directory>${basedir}/src/main/standalone</directory>
+			<directory>${basedir}/bin</directory>
 			<includes>
-				<include>*.bat</include>
 				<include>*.sh</include>
 			</includes>
 			<outputDirectory>.</outputDirectory>
