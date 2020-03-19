@@ -200,7 +200,7 @@ if [[ "$BIN_VERIFY" == "true" ]]; then
     tar -xzf $DIST_DIR/systemds-$TAG-bin.tgz
     cd systemds-$TAG-bin
     echo "print('hello world');" > hello.dml
-    ./runStandaloneSystemDS.sh hello.dml
+    ./systemds.sh hello.dml
     cd ..
     echo "`date +%Y-%m-%dT%H:%M:%S`: INFO: Verification of tgz files completed successfully."
 
@@ -210,7 +210,7 @@ if [[ "$BIN_VERIFY" == "true" ]]; then
     unzip -q $DIST_DIR/systemds-$TAG-bin.zip
     cd systemds-$TAG-bin
     echo "print('hello world');" > hello.dml
-    ./runStandaloneSystemDS.sh hello.dml
+    ./systemds.sh hello.dml
     cd ..
     echo "`date +%Y-%m-%dT%H:%M:%S`: INFO: Verification of zip files completed successfully."
 
