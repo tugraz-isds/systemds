@@ -59,7 +59,7 @@ rm -R OPENBLAS
 echo "-----------------------------------------------------------------------"
 echo "Check for unexpected dependencies added after code change or new setup:"
 echo "Non-standard dependencies for libsystemds_mkl-linux-x86_64.so"
-ldd lib/libsystemds_mkl-Linux-x86_64.so | grep -v $gcc_toolkit"\|"$linux_loader"\|"$intel_mkl
+ldd lib/libsystemds_mkl-Linux-x86_64.so | grep -v $gcc_toolkit"\|$linux_loader\|"$intel_mkl
 echo "Non-standard dependencies for libsystemds_openblas-linux-x86_64.so"
-ldd lib/libsystemds_openblas-Linux-x86_64.so | grep -v $gcc_toolkit"\|"$linux_loader"\|"$openblas
+ldd lib/libsystemds_openblas-Linux-x86_64.so | grep -v $gcc_toolkit"\|$linux_loader\|"$openblas
 echo "-----------------------------------------------------------------------"
