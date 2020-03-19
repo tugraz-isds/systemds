@@ -146,7 +146,7 @@ rel_path()
 #	 echo ${back}${target#$common_part/}
 
 if [ -z "${back=}" ]; then
-  ret=.
+  ret=./${target#$common_part/}
   else
 	ret=${back}${target#$common_part/}
 	fi
@@ -220,6 +220,8 @@ if [ "$OSTYPE" == "win32" ] ||  [ "$OSTYPE" == "msys" ] ; then
   # fix separator in find output on windows
   # win_delim SYSTEMDS_JAR_FILE
   # echo ${SYSTEMDS_JAR_FILE}
+
+  # or make the jar path relative to skip issues with Windows paths
   JARNAME=$(basename ${SYSTEMDS_JAR_FILE})
   A=$(abs_path $(dirname $SYSTEMDS_JAR_FILE))
   # echo ${A}
@@ -230,37 +232,26 @@ if [ "$OSTYPE" == "win32" ] ||  [ "$OSTYPE" == "msys" ] ; then
 
   # if [ -n "$LOG4JPROP" ]; then win_delim LOG4JPROP; fi
   # if [ -n "$CONFIG_FILE" ]; then win_delim CONFIG_FILE;  fi
-  
-  # to find winutils.exe etc on windows (no need to change dir sep though :-P
-  if [ -z ${HADOOP_HOME} ]; then
-    # find any hadoop dir that has winutils.exe and strip two levels
-	HADOOP_HOME=$(abs_path $(find ${SYSTEMDS_ROOT} -iname winutils.exe | tail -n 1 | xargs dirname | xargs dirname))
-	export HADOOP_HOME
-	
-	rel_path HADOOP_REL ${HADOOP_HOME}
-	# using a relative path saves us from using win_delim()
-	export PATH=${PATH}${PATH_SEP}${HADOOP_REL}${DIR_SEP}bin
-	
+
 	# export PATH=${PATH}${PATH_SEP}$(rel_path ${HADOOP_HOME})${DIR_SEP}bin
-  fi
 else
   DIR_SEP=/
   PATH_SEP=:
 fi
 
-	# source=$(pwd)
-	# target=${HADOOP_HOME}
+# find hadoop home
+if [ -z ${HADOOP_HOME} ]; then
+  HADOOP_HOME=$(abs_path $(find ${SYSTEMDS_ROOT} -iname hadoop | tail -n 1 ))
+  export HADOOP_HOME
+fi
 
-	# common_part=$source
-	# back=
-	# while [ "${target#$common_part}" = "${target}" ]; do
-	  # common_part=$(dirname $common_part)
-	  # back="../${back}"
-	  # echo ${back}
-	# done
-
-	# echo ${back}${target#$common_part/}
-
+# add hadoop home to path for loading hadoop jni
+rel_path HADOOP_REL ${HADOOP_HOME}
+# using a relative path saves us from using win_delim()
+echo ${HADOOP_HOME}
+echo "${HADOOP_REL}"
+export PATH=${PATH}${PATH_SEP}${HADOOP_REL}${DIR_SEP}bin
+#exit 1
 
 # set java class path
 CLASSPATH="${SYSTEMDS_JAR_FILE}${PATH_SEP} \
