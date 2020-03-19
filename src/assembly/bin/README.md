@@ -29,7 +29,13 @@ limitations under the License.
 
 #### Getting started
 
-Create a text file called hello.dml containing the content 
+Requirements for running SystemDS are a bash shell and OpenJDK 8 or a Spark 2 cluster installation (to run distributed jobs). 
+These requirements should be available via standard system packages in all major Linux distributions 
+(make sure to have the right JDK version enabled, if you have multiple versions in your system).
+For Windows, a bash comes with git (http://git-scm.com) and OpenJDK builds can be optained at http://adoptopenjdk.net.  
+
+To start out with an example after having installed the requirements mentioned above, create a text file  
+`hello.dml` in your unzipped SystemDS directory containing the following content: 
  ```shell script
 X = rand(rows=$1, cols=$2, min=0, max=10, sparsity=$3)
 Y = rand(rows=$2, cols=$1, min=0, max=10, sparsity=$3)
@@ -39,22 +45,42 @@ print(toString(Z))
 write(Z, "Z")
 ``` 
 
-Now run that first script you created by running one of the following commands depending on your operating system:
+**Explaination:** The script takes three parameters for the creation of your matrices X and Y: rows, columns and degree 
+of sparsity. As you can see, DML can access these parameters by specifying $1, $2, ... etc
 
-##### Linux/Bash 
+
+**Execution:** Now run that first script you created by running one of the following commands depending on your operating system:
+
+##### Running a script locally 
 
 ```shell script
-$ runStandaloneSystemDS.sh hello.dml -args 10 10 1.0
+$ ./systemds.sh hello.dml -args 10 10 1.0
 ```
 
-##### Windows/CMD
+##### Running a script locally, providing your own SystemDS.jar file
  
+If you compiled SystemDS from source, you can of course use the created JAR file with the run script. 
+
 ```shell script
-$ runStandaloneSystemDS.bat hello.dml -args 10 10 1.0
+$ ./systemds.sh path/to/the/SystemDS.jar hello.dml -args 10 10 1.0
 ```
 
-**Explaination:** The script takes three parameters for the creation of your matrices X and Y: rows, columns and degree of sparsity.
-As you can see, DML can access these parameters by specifying $1, $2, ... etc
+##### Running a script locally, in your SystemDS source environment
+If you have cloned the SystemDS source repository and want to run your DML script with that, you can point the
+shell script to the source directory by setting the `SYSTEMDS_ROOT` environment variable.
+```shell script
+$ SYSTEMDS_ROOT=../../code/my-systemds/source  ./systemds.sh hello.dml -args 10 10 1.0
+```
+
+##### Running a script distributed on a Spark cluster 
+For running on a Spark cluster, the env variable SYSDS_DISTRIBUTED needs to be set (to something other than 0).
+Per default, SystemDS will run in hybrid mode, pushing some instructions to the cluster and running others locally.
+To force cluster mode in this little test, we will increase the matrix size to give the woker nodes in the cluster 
+something to do and force SystemDS to only generate Spark instructions by adding -exec spark to the command line 
+parameters:
+```shell script
+$ SYSDS_DISTRIBUTED=1 ./systemds.sh hello.dml -args 10000 10000 1.0 -exec spark
+```
 
 The output should read something similar to this (the warning can be safely ignored):
 
