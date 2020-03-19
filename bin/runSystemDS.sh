@@ -177,10 +177,10 @@ if [ -z "$SYSTEMDS_ROOT" ] ; then
   SYSTEMDS_ROOT=.
 else
 	ABS=$(abs_path ${SYSTEMDS_ROOT})
-	 echo "${ABS}"
+#	 echo "${ABS}"
 #	 REL=$(rel_path ${ABS})
 	rel_path REL "${ABS}"
-  echo "${REL}"
+#  echo "${REL}"
 	SYSTEMDS_ROOT=${REL}
 	echo "Using existing SystemDS at ${SYSTEMDS_ROOT}"
 fi;
@@ -246,12 +246,11 @@ if [ -z ${HADOOP_HOME} ]; then
 fi
 
 # add hadoop home to path for loading hadoop jni
-rel_path HADOOP_REL ${HADOOP_HOME}
+rel_path HADOOP_REL "${HADOOP_HOME}"
 # using a relative path saves us from using win_delim()
-echo ${HADOOP_HOME}
-echo "${HADOOP_REL}"
+#echo ${HADOOP_HOME}
+#echo "${HADOOP_REL}"
 export PATH=${PATH}${PATH_SEP}${HADOOP_REL}${DIR_SEP}bin
-#exit 1
 
 # set java class path
 CLASSPATH="${SYSTEMDS_JAR_FILE}${PATH_SEP} \
@@ -260,8 +259,6 @@ CLASSPATH="${SYSTEMDS_JAR_FILE}${PATH_SEP} \
 # trim whitespace (introduced by the line breaks above)
 CLASSPATH=$(echo "${CLASSPATH}" | tr -d '[:space:]')
 
-# SYSTEMDS_STANDALONE_OPTS="${SYSTEMDS_STANDALONE_OPTS} -Djava.library.path=\"${HADOOP_HOME}${DIR_SEP}bin${PATH_SEP}${JAVA_HOME}\""
-# echo ${SYSTEMDS_STANDALONE_OPTS}
 print_out "###############################################################################"
 print_out "#  SYSTEMDS_ROOT= ${SYSTEMDS_ROOT}"
 print_out "#  SYSTEMDS_JAR_FILE= ${SYSTEMDS_JAR_FILE}"
@@ -295,6 +292,7 @@ else
   CMD=" \
   spark-submit ${SYSTEMDS_DISTRIBUTED_OPTS} \
   $SYSTEMDS_JAR_FILE \
+  -f ${SCRIPT_FILE} \
   $*"
   echo "Executing command: ${CMD}"
   echo ""
@@ -302,5 +300,3 @@ fi
 
 # run
 $CMD
-
-#read -p "Press [Enter] to continue"
