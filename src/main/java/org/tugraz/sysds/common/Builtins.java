@@ -90,6 +90,7 @@ public enum Builtins {
 	IMG_MIRROR("img_mirror", true),
 	IMG_BRIGHTNESS("img_brightness", true),
 	IMG_CROP("img_crop", true),
+	IMPUTE_RFD("impute_RFD", true),
 	INTERQUANTILE("interQuantile", false),
 	INTERSECT("intersect", true),
 	INVERSE("inv", "inverse", false),
