@@ -1,5 +1,5 @@
 /*
- * Modifications Copyright 2019 Graz University of Technology
+ * Modifications Copyright 2020 Graz University of Technology
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -39,6 +39,7 @@ import org.tugraz.sysds.api.mlcontext.MLContextUtil;
 import org.tugraz.sysds.common.Types.ExecMode;
 import org.tugraz.sysds.common.Types.ValueType;
 import org.tugraz.sysds.conf.ConfigurationManager;
+import org.tugraz.sysds.conf.DMLConfig;
 import org.tugraz.sysds.hops.OptimizerUtils;
 import org.tugraz.sysds.lops.Checkpoint;
 import org.tugraz.sysds.runtime.DMLRuntimeException;
@@ -214,7 +215,9 @@ public class SparkExecutionContext extends ExecutionContext
 			if(DMLScript.USE_LOCAL_SPARK_CONFIG) {
 				// For now set 4 cores for integration testing :)
 				SparkConf conf = createSystemDSSparkConf()
-						.setMaster("local[*]").setAppName("My local integration test app");
+						.setMaster("local[" +
+							ConfigurationManager.getDMLConfig().getTextValue(DMLConfig.LOCAL_SPARK_NUM_THREADS)+
+							"]").setAppName("My local integration test app");
 				// This is discouraged in spark but have added only for those testcase that cannot stop the context properly
 				// conf.set("spark.driver.allowMultipleContexts", "true");
 				conf.set("spark.ui.enabled", "false");
@@ -1661,7 +1664,7 @@ public class SparkExecutionContext extends ExecutionContext
 
 	/**
 	 * Captures relevant spark cluster configuration properties, e.g., memory budgets and
-	 * degree of parallelism. This configuration abstracts legacy (< Spark 1.6) and current
+	 * degree of parallelism. This configuration abstracts legacy ({@literal <} Spark 1.6) and current
 	 * configurations and provides a unified view.
 	 */
 	public static class SparkClusterConfig
