@@ -70,23 +70,23 @@ SystemDS provides algorithm level functions as buildin functions to simplify dev
 One example of this is l2SVM.
 high level functions for Data-Scientists, lets take a look at l2svm::
 
-    # Import numpy and SystemDS matrix
-    >>> import numpy as np
-    >>> from systemds.matrix import Matrix
-    # Set a seed
-    >>> np.random.seed(0)
-    # Generate random features and labels in numpy
-	# This can easily be exchanged with a data set.
-    >>> features = np.array(np.random.randint(100, size=10 * 10) + 1.01, dtype=np.double)
-    >>> features.shape = (10, 10)
-    >>> labels = np.zeros((10, 1))
-    # l2svm labels can only be 0 or 1
-    >>> for i in range(10):
-    >>>     if np.random.random() > 0.5:
-    >>>         labels[i][0] = 1
-    # compute our model
-    >>> model = Matrix(features).l2svm(Matrix(labels)).compute()
-	>>> print(model)
+  # Import numpy and SystemDS matrix
+  >>> import numpy as np
+  >>> from systemds.matrix import Matrix
+  # Set a seed
+  >>> np.random.seed(0)
+  # Generate random features and labels in numpy
+  # This can easily be exchanged with a data set.
+  >>> features = np.array(np.random.randint(100, size=10 * 10) + 1.01, dtype=np.double)
+  >>> features.shape = (10, 10)
+  >>> labels = np.zeros((10, 1))
+  # l2svm labels can only be 0 or 1
+  >>> for i in range(10):
+  >>>     if np.random.random() > 0.5:
+  >>>         labels[i][0] = 1
+  # compute our model
+  >>> model = Matrix(features).l2svm(Matrix(labels)).compute()
+  >>> print(model)
 
 The output should be similar to::
 
