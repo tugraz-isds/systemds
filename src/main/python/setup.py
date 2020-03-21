@@ -1,4 +1,4 @@
-#p/!/usr/bin/env python3
+#!/usr/bin/env python3
 # -------------------------------------------------------------
 #
 # Modifications Copyright 2020 Graz University of Technology
