@@ -24,17 +24,15 @@
 # Make the `systemds` package importable
 import os
 import sys
+import warnings
+import unittest
+import numpy as np
 
 path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../")
 sys.path.insert(0, path)
 
-import unittest
 from systemds.matrix import Matrix
 from systemds.utils import helpers
-import numpy as np
-
-import logging
-import warnings
 
 dim = 5
 m1 = np.array(np.random.randint(100, size=dim * dim) + 1.01, dtype=np.double)
@@ -101,17 +99,7 @@ class TestBinaryOp(unittest.TestCase):
     def test_abs(self):
         self.assertTrue(np.allclose(Matrix(m1).abs().compute(), np.abs(m1)))
 
-if __name__ == "__main__":
-    # logger = logging.getLogger("py4j")
-    # logger.setLevel(logging.DEBUG)
-    # logger.addHandler(logging.StreamHandler())
 
-    # print("starting tests")
+if __name__ == "__main__":
     unittest.main(exit=False)
-    # ret = unittest.main(exit=True)
-    # testClass = TestBinaryOp()
-    # testClass.test_plus()
-    # helpers.wait_gw()
-    # print("done testing")
     helpers.shutdown()
-    # sys.exit(0)

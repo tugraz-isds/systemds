@@ -73,7 +73,6 @@ class OperationNode(DAGNode):
             elif self.output_type == OutputType.MATRIX:
                 self.result_var = matrix_block_to_numpy(get_gateway().jvm,
                                                         result_variables.getMatrixBlock(self.script.out_var_name))
-            # get_gateway().close()
         if verbose:
             print(self.script.dml_script)
             # TODO further info

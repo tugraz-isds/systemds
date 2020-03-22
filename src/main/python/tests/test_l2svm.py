@@ -39,6 +39,7 @@ class TestL2svm(unittest.TestCase):
         warnings.filterwarnings(action="ignore",
                                 message="unclosed",
                                 category=ResourceWarning)
+
     def test_10x10(self):
         features, labels = generate_matrices_for_l2svm(10, seed=1304)
         # TODO calculate reference

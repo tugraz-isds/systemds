@@ -25,13 +25,12 @@
 # Make the `systemds` package importable
 import os
 import sys
-
-path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../")
-sys.path.insert(0, path)
-
 import warnings
 import unittest
 import numpy as np
+
+path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../")
+sys.path.insert(0, path)
 
 from systemds.matrix import Matrix, full, seq
 from systemds.utils import helpers

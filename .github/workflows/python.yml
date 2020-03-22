@@ -26,10 +26,10 @@ name: Python Test
 on:
   push:
     branches:
-      - python_test_debug
-#  pull_request:
-#    branches:
-#      - master
+      - master
+  pull_request:
+    branches:
+      - master
 
 jobs:
   applicationsTests:
@@ -74,10 +74,9 @@ jobs:
         echo "Beginning tests"
         python tests/test_matrix_binary_op.py
         echo "Exit Status: " $?
-        sleep 5
+        sleep 3
         python tests/test_matrix_aggregations.py
         echo "Exit Status: " $?
-        sleep 5
+        sleep 3
         python tests/test_l2svm.py
         echo "Exit Status: " $?
-        sleep 5

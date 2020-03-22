@@ -27,6 +27,7 @@ JAVA_GATEWAY = None
 MODULE_NAME = 'systemds'
 PROC = None
 
+
 def get_gateway() -> JavaGateway:
     """
     Gives the gateway with which we can communicate with the SystemDS instance running a
@@ -41,10 +42,6 @@ def get_gateway() -> JavaGateway:
             JAVA_GATEWAY = JavaGateway(eager_load=True)
         except Py4JNetworkError:  # if no java instance is running start it
             systemds_java_path = os.path.join(_get_module_dir(), 'systemds-java')
-            # systemds_java_path = "../../../target"
-            # systemds_java_path = os.path.join(_get_module_dir(), '../../../../target')
-
-            print ("path to sysds: " + systemds_java_path)
             cp_separator = ':'
             if os.name == 'nt':  # nt means its Windows
                 cp_separator = ';'
@@ -59,31 +56,13 @@ def get_gateway() -> JavaGateway:
             PROC = process
     return JAVA_GATEWAY
 
-def print_pid():
-    if PROC:
-        print(PROC)
 
 def shutdown():
     global JAVA_GATEWAY
     global PROC
-    # print("killing pid " + str(PROC.pid))
-    # PROC.kill()
-
-    # print("closing gateway")
-    # JAVA_GATEWAY.shutdown()
-
-    print("closing gateway")
     JAVA_GATEWAY.shutdown()
-
-    # PROC.stdin.write(b'\n')
     PROC.communicate(input=b'\n')
-    # JAVA_GATEWAY.close()
 
-
-
-def wait_gw():
-    global PROC
-    PROC.wait()
 
 def create_params_string(unnamed_parameters: Iterable[str], named_parameters: Dict[str, str]) -> str:
     """
