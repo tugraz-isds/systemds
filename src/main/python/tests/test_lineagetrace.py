@@ -14,54 +14,41 @@
 #  limitations under the License.
 # ------------------------------------------------------------------------------
 import unittest
-import re
-
+import unittest
 import os
 import sys
-from typing import Tuple
-
 import numpy as np
+import re
 
 path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../")
 sys.path.insert(0, path)
-from systemds.matrix import Matrix
+from systemds.matrix import Matrix, full, seq
 
+class TestLineageTrace(unittest.TestCase):
+    def test_compare_trace1(self): #test getLineageTrace() on an intermediate
+        m = full((5, 10), 4.20)
+        m_res = m * 3.1
+        m_sum = m_res.sum()       
+        with open(os.path.join("tests", "lt.txt"), "r") as file:
+            data = file.read()
+        file.close()
+        self.assertEqual(reVars(m_res.getLineageTrace()), reVars(data))
 
-class TestAPI(unittest.TestCase):
-    def test_getl2svm_lineage(self):
-        features, labels = generate_matrices_for_l2svm(10, seed=1304)
-        #get the lineage trace
-        lt = features.l2svm(labels).getLineageTrace()
-        with open(os.path.join("tests", "lt_l2svm.txt"), "r") as file:
+    def test_compare_trace2(self): #test (lineage=True) as an argument to compute
+        m = full((5, 10), 4.20)
+        m_res = m * 3.1
+        sum, lt = m_res.sum().compute(lineage = True)       
+        lt = re.sub(r'\b_mVar\d*\b', '', lt)
+        with open(os.path.join("tests", "lt2.txt"), "r") as file:
             data = file.read()
         file.close()
         self.assertEqual(reVars(lt), reVars(data))
 
-    def test_getl2svm_lineage2(self):
-        features, labels = generate_matrices_for_l2svm(10, seed=1304)
-        #get the lineage trace
-        model, lt = features.l2svm(labels).compute(lineage = True)
-        with open(os.path.join("tests", "lt_l2svm.txt"), "r") as file:
-            data = file.read()
-        file.close()
-        self.assertEqual(reVars(lt), reVars(data))
-
-
-def generate_matrices_for_l2svm(dims: int, seed: int = 1234) -> Tuple[Matrix, Matrix]:
-    np.random.seed(seed)
-    m1 = np.array(np.random.randint(100, size=dims * dims) + 1.01, dtype=np.double)
-    m1.shape = (dims, dims)
-    m2 = np.zeros((dims, 1))
-    for i in range(dims):
-        if np.random.random() > 0.5:
-            m2[i][0] = 1
-    return Matrix(m1), Matrix(m2)
 
 def reVars(s: str) -> str:
     s = re.sub(r'\b_mVar\d*\b', '', s)
     s = re.sub(r'\b_Var\d*\b', '', s)
     return s
-    
 
 if __name__ == "__main__":
     unittest.main()

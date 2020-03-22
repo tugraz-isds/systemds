@@ -14,7 +14,7 @@
 #  limitations under the License.
 # ------------------------------------------------------------------------------
 
-from typing import Any, Dict, Optional, Collection, KeysView, Union
+from typing import Any, Dict, Optional, Collection, KeysView, Union, Tuple
 
 from py4j.java_collections import JavaArray
 from py4j.java_gateway import JavaObject
@@ -61,7 +61,7 @@ class DMLScript:
         """
         self.inputs[var_name] = input_var
 
-    def execute(self, lineage: bool = False) -> JavaObject:
+    def execute(self, lineage: bool = False) -> Union[JavaObject, Tuple[JavaObject, str]]:
         """If not already created, create a preparedScript from our DMLCode, pass python local data to our prepared
         script, then execute our script and return the resultVariables
 
@@ -85,7 +85,7 @@ class DMLScript:
 
         ret = self.prepared_script.executeScript()
         if lineage:
-            print(self.prepared_script.getLineageTrace(self.out_var_name))
+            return ret, self.prepared_script.getLineageTrace(self.out_var_name)
 
         return ret
 

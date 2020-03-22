@@ -73,9 +73,6 @@ class Matrix(OperationNode):
         else:
             return super().compute(verbose, lineage)
 
-    def getLineageTrace(self) -> str:
-        return super().getLineageTrace()
-
     def _is_numpy(self) -> bool:
         return self.np_array is not None
 

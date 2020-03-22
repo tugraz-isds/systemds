@@ -21,7 +21,7 @@ from ..utils.helpers import get_gateway, create_params_string
 from ..utils.converters import matrix_block_to_numpy
 from ..script_building.script import DMLScript
 from ..script_building.dag import OutputType, DAGNode, VALID_INPUT_TYPES
-from typing import Union, Optional, Iterable, Dict, Sequence
+from typing import Union, Optional, Iterable, Dict, Sequence, Tuple
 
 BINARY_OPERATIONS = ['+', '-', '/', '//', '*', '<', '<=', '>', '>=', '==', '!=']
 # TODO add numpy array
@@ -60,11 +60,14 @@ class OperationNode(DAGNode):
         self.lineage_trace = None
         self.script = None
 
-    def compute(self, verbose: bool = False, lineage: bool = False) -> Union[float, np.array]:
+    def compute(self, verbose: bool = False, lineage: bool = False) -> Union[float, np.array, Tuple[Union[float, np.array], str]]:
         if self.result_var is None:
             self.script = DMLScript()
             self.script.build_code(self)
-            result_variables = self.script.execute(lineage)
+            if lineage:
+                result_variables, ltrace = self.script.execute(lineage)
+            else:
+                result_variables = self.script.execute(lineage)
             if self.output_type == OutputType.DOUBLE:
                 self.result_var = result_variables.getDouble(self.script.out_var_name)
             elif self.output_type == OutputType.MATRIX:
@@ -73,7 +76,11 @@ class OperationNode(DAGNode):
         if verbose:
             print(self.script.dml_script)
             # TODO further info
-        return self.result_var
+            
+        if lineage:
+            return self.result_var, ltrace
+        else:
+            return self.result_var
 
     def getLineageTrace(self) -> str:
         """Get the lineage trace for this node.
