@@ -113,5 +113,5 @@ if __name__ == "__main__":
     # testClass.test_plus()
     # helpers.wait_gw()
     # print("done testing")
-    # helpers.shutdown()
+    helpers.shutdown()
     # sys.exit(0)

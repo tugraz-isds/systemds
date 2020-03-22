@@ -14,6 +14,7 @@
 #  limitations under the License.
 # ------------------------------------------------------------------------------
 
+import warnings
 import unittest
 
 import os
@@ -29,6 +30,15 @@ from systemds.matrix import Matrix
 
 class TestL2svm(unittest.TestCase):
 
+    def setUp(self):
+        warnings.filterwarnings(action="ignore",
+                                message="unclosed",
+                                category=ResourceWarning)
+
+    def tearDown(self):
+        warnings.filterwarnings(action="ignore",
+                                message="unclosed",
+                                category=ResourceWarning)
     def test_10x10(self):
         features, labels = generate_matrices_for_l2svm(10, seed=1304)
         # TODO calculate reference
@@ -58,3 +68,4 @@ def generate_matrices_for_l2svm(dims: int, seed: int = 1234) -> Tuple[Matrix, Ma
 
 if __name__ == "__main__":
     unittest.main()
+    systemds.utils.helpers.shutdown()

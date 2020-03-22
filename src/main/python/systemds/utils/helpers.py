@@ -75,7 +75,7 @@ def shutdown():
     # print("closing gateway")
     JAVA_GATEWAY.shutdown()
 
-    # PROC.stdin.write(b'\n')
+    PROC.stdin.write(b'\n')
 
     # JAVA_GATEWAY.close()
 

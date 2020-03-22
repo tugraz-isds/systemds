@@ -29,6 +29,7 @@ import sys
 path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../")
 sys.path.insert(0, path)
 
+import warnings
 import unittest
 import numpy as np
 
@@ -42,6 +43,16 @@ m2.shape = (dim, dim)
 
 
 class TestMatrixAggFn(unittest.TestCase):
+
+    def setUp(self):
+        warnings.filterwarnings(action="ignore",
+                                message="unclosed",
+                                category=ResourceWarning)
+
+    def tearDown(self):
+        warnings.filterwarnings(action="ignore",
+                                message="unclosed",
+                                category=ResourceWarning)
 
     def test_sum1(self):
         self.assertTrue(np.allclose(Matrix(m1).sum().compute(), m1.sum()))
@@ -79,3 +90,4 @@ class TestMatrixAggFn(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+    systemds.utils.helpers.shutdown()
