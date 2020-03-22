@@ -30,7 +30,11 @@ sys.path.insert(0, path)
 
 import unittest
 from systemds.matrix import Matrix
+from systemds.utils import helpers
 import numpy as np
+
+import logging
+import warnings
 
 dim = 5
 m1 = np.array(np.random.randint(100, size=dim * dim) + 1.01, dtype=np.double)
@@ -41,6 +45,16 @@ s = 3.02
 
 
 class TestBinaryOp(unittest.TestCase):
+
+    def setUp(self):
+        warnings.filterwarnings(action="ignore",
+                                message="unclosed",
+                                category=ResourceWarning)
+
+    def tearDown(self):
+        warnings.filterwarnings(action="ignore",
+                                message="unclosed",
+                                category=ResourceWarning)
 
     def test_plus(self):
         self.assertTrue(np.allclose((Matrix(m1) + Matrix(m2)).compute(), m1 + m2))
@@ -87,6 +101,17 @@ class TestBinaryOp(unittest.TestCase):
     def test_abs(self):
         self.assertTrue(np.allclose(Matrix(m1).abs().compute(), np.abs(m1)))
 
-
 if __name__ == "__main__":
-    unittest.main()
+    # logger = logging.getLogger("py4j")
+    # logger.setLevel(logging.DEBUG)
+    # logger.addHandler(logging.StreamHandler())
+
+    # print("starting tests")
+    ret = unittest.main(exit=True)
+    # ret = unittest.main(exit=True)
+    # testClass = TestBinaryOp()
+    # testClass.test_plus()
+    # helpers.wait_gw()
+    # print("done testing")
+    # helpers.shutdown()
+    # sys.exit(0)

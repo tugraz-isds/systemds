@@ -72,6 +72,7 @@ class DMLScript:
         # sent to the entry_point, but this is safer
         gateway = get_gateway()
         entry_point = gateway.entry_point
+        # gateway.jvm.py4j.GatewayServer.turnLoggingOn()
         if self.prepared_script is None:
             input_names = self.inputs.keys()
             connection = entry_point.getConnection()
