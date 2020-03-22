@@ -107,7 +107,7 @@ if __name__ == "__main__":
     # logger.addHandler(logging.StreamHandler())
 
     # print("starting tests")
-    ret = unittest.main(exit=True)
+    unittest.main(exit=False)
     # ret = unittest.main(exit=True)
     # testClass = TestBinaryOp()
     # testClass.test_plus()

@@ -34,6 +34,7 @@ import unittest
 import numpy as np
 
 from systemds.matrix import Matrix, full, seq
+from systemds.utils import helpers
 
 dim = 5
 m1 = np.array(np.random.randint(100, size=dim * dim) + 1.01, dtype=np.double)
@@ -89,5 +90,5 @@ class TestMatrixAggFn(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
-    systemds.utils.helpers.shutdown()
+    unittest.main(exit=False)
+    helpers.shutdown()

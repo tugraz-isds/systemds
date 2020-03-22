@@ -26,7 +26,7 @@ import numpy as np
 path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../")
 sys.path.insert(0, path)
 from systemds.matrix import Matrix
-
+from systemds.utils import helpers
 
 class TestL2svm(unittest.TestCase):
 
@@ -67,5 +67,5 @@ def generate_matrices_for_l2svm(dims: int, seed: int = 1234) -> Tuple[Matrix, Ma
 
 
 if __name__ == "__main__":
-    unittest.main()
-    systemds.utils.helpers.shutdown()
+    unittest.main(exit=False)
+    helpers.shutdown()
