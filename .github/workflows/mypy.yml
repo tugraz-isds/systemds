@@ -73,5 +73,5 @@ jobs:
         ls tests/
         echo "Beginning tests"
         python tests/test_matrix_binary_op.py
-#        python tests/test_matrix_aggregations.py
-#        python tests/test_l2svm.py
+        python tests/test_matrix_aggregations.py
+        python tests/test_l2svm.py
