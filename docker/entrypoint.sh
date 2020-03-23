@@ -1,6 +1,7 @@
+#!/bin/bash
 #-------------------------------------------------------------
 #
-# Modifications Copyright 2020 Graz University of Technology
+# Copyright 2020 Graz University of Technology
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -9,9 +10,9 @@
 # to you under the Apache License, Version 2.0 (the
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
-# 
+#
 #   http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing,
 # software distributed under the License is distributed on an
 # "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -21,32 +22,36 @@
 #
 #-------------------------------------------------------------
 
-print("Starting install RScripts")
+# A script to execute the tests inside the docker container.
 
-args <- commandArgs(TRUE)
+cd /github/workspace
 
-options(repos=structure(c(CRAN="http://cran.r-project.org")))
+build="$(mvn -T 2 clean compile test-compile surefire:test | grep 'BUILD')"
 
-custom_install <- function(pkg) {
-    if(!is.element(pkg, installed.packages()[,1])) {
-		# Installing to temp folder, if you want to permenently install change lib path
-		if (length(args)==0) {
- 			install.packages(pkg);
-		} else if (length(args) == 1){
-			install.packages(pkg, lib= args[1]);
-		}
-	}
-} 
+if [[ $build == *"SUCCESS"* ]]; then
+  echo "Successfull build"
+else
+  echo "failed building"
+  exit 1
+fi
 
-custom_install("Matrix");
-custom_install("psych");
-custom_install("moments");
-custom_install("boot");
-custom_install("matrixStats");
-custom_install("outliers");
-custom_install("caret");
-custom_install("sigmoid");
-custom_install("DescTools");
-custom_install("mice");
+grep_args="SUCCESS"
+log="/tmp/sysdstest.log"
 
-print("Done")
+echo "Starting Tests"
+
+grepvals="$(mvn surefire:test -DskipTests=false -Dtest=$1 | tee $log | grep $grep_args)"
+
+if [[ $grepvals == *"SUCCESS"* ]]; then
+	echo "--------------------- last 100 lines from test ------------------------"
+	tail -n 100 $log
+	echo "------------------ last 100 lines from test end -----------------------"
+	echo "::set-output name=value::Successs"
+	sleep 3
+	exit 0
+else
+	echo "\n $(cat $log)"
+	echo "::set-output name=value::Failed"
+	sleep 3
+	exit 1
+fi

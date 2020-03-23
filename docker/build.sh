@@ -1,6 +1,7 @@
+#/bin/bash 
 #-------------------------------------------------------------
 #
-# Modifications Copyright 2020 Graz University of Technology
+# Copyright 2020 Graz University of Technology
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -9,9 +10,9 @@
 # to you under the Apache License, Version 2.0 (the
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
-# 
+#
 #   http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing,
 # software distributed under the License is distributed on an
 # "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -21,32 +22,13 @@
 #
 #-------------------------------------------------------------
 
-print("Starting install RScripts")
+# Build the docker containers
 
-args <- commandArgs(TRUE)
+# The first build is for running systemds through docker.
+docker image build -f docker/sysds.Dockerfile -t sebaba/sysds:0.2 .
 
-options(repos=structure(c(CRAN="http://cran.r-project.org")))
+# The second build is for testing systemds. This image installs the R dependencies needed to run the tests.
+docker image build -f docker/testsysds.Dockerfile -t sebaba/testingsysds:0.2 .
 
-custom_install <- function(pkg) {
-    if(!is.element(pkg, installed.packages()[,1])) {
-		# Installing to temp folder, if you want to permenently install change lib path
-		if (length(args)==0) {
- 			install.packages(pkg);
-		} else if (length(args) == 1){
-			install.packages(pkg, lib= args[1]);
-		}
-	}
-} 
-
-custom_install("Matrix");
-custom_install("psych");
-custom_install("moments");
-custom_install("boot");
-custom_install("matrixStats");
-custom_install("outliers");
-custom_install("caret");
-custom_install("sigmoid");
-custom_install("DescTools");
-custom_install("mice");
-
-print("Done")
+# You might want to prune the docker system afterwards using
+# docker system prune
