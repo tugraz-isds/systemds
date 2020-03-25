@@ -39,10 +39,7 @@ RUN wget http://archive.apache.org/dist/maven/maven-3/$MAVEN_VERSION/binaries/ap
   mv apache-maven-$MAVEN_VERSION /usr/lib/mvn
 
 # Install Extras
-RUN apk update && \
-    apk upgrade && \
-    apk add git && \ 
-    apk add bash
+RUN apk add --no-cache git bash
 
 RUN git clone https://github.com/tugraz-isds/systemds.git
 
