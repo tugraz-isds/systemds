@@ -59,7 +59,7 @@ fi
 printUsageExit()
 {
 cat << EOF
-Usage: $0 [SystemDS.jar] [portnumber]
+Usage: $0 [SystemDS.jar] <portnumber> [arguments] [-help]
 
     SystemDS.jar - Specify a custom SystemDS.jar file (this will be prepended to the classpath
     port         - The port to open for the federated worker.
@@ -137,10 +137,15 @@ abs_path()
 # above be helper functions
 #-------------------------------------------------------------
 
-if [ -z "$1" ]; then
-	PORT=""
+# Peel off first and/or second argument so that $@ contains arguments to DML script
+if  echo "$1" | grep -q "jar"; then
+  SYSTEMDS_JAR_FILE=$1
+  shift
+  PORT=$1
+  shift
 else
-	PORT="$1"
+  PORT=$1
+  shift
 fi
 
 
