@@ -40,6 +40,7 @@ tensors (multi-dimensional arrays) whose first dimension may have a heterogeneou
 
    install.rst
    simple_examples.rst
+   federated.rst
 
 .. toctree::
    :maxdepth: 1
