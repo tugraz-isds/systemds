@@ -17,6 +17,5 @@
 #-------------------------------------------------------------
 
 X = read($1, data_type="frame", format="csv", header=FALSE);
-M = read($2);
-Y = impute_RFD(X, M, $3);
-write(Y, $4, format="binary")
+Y = impute_RFD(X, $2, $3, $4);
+write(Y, $5, format="binary")

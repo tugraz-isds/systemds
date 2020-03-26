@@ -37,7 +37,7 @@ public class BuiltinImputeRFDTest extends AutomatedTestBase {
 	private final static String TEST_NAME = "impute_RFD";
 	private final static String TEST_DIR = "functions/builtin/";
 	private static final String TEST_CLASS_DIR = TEST_DIR + BuiltinImputeRFDTest.class.getSimpleName() + "/";
-	private final static int rows = 10;
+	private final static int rows = 11;
 	private final static int cols = 4;
 	private final static double epsilon = 0.0000000001;
 
@@ -51,35 +51,34 @@ public class BuiltinImputeRFDTest extends AutomatedTestBase {
 
 	@Test
 	public void test1() throws IOException {
-		double[][] M = {{0, 1, 1, 0}};
-		runImpute_RFDTests(M, 0.75, 1,  LopProperties.ExecType.CP);
+		runImpute_RFDTests(2,3, 0.6, 1,  LopProperties.ExecType.CP);
 	}
 
 	@Test
 	public void test2() throws IOException {
 		double[][] M = {{0, 1, 1, 0}};
-		runImpute_RFDTests(M, 0.75, 2,  LopProperties.ExecType.CP);
+		runImpute_RFDTests(2,3, 0.45, 2, LopProperties.ExecType.CP);
 	}
-//
-//	@Test
-//	public void test3() throws IOException {
-//		double[][] M = {{0, 1, 1, 0}};
-//		runImpute_RFDTests(M, 0.75, 1,  LopProperties.ExecType.SPARK);
-//	}
-//
-//	@Test
-//	public void test4() throws IOException {
-//		double[][] M = {{0, 1, 1, 0}};
-//		runImpute_RFDTests(M, 0.75, 2,  LopProperties.ExecType.SPARK);
-//	}
-	private void runImpute_RFDTests(double[][] M, double threshold, int test, LopProperties.ExecType instType)
+
+	@Test
+	public void test3() throws IOException {
+		double[][] M = {{0, 1, 1, 0}};
+		runImpute_RFDTests(2,3, 0.6, 1,   LopProperties.ExecType.SPARK);
+	}
+
+	@Test
+	public void test4() throws IOException {
+		double[][] M = {{0, 1, 1, 0}};
+		runImpute_RFDTests(2,3, 0.4, 2,   LopProperties.ExecType.SPARK);
+	}
+	private void runImpute_RFDTests(int source, int target, double threshold, int test, LopProperties.ExecType instType)
 			throws IOException {
 		Types.ExecMode platformOld = setExecMode(instType);
 		try {
 			loadTestConfiguration(getTestConfiguration(TEST_NAME));
 			String HOME = SCRIPT_DIR + TEST_DIR;
 			fullDMLScriptName = HOME + TEST_NAME + ".dml";
-			programArgs = new String[] {"-args", input("A"), input("M"), String.valueOf(threshold), output("B")}; //
+			programArgs = new String[] {"-args", input("A"), String.valueOf(source),String.valueOf(target), String.valueOf(threshold), output("B")}; //
 			//initialize the frame data.
 			FrameBlock frame1 = new FrameBlock(schema);
 			FrameWriter writer = FrameWriterFactory.createFrameWriter(OutputInfo.CSVOutputInfo);
@@ -87,7 +86,6 @@ public class BuiltinImputeRFDTest extends AutomatedTestBase {
 			initFrameDataString(frame1, A, test);
 			writer.writeFrameToHDFS(frame1.slice(0, rows - 1, 0, schema.length - 1, new FrameBlock()),
 					input("A"), rows, schema.length);
-			writeInputMatrixWithMTD("M", M, true);
 
 			runTest(true, false, null, -1);
 			FrameBlock frameRead = readDMLFrameFromHDFS("B", InputInfo.BinaryBlockInputInfo);
@@ -110,13 +108,13 @@ public class BuiltinImputeRFDTest extends AutomatedTestBase {
 		switch (test)
 		{
 			case 1:
-				s1 = new String[] {"TU-Graz", "TU-Graz", "TU-Graz", "IIT", "IIT", "IIT", "SIBA", "SIBA", "SIBA", "TU-Wien"};
-				s2 = new String[] {"Austria", "Austria", "Austria", "India", null, "India", "Pakistan", "Pakistan", "Austria", "Austria"};
+				s1 = new String[] {"TU-Graz", "TU-Graz", "TU-Graz", "IIT", "IIT", "IIT", "IIT", "SIBA", "SIBA", "SIBA", "TU-Wien"};
+				s2 = new String[] {"Austria", "Austria", "Austria", "India", "IIT", "India", "India", "Pakistan", "Pakistan", "Austria", "Austria"};
 				break;
 			case 2:
-				s1 = new String[]  {"TU-Graz", "TU-Graz", "TU-Graz", "IIT", "IIT", "IIT", "SIBA", "SIBA", "SIBA", "TU-Wien"};
-				s2 = new String[] {"Austria", "Austria", "Austria", null, null, "India", "Pakistan", "Pakistan", null,"Austria"};
-				break;  //{"TU Graz", "TU Graz", "TU Graz", "IIT", "IIT", "IIT", "SIBA", "SIBA", "SIBA", "TU Wien"};
+				s1 = new String[]  {"TU-Graz", "TU-Graz", "TU-Graz", "IIT", "IIT", "IIT", "IIT", "SIBA", "SIBA", "SIBA", "TU-Wien"};
+				s2 = new String[]  {"Austria", "Austria", "Austria", "India", "IIT", "In","India", "Pakistan", "Pakistan", null,"Austria"};
+				break;
 		}
 
 		frame1.appendColumn(b);
@@ -128,8 +126,8 @@ public class BuiltinImputeRFDTest extends AutomatedTestBase {
 	private static FrameBlock tureOutput(double[][] data) {
 		FrameBlock frame1 = new FrameBlock(schema);
 		boolean[] b = new boolean[rows];
-		String[] s1 = {"TU-Graz", "TU-Graz", "TU-Graz", "IIT", "IIT", "IIT", "SIBA", "SIBA", "SIBA", "TU-Wien"};
-		String[] s2 = {"Austria", "Austria", "Austria", "India", "India", "India", "Pakistan", "Pakistan", "Pakistan", "Austria"};
+		String[] s1 = {"TU-Graz", "TU-Graz", "TU-Graz", "IIT", "IIT", "IIT","IIT", "SIBA", "SIBA", "SIBA", "TU-Wien"};
+		String[] s2 = {"Austria", "Austria", "Austria", "India", "India", "India","India", "Pakistan", "Pakistan", "Pakistan", "Austria"};
 		long[] l = new long[rows];
 		for (int i = 0; i < rows; i++) {
 			data[i][1] = (b[i] = (Boolean) UtilFunctions.doubleToObject(Types.ValueType.BOOLEAN, data[i][1], false)) ? 1 : 0;
@@ -148,7 +146,7 @@ public class BuiltinImputeRFDTest extends AutomatedTestBase {
 				Object val1 = UtilFunctions.stringToObject(schema[j], UtilFunctions.objectToString(frame1.get(i, j)));
 				Object val2 = UtilFunctions.stringToObject(schema[j], UtilFunctions.objectToString(frame2.get(i, j)));
 				if (TestUtils.compareToR(schema[j], val1, val2, epsilon) != 0)
-					Assert.fail("The DML data for cell (" + i + "," + j + ") is " + val1 + ", not same as the R value " + val2);
+					Assert.fail("The DML data for cell (" + i + "," + j + ") is " + val1 + ", not same as the expected value " + val2);
 			}
 	}
 }

@@ -28,8 +28,8 @@
 # NAME            TYPE    DEFAULT     MEANING
 # ---------------------------------------------------------------------------------------------
 # F               String    --       Data frame
-# Mask            Double    --       A row vector for interested features i.e. Mask =[1, 0, 1]
-                                     # will exclude the second column from processing
+# source          Integer   --       source attribute to use for imputation and error correction
+# target          Integer   --       attribute to be fixed
 # threshold       Double    --       threshold value in interval [0, 1] for robust FDs 
 # ---------------------------------------------------------------------------------------------
 
@@ -40,7 +40,7 @@
 # ---------------------------------------------------------------------------------------------
 # imputed_F      String   ---        Frame with possible imputations 
 
-s_impute_RFD = function(Frame[String] F, Matrix[Double] Mask, Double threshold)
+s_impute_RFD = function(Frame[String] F, Integer sourceAttribute, Integer targetAttribute, Double threshold)
   return(Frame[String] imputed_F)
 {
 
@@ -48,77 +48,59 @@ s_impute_RFD = function(Frame[String] F, Matrix[Double] Mask, Double threshold)
   if( threshold < 0 | threshold > 1 )
     stop("Stopping due to invalid input, threshold required in interval [0, 1] found "+threshold)
 
-  if(ncol(F) != ncol(Mask))
-    stop("Stopping due to dimension mismatch in Matrix and it's Mask")
+  if(sourceAttribute < 0 | sourceAttribute > ncol(F) | targetAttribute < 0 | targetAttribute > ncol(F))
+    stop("Stopping due to invalid source and target")
 
-  if( nrow(Mask) > 1 )
-    stop("Stopping due to invalid input, Mask required n * 1 found n * "+nrow(Mask))
 
   # detect schema for transformation
   schema = detectSchema(F)
   s=""
-  for(i in 1: ncol(schema))
-  {
+  for(i in 1: ncol(F)) {
     if(as.scalar(schema[1,i]) == "STRING" | as.scalar(schema[1,i]) == "BOOLEAN" )
       s = s+as.integer(i)+","; 
   }
   
   # recode data frame
   jspecR = "{ids:true, recode:["+s+"]}";
-  [tX, M] = transformencode(target=F, spec=jspecR);
+  [X, M] = transformencode(target=F, spec=jspecR);
 
-  # feature pruning using mask (keep interested features only for FD discovery)
-  FDs = discoverFD(tX, Mask, threshold)
-  tX = replace(target = tX, pattern=NaN, replacement=0)
-  X = removeEmpty(target = tX, margin = "cols", select=Mask)
-  
-  n = nrow(FDs)
-  d = ncol(FDs)
-  
-  for(i in 1:n) {
-    for(j in 1:d) {
-      if(as.scalar(FDs[i, j]) != 0) {
-        X[,j] = impute(X[,i], X[,j]) # if there exist a FD (A -> B) then impute B using A
-        FDs[,j] = matrix(0,nrow(FDs),1)
-      }
-    }
-  }
-  
-  p = table((seq(1, ncol(X))) , (removeEmpty(target = t(Mask)*seq(1, ncol(Mask)), margin ="rows")), 1,ncol(X), ncol(F))
-  q = tX * (1-Mask)
-  X_full = (X %*% p)+q;
-
+  # impute missing values and fix errors
+  X[,targetAttribute] = imputeAndCorrect(X[,sourceAttribute], X[,targetAttribute], threshold) 
+ 
   # getting the actual data back
-  dF = transformdecode(target=X_full, spec=jspecR, meta=M);
+  dF = transformdecode(target=X, spec=jspecR, meta=M);
   imputed_F = dF;
 }
 
-impute = function(Matrix[Double] X, Matrix[Double] Y)
+imputeAndCorrect = function(Matrix[Double] X, Matrix[Double] Y, Double threshold)
   return(Matrix[Double] imputed_Y) {
-  # sanity checks
+
   XY = cbind(X, Y)
+  
+  # replace the NaN values with zero
+  XY = replace(target = XY, pattern=NaN, replacement=0)
   missing_mask = (XY == 0)
+  
+  # map the missing values to an arbitrary number (i.e., Max values + 1)
+  XY = missing_mask * (colMaxs(XY)+1) + XY
+  
+  # create mapping between source and target
+  ctab = table(XY[,1], XY[,2], 1)
+ 
+  # remove the table column representing missing values
   if(sum(missing_mask[,2]) > 0)
-  {
-    # map the missing values to an arbitrary number (i.e., Max values + 1)
-    XY = missing_mask * (colMaxs(XY)+1) + XY
-    # create mapping between X and Y
-    ctab = table(XY[,1], XY[,2], 1)
-    # remove the table column representing missing values
     ctab = ctab[,1:ncol(ctab)-1]
-    vector = t(seq(1, ncol(ctab)))
-    # Get the most frequent mapped value of Y 
-    ans = (ctab == rowMaxs(ctab)) * vector
-    tabMax = rowSums(ans) != (ncol(ans) * ((ncol(ans))+1)/2)
-    filled = rowMaxs(ans) * tabMax 
-    for(i in 1:nrow(X), check = 0)
-    {
-      index = as.scalar(XY[i,1])
-      # XY[i,2] = as.scalar(filled[index,1])
-      Y[i,1] = as.scalar(filled[index,1])
-    }
-    
+
+  ctab = ctab/(rowSums(ctab)) > threshold 
+  
+  # Get the most frequent mapped value of Y 
+  ans = (ctab == rowMaxs(ctab)) * t(seq(1, ncol(ctab)))
+  tabMax = rowSums(ans) != (ncol(ans) * ((ncol(ans))+1)/2) # vector for controlling max(0)
+  filled = rowMaxs(ans) * tabMax 
+  for(i in 1:nrow(X))
+  {
+    index = as.scalar(XY[i,1])
+    Y[i,1] = as.scalar(filled[index,1])
   }
-   
   imputed_Y = Y
 }
