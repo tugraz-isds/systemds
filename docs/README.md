@@ -32,10 +32,10 @@ In this directory you'll find
 
 ## Pointers to more documentation
 
-* A [hello world example](https://github.com/tugraz-isds/systemds/blob/master/src/assembly/bin/README.md) (shipped with the binary distribution) to get you started on how to run SystemDS
-* An extended introductory [example](https://github.com/tugraz-isds/systemds/blob/master/bin/README.md)
-* Instructions on how to build the [python bindings documentation](https://github.com/tugraz-isds/systemds/blob/master/src/main/python/docs/README.md)
-* [Packaging](https://github.com/tugraz-isds/systemds/blob/master/src/main/python/BUILD_INSTRUCTIONS.md)
+* A [hello world example](/src/assembly/bin/README.md) (shipped with the binary distribution) to get you started on how to run SystemDS
+* An extended introductory [example](/bin/README.md)
+* Instructions on how to build the [python bindings documentation](/src/main/python/docs/README.md)
+* [Packaging](/src/main/python/BUILD_INSTRUCTIONS.md)
  the python bindings yourself
 * The generated javadoc output will be available from the [releases page](https://github.com/tugraz-isds/systemds/releases)
   
