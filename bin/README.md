@@ -45,7 +45,7 @@ or your environment variables in windows to enable reuse between terminals and r
 To quickly verify that the system is setup correctly.
 You can run a simple hello world, using the launch script.
 
-Open an terminal and go to an empty folder.
+first open an terminal and go to an empty folder, then execute the following.
 
 ```bash
 # Create a hello World script
@@ -84,7 +84,7 @@ echo '{"rows": 1, "cols": 4, "format": "csv"}' > data/types.csv.mtd
 bin/systemds.sh Univar-Stats.dml -nvargs X=data/haberman.data TYPES=data/types.csv STATS=data/univarOut.mtx CONSOLE_OUTPUT=TRUE
 ```
 
-### Using Intel MKL native instructions
+## Using Intel MKL native instructions
 
 To use the MKL acceleration download and install the latest MKL library from [1],
 set the environment variables with the MKL-provided script `$ compilervars.sh intel64` and set

@@ -39,10 +39,13 @@ We have provided at profile for java located in [Codestyle File ./docs/CodeStyle
 
 ## License
 
-Each file in the project has a header license, when adding files remember to add an appropriate comment for that filetype containing the license. One Example is this file: [RAW Link](https://raw.githubusercontent.com/tugraz-isds/systemds/master/CONTRIBUTING.md).
+Each file in the project has a header license, when adding files remember to add an appropriate comment for that filetype containing the license.
+One Example is this file: [RAW Link](https://raw.githubusercontent.com/tugraz-isds/systemds/master/CONTRIBUTING.md).
 
 The specific type of commenting `\** *\` or `# ...` varies depending on filetype, but the content is the same except for year and "Modifications".
-A rule of thumb is that the License should be updated if more than 5 lines of code changed in the file. The following it the two types of license headers:
+A rule of thumb is that the License should not be updated unless significant changes happen to the file.
+
+The following is the two types of license headers:
 
 License header for new Files:
 
