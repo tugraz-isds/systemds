@@ -42,7 +42,8 @@ jobs:
         java: [ 1.8 ]
     name:  Python Test
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout Repository
+      uses: actions/checkout@v2
 
     - name: Setup Java
       uses: actions/setup-java@v1
@@ -55,7 +56,8 @@ jobs:
         python-version: ${{ matrix.python-version }}
         architecture: 'x64'
 
-    - uses: actions/cache@v1
+    - name: Cache Pip Installs
+      uses: actions/cache@v1
       with:
         path: ~/.cache/pip
         key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
@@ -65,7 +67,8 @@ jobs:
     - name: Install pip Dependencies
       run: pip install numpy py4j wheel
 
-    - uses: actions/cache@v1
+    - name: Cache Maven Dependencies
+      uses: actions/cache@v1
       with:
         path: ~/.m2/repository
         key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
