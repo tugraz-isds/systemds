@@ -25,6 +25,8 @@ limitations under the License.
 
 **Documentation:** [SystemDS Documentation](https://github.com/tugraz-isds/systemds/tree/master/docs)
 
+**Python Documentation** [Python SystemDS Documentation](https://damslab.github.io/docs/sysdspython/index.html)
+
 **Status and Build:** SystemDS is still in pre-alpha status. The original code base was forked from [**Apache SystemML**](http://systemml.apache.org/) 1.2 in September 2018. We will continue to support linear algebra programs over matrices, while replacing the underlying data model and compiler, as well as substantially extending the supported functionalities. Until the first release, you can build your own snapshot via Apache Maven: `mvn -DskipTests clean package`.
 
 ## Status

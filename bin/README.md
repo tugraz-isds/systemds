@@ -26,11 +26,34 @@ This directory contains scripts to launch systemds.
 ## Setting SYSTEMDS_ROOT environment variable
 
 In order to run SystemDS from your development directory and leave the
-SystemDS source tree untouched, the following setup could be used (example for bash):
+SystemDS files untouched, the following setup could be used (example for bash):
+The settings are the same if you download a release of SystemDS.
 
- ```bash
-export SYSTEMDS_ROOT=/home/$USER/systemds
+The following example works if you open an terminal at the root of the downloaded release,
+or a cloned repository. You can also change the `$(pwd)` with the full path to the folder.
+
+```bash
+export SYSTEMDS_ROOT=$(pwd)
 export PATH=$SYSTEMDS_ROOT/bin:$PATH
+```
+
+It can be beneficial to enter these into your `~/.profile` for linux
+or your environment variables in windows to enable reuse between terminals and restarts.
+
+## Hello World example
+
+To quickly verify that the system is setup correctly.
+You can run a simple hello world, using the launch script.
+
+Open an terminal and go to an empty folder.
+
+```bash
+# Create a hello World script
+echo 'print("HelloWorld!")' > hello.dml
+# Execute hello world Script
+systemds.sh hello.dml
+# Remove the hello.dml
+rm hello.dml
 ```
 
 ## Running a first example
@@ -66,6 +89,8 @@ bin/systemds.sh Univar-Stats.dml -nvargs X=data/haberman.data TYPES=data/types.c
 To use the MKL acceleration download and install the latest MKL library from [1],
 set the environment variables with the MKL-provided script `$ compilervars.sh intel64` and set
 the option `sysds.native.blas` in `SystemDS-config.xml`.
+
+[1]: https://software.intel.com/mkl "Intel Math Kernel Library"
 
 ## Further reading
 
