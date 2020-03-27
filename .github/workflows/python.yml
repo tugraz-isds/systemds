@@ -49,20 +49,34 @@ jobs:
       with:
         java-version: ${{ matrix.java }}
 
-    - name: Maven clean & package
-      run: mvn clean package
-
     - name: Setup Python
       uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
         architecture: 'x64'
 
+    - uses: actions/cache@v1
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
     - name: Install pip Dependencies
       run: pip install numpy py4j wheel
 
+    - uses: actions/cache@v1
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-
+
+    - name: Maven clean & package
+      run: mvn clean package
+
+
     - name: Build Python Package
-      # TODO: Find out how to make if statement correctly: suggestion but not working: if: ${{ matrix.tests }} == P
       run: |
         cd src/main/python
         python create_python_dist.py

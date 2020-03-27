@@ -27,7 +27,7 @@ Start Federated worker
 
 To start a federated worker:
 
-  ./bin/systemds-federatedworker.sh 8001
+  ./bin/systemds.sh WORKER 8001
 
 Simple Aggregation Example
 --------------------------
@@ -73,9 +73,9 @@ Using the data created from the last example we can simulate
 multiple federated workers by simply starting multiple ones on different ports.
 
 
-| ./bin/systemds-federatedworker.sh 8001
-| ./bin/systemds-federatedworker.sh 8002
-| ./bin/systemds-federatedworker.sh 8003
+| ./bin/systemds.sh WORKER 8001
+| ./bin/systemds.sh WORKER 8002
+| ./bin/systemds.sh WORKER 8003
 
 Then the code would look as follows::
 
