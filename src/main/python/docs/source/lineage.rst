@@ -93,3 +93,7 @@ Output::
   (0) (C) CP°rand°5·SCALAR·INT64·true°10·SCALAR·INT64·true°1000°4.2°4.2°1.0°-1°uniform°1.0°1°_mVar0·MATRIX·FP64
   (1) (I) uak+ (0)
   (3) (I) * (2) (1)
+
+
+:Author: Arnab Phani 
+:Version: 1.0 of 26/03/2020
