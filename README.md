@@ -19,7 +19,7 @@ limitations under the License.
 {% end comment %}
 -->
 
-**NOTE:** SystemDS has been merged back into [**Apache SystemML**](https://github.com/apache/systemml) to become Apache SystemDS (March 27, 2020).
+**NOTE:** SystemDS has been merged back into Apache SystemML to become [**Apache SystemDS**](https://github.com/apache/systemds) (March 27, 2020).
 
 # SystemDS
 
