@@ -18,6 +18,23 @@
 Matrix API
 ==========
 
+SystemDSContext
+---------------
+
+Since we always need a java instance running which will can execute operations in SystemDS, we
+need to start this connection at some point. We do this with ``SystemDSContext``. A ``SystemDSContext``
+object has to be created and once we are finished ``.close()`` has to be called on it, or
+we can use it by doing ``with SystemDSContext() as context:``, which will automatically close
+the context if an error occurs or we are finished with our operations. Creating an context is
+an expensive procedure, because we might have to start a subprocess running java, therefore
+try to do this only once for your program, or always leave at least one context open.
+
+Our SystemDS operations always start with an call on a ``SystemDSContext``, most likely to generate
+a matrix on which we can operate.
+
+.. autoclass:: systemds.context.SystemDSContext
+  :members:
+
 OperationNode
 -------------
 
@@ -44,13 +61,17 @@ Matrix
 ------
 
 A ``Matrix`` is represented either by an ``OperationNode``, or the derived class ``Matrix``.
-An Matrix can recognized it by checking the ``output_type`` of the object.
+An Matrix can be recognized it by checking the ``output_type`` of the object.
 
 Matrices are the most fundamental objects we operate on.
+
+Although we can generate matrices with the function calls or object construction specified below,
+the recommended way is to use the methods defined on ``SystemDSContext``.
+
 If one generate the matrix in SystemDS directly via a function call,
 it can be used in an function which will generate an ``OperationNode`` e.g. ``federated``, ``full``, ``seq``.
 
-If we want to work on an numpy array we need to use the class ``Matrix``.
+If we want to work on an numpy array, or want to read a matrix from a file, we need to use the class ``Matrix``.
 
 .. autoclass:: systemds.matrix.Matrix
     :members:
