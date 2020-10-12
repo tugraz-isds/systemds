@@ -36,7 +36,7 @@ tensors (multi-dimensional arrays) whose first dimension may have a heterogeneou
 .. toctree::
    :maxdepth: 1
    :hidden:
-   :caption: Getting Started:
+   :caption: Getting Started
 
    install.rst
    simple_examples.rst
@@ -47,3 +47,4 @@ tensors (multi-dimensional arrays) whose first dimension may have a heterogeneou
    :caption: Central Classes
 
    matrix.rst
+   lineage.rst
